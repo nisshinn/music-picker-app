@@ -59,7 +59,7 @@ app.get("/auth/login", (req, res) => {
                 process.env.SPOTIFY_CLIENT_ID,
 
             scope:
-                "streaming user-read-email user-read-private user-modify-playback-state",
+                "streaming user-read-email user-read-private user-modify-playback-state user-top-read",
 
             redirect_uri:
                 spotifyRedirectUri,
@@ -491,6 +491,56 @@ app.get(
 // ==========================================
 // ジャンルからSpotifyの曲を取得
 // ==========================================
+// ==============================
+// 🔥 Spotify TOP曲
+// ==============================
+app.get("/api/top-tracks", async (req, res) => {
+    try {
+        const accessToken = req.headers.authorization?.replace("Bearer ", "");
+
+        if (!accessToken) {
+            return res.status(401).json({
+                error: "Spotifyログインが必要です"
+            });
+        }
+
+        const response = await fetch(
+            "https://api.spotify.com/v1/me/top/tracks?limit=20&time_range=medium_term",
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Spotify TOP Tracks Error:", data);
+
+            return res.status(response.status).json(data);
+        }
+
+        const songs = (data.items || []).map(track => ({
+            title: track.name,
+            artist: track.artists
+                .map(artist => artist.name)
+                .join(", "),
+            image: track.album?.images?.[0]?.url || "",
+            uri: track.uri,
+            spotifyUrl: track.external_urls?.spotify || ""
+        }));
+
+        res.json(songs);
+
+    } catch (error) {
+        console.error("TOP Tracks Error:", error);
+
+        res.status(500).json({
+            error: "TOP曲の取得に失敗しました"
+        });
+    }
+});
 
 app.get(
     "/api/genre-tracks",
@@ -549,8 +599,13 @@ app.get(
             const spotifyGenre =
                 genreMap[genre] || genre;
 
-            const query =
-                `genre:${spotifyGenre}`;
+            let query;
+
+if (genre === "all") {
+    query = "year:2020-2026";
+} else {
+    query = `genre:${spotifyGenre}`;
+}
 
             const url =
                 "https://api.spotify.com/v1/search" +

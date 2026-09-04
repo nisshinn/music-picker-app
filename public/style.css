@@ -934,3 +934,28 @@ select:focus {
     }
 
 }
+.song-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.favorite-button {
+    border: none;
+    background: transparent;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 6px;
+    transition: transform 0.15s ease;
+}
+
+.favorite-button:hover {
+    transform: scale(1.15);
+}
+.sub-page {
+    display: none;
+}
+
+.sub-page.active {
+    display: block;
+}
