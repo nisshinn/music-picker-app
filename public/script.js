@@ -14,8 +14,8 @@ let currentPlaylist = [];
 let currentTrackIndex = 0;
 
 let isPlaylistMode = false;
-let lastPlaybackPosition = 0;
 let isChangingTrack = false;
+let lastPlaybackPosition = 0;
 
 
 // ==========================================
@@ -131,8 +131,16 @@ function normalizeTrack(track) {
     }
 
 
+    // ==========================================
     // server.jsから返ってくる形式
-    if (track.title || track.artist) {
+    // ==========================================
+
+    if (
+        track.title ||
+        track.artist ||
+        track.image ||
+        track.spotifyUrl
+    ) {
 
         return {
 
@@ -154,11 +162,16 @@ function normalizeTrack(track) {
                     ? track.artist
                         .split(",")
                         .map(name => ({
-                            name: name.trim()
+                            name: name.trim(),
+                            id: ""
                         }))
                     : (
                         track.artists || []
                     ),
+
+            // ★ アーティストIDを保持
+            artistId:
+                track.artistId || "",
 
             album: {
 
@@ -186,7 +199,10 @@ function normalizeTrack(track) {
     }
 
 
+    // ==========================================
     // Spotify APIそのものの形式
+    // ==========================================
+
     return {
 
         ...track,
@@ -216,7 +232,7 @@ function normalizeTrack(track) {
 
 
 // ==========================================
-// アーティスト検索
+// アーティスト検索・ホーム
 // ==========================================
 
 function initHomePage() {
@@ -263,9 +279,12 @@ function initHomePage() {
     let selectedArtistId = "";
     let selectedArtistName = "";
 
-
     let searchTimer;
 
+
+    // ==========================================
+    // アーティスト入力
+    // ==========================================
 
     artistSearch.addEventListener(
         "input",
@@ -289,8 +308,12 @@ function initHomePage() {
                 selectedArtistName = "";
 
                 if (selectedArtist) {
+
                     selectedArtist.innerHTML = "";
-                    selectedArtist.style.display = "none";
+
+                    selectedArtist.style.display =
+                        "none";
+
                 }
 
                 return;
@@ -298,21 +321,36 @@ function initHomePage() {
             }
 
 
-            // アーティストを変更したら
-            // 前に選んだアーティストを解除
+            // アーティストを変更した
             selectedArtistId = "";
             selectedArtistName = "";
 
 
+            if (selectedArtist) {
+
+                selectedArtist.innerHTML = "";
+
+                selectedArtist.style.display =
+                    "none";
+
+            }
+
+
             searchTimer =
                 setTimeout(
-                    () => searchArtists(keyword),
+                    () => {
+                        searchArtists(keyword);
+                    },
                     300
                 );
 
         }
     );
 
+
+    // ==========================================
+    // アーティスト検索
+    // ==========================================
 
     async function searchArtists(keyword) {
 
@@ -360,21 +398,9 @@ function initHomePage() {
                 await response.json();
 
 
-            /*
-             * server.jsは配列を返す
-             *
-             * [
-             *   {
-             *      id,
-             *      name,
-             *      image,
-             *      spotifyUrl
-             *   }
-             * ]
-             *
-             * なので data.artists ではなく
-             * data を使う。
-             */
+            // ======================================
+            // server.jsは配列を返す
+            // ======================================
 
             const artists =
                 Array.isArray(data)
@@ -401,6 +427,10 @@ function initHomePage() {
 
             }
 
+
+            // ======================================
+            // アーティスト表示
+            // ======================================
 
             artists.forEach(
                 artist => {
@@ -454,6 +484,10 @@ function initHomePage() {
 
                     `;
 
+
+                    // ==================================
+                    // アーティスト選択
+                    // ==================================
 
                     item.addEventListener(
                         "click",
@@ -511,7 +545,8 @@ function initHomePage() {
                                 artist.name;
 
 
-                            artistResults.innerHTML = "";
+                            artistResults.innerHTML =
+                                "";
 
                         }
                     );
@@ -617,6 +652,7 @@ function initHomePage() {
             "click",
             async () => {
 
+                // 気分チェック
                 if (!selectedMood) {
 
                     alert(
@@ -628,6 +664,7 @@ function initHomePage() {
                 }
 
 
+                // アーティスト・ジャンルチェック
                 if (
                     !selectedArtistId &&
                     (
@@ -662,6 +699,13 @@ function initHomePage() {
                     // ==================================
 
                     if (selectedArtistId) {
+
+                        console.log(
+                            "選択アーティスト:",
+                            selectedArtistName,
+                            selectedArtistId
+                        );
+
 
                         const response =
                             await fetch(
@@ -735,18 +779,26 @@ function initHomePage() {
                     }
 
 
+                    console.log(
+                        "取得した曲:",
+                        tracks
+                    );
+
+
                     // ==================================
                     // Spotify形式に統一
                     // ==================================
 
                     tracks =
                         tracks
-                            .map(normalizeTrack)
+                            .map(
+                                normalizeTrack
+                            )
                             .filter(Boolean);
 
 
                     // ==================================
-                    // アーティストを再確認
+                    // アーティストの場合
                     // ==================================
 
                     if (selectedArtistId) {
@@ -755,15 +807,32 @@ function initHomePage() {
                             tracks.filter(
                                 track => {
 
-                                    return track.artists?.some(
-                                        artist =>
-                                            artist.id ===
-                                            selectedArtistId
-                                    ) ||
-                                    track.artistId ===
-                                        selectedArtistId ||
-                                    track.artistId ===
-                                        selectedArtistId;
+                                    // server.jsからartistIdが来る場合
+                                    if (
+                                        track.artistId ===
+                                        selectedArtistId
+                                    ) {
+
+                                        return true;
+
+                                    }
+
+
+                                    // Spotify形式の場合
+                                    if (
+                                        track.artists?.some(
+                                            artist =>
+                                                artist.id ===
+                                                selectedArtistId
+                                        )
+                                    ) {
+
+                                        return true;
+
+                                    }
+
+
+                                    return false;
 
                                 }
                             );
@@ -786,24 +855,31 @@ function initHomePage() {
                         track => {
 
                             const key =
-                                track.id ||
-                                track.uri ||
-                                `${track.name}_${track.artists
-                                    ?.map(a => a.name)
-                                    .join(",")}`;
+                                getTrackId(
+                                    track
+                                );
 
 
-                            if (!used.has(key)) {
+                            if (
+                                key &&
+                                !used.has(key)
+                            ) {
 
                                 used.add(key);
 
-                                unique.push(track);
+                                unique.push(
+                                    track
+                                );
 
                             }
 
                         }
                     );
 
+
+                    // ==================================
+                    // シャッフル
+                    // ==================================
 
                     tracks =
                         shuffleArray(
@@ -838,6 +914,10 @@ function initHomePage() {
                         );
 
 
+                    // ==================================
+                    // 曲がない
+                    // ==================================
+
                     if (
                         selectedTracks.length === 0
                     ) {
@@ -852,7 +932,7 @@ function initHomePage() {
 
 
                     // ==================================
-                    // 履歴
+                    // 履歴保存
                     // ==================================
 
                     saveToHistory(
@@ -861,7 +941,7 @@ function initHomePage() {
 
 
                     // ==================================
-                    // 表示
+                    // プレイリスト表示
                     // ==================================
 
                     displayPlaylist(
@@ -972,108 +1052,116 @@ function displayPlaylist(
 
         <div class="song-list">
 
-            ${normalizedTracks.map(
-                (track, index) => {
+            ${
+                normalizedTracks
+                    .map(
+                        (track, index) => {
 
-                    const image =
-                        track.album?.images?.[0]?.url ||
-                        "";
-
-
-                    const artists =
-                        track.artists
-                            ?.map(
-                                artist =>
-                                    artist.name
-                            )
-                            .join(", ") ||
-                        "Unknown";
+                            const image =
+                                track.album
+                                    ?.images?.[0]?.url ||
+                                "";
 
 
-                    return `
-
-                        <div
-                            class="song-card"
-                            data-index="${index}"
-                        >
-
-                            <div class="song-number">
-                                ${index + 1}
-                            </div>
+                            const artists =
+                                track.artists
+                                    ?.map(
+                                        artist =>
+                                            artist.name
+                                    )
+                                    .join(", ") ||
+                                "Unknown";
 
 
-                            ${
-                                image
-                                ? `
-                                    <img
-                                        class="song-cover"
-                                        src="${escapeHTML(image)}"
-                                        alt=""
-                                    >
-                                  `
-                                : `
-                                    <div class="song-cover song-no-image">
-                                        🎵
+                            return `
+
+                                <div
+                                    class="song-card"
+                                    data-index="${index}"
+                                >
+
+                                    <div class="song-number">
+                                        ${index + 1}
                                     </div>
-                                  `
-                            }
 
 
-                            <div class="song-info">
+                                    ${
+                                        image
+                                        ? `
+                                            <img
+                                                class="song-cover"
+                                                src="${escapeHTML(image)}"
+                                                alt=""
+                                            >
+                                          `
+                                        : `
+                                            <div class="song-cover song-no-image">
+                                                🎵
+                                            </div>
+                                          `
+                                    }
 
-                                <div class="song-name">
-                                    ${escapeHTML(
-                                        track.name
-                                    )}
+
+                                    <div class="song-info">
+
+                                        <div class="song-name">
+                                            ${escapeHTML(
+                                                track.name
+                                            )}
+                                        </div>
+
+                                        <div class="artist-name">
+                                            ${escapeHTML(
+                                                artists
+                                            )}
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="song-actions">
+
+                                        <button
+                                            class="favorite-button"
+                                            title="お気に入りに追加"
+                                            type="button">
+
+                                            ♡ お気に入り
+
+                                        </button>
+
+
+                                        ${
+                                            track.external_urls
+                                                ?.spotify
+                                            ? `
+                                                <a
+                                                    class="spotify-button"
+                                                    href="${escapeHTML(
+                                                        track
+                                                            .external_urls
+                                                            .spotify
+                                                    )}"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer">
+
+                                                    Spotify
+
+                                                </a>
+                                              `
+                                            : ""
+                                        }
+
+                                    </div>
+
                                 </div>
 
-                                <div class="artist-name">
-                                    ${escapeHTML(
-                                        artists
-                                    )}
-                                </div>
+                            `;
 
-                            </div>
-
-
-                            <div class="song-actions">
-
-                                <button
-                                    class="favorite-button"
-                                    title="お気に入りに追加"
-                                    type="button">
-
-                                    ♡ お気に入り
-
-                                </button>
-
-
-                                ${
-                                    track.external_urls?.spotify
-                                    ? `
-                                        <a
-                                            class="spotify-button"
-                                            href="${escapeHTML(
-                                                track.external_urls.spotify
-                                            )}"
-                                            target="_blank"
-                                            rel="noopener noreferrer">
-
-                                            Spotify
-
-                                        </a>
-                                      `
-                                    : ""
-                                }
-
-                            </div>
-
-                        </div>
-
-                    `;
-
-                }
-            ).join("")}
+                        }
+                    )
+                    .join("")
+            }
 
         </div>
 
@@ -1081,7 +1169,7 @@ function displayPlaylist(
 
 
     // ==========================================
-    // お気に入り
+    // 曲カード
     // ==========================================
 
     const cards =
@@ -1096,6 +1184,10 @@ function displayPlaylist(
             const track =
                 normalizedTracks[index];
 
+
+            // ======================================
+            // お気に入り
+            // ======================================
 
             const favoriteButton =
                 card.querySelector(
@@ -1117,6 +1209,7 @@ function displayPlaylist(
 
                         event.stopPropagation();
 
+
                         toggleFavorite(
                             track,
                             favoriteButton
@@ -1128,7 +1221,10 @@ function displayPlaylist(
             }
 
 
+            // ======================================
             // 曲クリック
+            // ======================================
+
             card.addEventListener(
                 "click",
                 event => {
@@ -1169,7 +1265,7 @@ function displayPlaylist(
 
         playAllButton.addEventListener(
             "click",
-            () => {
+            async () => {
 
                 if (
                     normalizedTracks.length === 0
@@ -1178,18 +1274,23 @@ function displayPlaylist(
                 }
 
 
-                // これが重要
-                isPlaylistMode = true;
-
-
                 currentPlaylist =
                     normalizedTracks;
 
 
-                currentTrackIndex = 0;
+                currentTrackIndex =
+                    0;
 
 
-                playTrack(
+                isPlaylistMode =
+                    true;
+
+
+                isChangingTrack =
+                    false;
+
+
+                await playTrack(
                     currentPlaylist,
                     0,
                     true
@@ -1204,7 +1305,7 @@ function displayPlaylist(
 
 
 // ==========================================
-// お気に入りボタン表示
+// お気に入りボタン
 // ==========================================
 
 function updateFavoriteButton(
@@ -1219,13 +1320,17 @@ function updateFavoriteButton(
 
 
     const id =
-        getTrackId(track);
+        getTrackId(
+            track
+        );
 
 
     const isFavorite =
         favorites.some(
             saved =>
-                getTrackId(saved) === id
+                getTrackId(
+                    normalizeTrack(saved)
+                ) === id
         );
 
 
@@ -1262,15 +1367,59 @@ function updateFavoriteButton(
 // 曲ID
 // ==========================================
 
-function getTrackId(track) {
+function getTrackId(
+    track
+) {
+
+    if (!track) {
+        return "";
+    }
+
 
     return (
-        track?.id ||
-        track?.uri ||
-        `${track?.name}_${track?.artists
-            ?.map(a => a.name)
-            .join(",")}`
+        track.id ||
+        track.uri ||
+        `${track.name || track.title}_${getArtistText(track)}`
     );
+
+}
+
+
+// ==========================================
+// アーティスト名取得
+// ==========================================
+
+function getArtistText(
+    track
+) {
+
+    if (!track) {
+        return "";
+    }
+
+
+    if (track.artist) {
+        return track.artist;
+    }
+
+
+    if (
+        Array.isArray(
+            track.artists
+        )
+    ) {
+
+        return track.artists
+            .map(
+                artist =>
+                    artist.name
+            )
+            .join(",");
+
+    }
+
+
+    return "";
 
 }
 
@@ -1343,9 +1492,11 @@ function initSearchPage() {
 
 
             if (!response.ok) {
+
                 throw new Error(
                     `HTTP ${response.status}`
                 );
+
             }
 
 
@@ -1354,9 +1505,13 @@ function initSearchPage() {
 
 
             const tracks =
-                Array.isArray(data.tracks)
-                    ? data.tracks
-                    : [];
+                Array.isArray(data)
+                    ? data
+                    : (
+                        Array.isArray(data.tracks)
+                            ? data.tracks
+                            : []
+                    );
 
 
             if (tracks.length === 0) {
@@ -1497,12 +1652,22 @@ function initFavoritesPage() {
     favorites.forEach(
         track => {
 
-            container.appendChild(
-                createTrackElement(
-                    normalizeTrack(track),
-                    true
-                )
-            );
+            const normalized =
+                normalizeTrack(
+                    track
+                );
+
+
+            if (normalized) {
+
+                container.appendChild(
+                    createTrackElement(
+                        normalized,
+                        true
+                    )
+                );
+
+            }
 
         }
     );
@@ -1767,7 +1932,7 @@ function initAccountPage() {
 
 
     if (
-        !status ||
+        !status &&
         !statusText
     ) {
         return;
@@ -1780,19 +1945,37 @@ function initAccountPage() {
 
     if (token) {
 
-        status.textContent =
-            "Spotify接続済み 🎵";
+        if (status) {
 
-        statusText.textContent =
-            "Spotifyアカウントが接続されています。";
+            status.textContent =
+                "Spotify接続済み 🎵";
+
+        }
+
+
+        if (statusText) {
+
+            statusText.textContent =
+                "Spotifyアカウントが接続されています。";
+
+        }
 
     } else {
 
-        status.textContent =
-            "Spotify未接続";
+        if (status) {
 
-        statusText.textContent =
-            "Spotifyにログインすると、TOP曲などの機能が使えます。";
+            status.textContent =
+                "Spotify未接続";
+
+        }
+
+
+        if (statusText) {
+
+            statusText.textContent =
+                "Spotifyにログインすると、TOP曲などの機能が使えます。";
+
+        }
 
     }
 
@@ -1903,6 +2086,10 @@ function initSettingsPage() {
     );
 
 
+    // ==========================================
+    // 曲数
+    // ==========================================
+
     if (songCount) {
 
         const savedCount =
@@ -1942,6 +2129,10 @@ function initSettingsPage() {
     }
 
 
+    // ==========================================
+    // 履歴削除
+    // ==========================================
+
     if (clearHistoryButton) {
 
         clearHistoryButton.addEventListener(
@@ -1972,7 +2163,9 @@ function initSettingsPage() {
 // テーマ
 // ==========================================
 
-function applyTheme(theme) {
+function applyTheme(
+    theme
+) {
 
     document.body.classList.remove(
         "theme-dark",
@@ -2020,7 +2213,14 @@ function createTrackElement(
 ) {
 
     track =
-        normalizeTrack(track);
+        normalizeTrack(
+            track
+        );
+
+
+    if (!track) {
+        return document.createElement("div");
+    }
 
 
     const item =
@@ -2034,7 +2234,8 @@ function createTrackElement(
 
 
     const image =
-        track.album?.images?.[0]?.url ||
+        track.album
+            ?.images?.[0]?.url ||
         "";
 
 
@@ -2103,7 +2304,8 @@ function createTrackElement(
 
 
             ${
-                track.external_urls?.spotify
+                track.external_urls
+                    ?.spotify
                 ? `
                     <a
                         class="spotify-button"
@@ -2148,6 +2350,7 @@ function createTrackElement(
             event => {
 
                 event.stopPropagation();
+
 
                 toggleFavorite(
                     track,
@@ -2202,7 +2405,14 @@ function toggleFavorite(
 ) {
 
     track =
-        normalizeTrack(track);
+        normalizeTrack(
+            track
+        );
+
+
+    if (!track) {
+        return;
+    }
 
 
     let favorites =
@@ -2212,7 +2422,9 @@ function toggleFavorite(
 
 
     const id =
-        getTrackId(track);
+        getTrackId(
+            track
+        );
 
 
     const index =
@@ -2274,11 +2486,20 @@ function saveToHistory(
         track => {
 
             track =
-                normalizeTrack(track);
+                normalizeTrack(
+                    track
+                );
+
+
+            if (!track) {
+                return;
+            }
 
 
             const id =
-                getTrackId(track);
+                getTrackId(
+                    track
+                );
 
 
             history =
@@ -2584,7 +2805,7 @@ function createSpotifyPlayer(
 
 
             // ======================================
-            // まとめて再生の自動次曲
+            // まとめて再生
             // ======================================
 
             if (
@@ -2603,31 +2824,43 @@ function createSpotifyPlayer(
                 setTimeout(
                     async () => {
 
-                        if (
-                            currentTrackIndex <
-                            currentPlaylist.length - 1
-                        ) {
+                        try {
 
-                            currentTrackIndex++;
+                            if (
+                                currentTrackIndex <
+                                currentPlaylist.length - 1
+                            ) {
+
+                                currentTrackIndex++;
 
 
-                            await playTrack(
-                                currentPlaylist,
-                                currentTrackIndex,
-                                true
+                                await playTrack(
+                                    currentPlaylist,
+                                    currentTrackIndex,
+                                    true
+                                );
+
+                            } else {
+
+                                // 最後の曲
+                                isPlaylistMode =
+                                    false;
+
+                            }
+
+                        } catch (error) {
+
+                            console.error(
+                                "Auto Next Error:",
+                                error
                             );
 
-                        } else {
+                        } finally {
 
-                            // 最後の曲
-                            isPlaylistMode =
+                            isChangingTrack =
                                 false;
 
                         }
-
-
-                        isChangingTrack =
-                            false;
 
                     },
                     500
@@ -2685,6 +2918,10 @@ function createSpotifyPlayer(
                 message
             );
 
+            updateSpotifyStatus(
+                "Spotify認証エラー"
+            );
+
         }
     );
 
@@ -2719,7 +2956,12 @@ function createSpotifyPlayer(
     );
 
 
-    spotifyPlayer.connect()
+    // ==========================================
+    // 接続
+    // ==========================================
+
+    spotifyPlayer
+        .connect()
         .then(
             success => {
 
@@ -2791,6 +3033,17 @@ async function playTrack(
     }
 
 
+    if (!track.uri) {
+
+        alert(
+            "この曲はSpotifyで再生できません。"
+        );
+
+        return;
+
+    }
+
+
     currentPlaylist =
         tracks;
 
@@ -2800,6 +3053,10 @@ async function playTrack(
     isPlaylistMode =
         playlistMode;
 
+
+    // ==========================================
+    // Playerチェック
+    // ==========================================
 
     if (!spotifyPlayer) {
 
@@ -2840,7 +3097,10 @@ async function playTrack(
 
     try {
 
-        // ブラウザの自動再生対策
+        // ======================================
+        // ブラウザ自動再生対策
+        // ======================================
+
         if (
             spotifyPlayer.activateElement
         ) {
@@ -2852,41 +3112,55 @@ async function playTrack(
 
 
         // ======================================
-        // 再生先をWeb Playerへ移動
+        // Web Playerへ再生先を移動
         // ======================================
 
-        await fetch(
-            "https://api.spotify.com/v1/me/player",
-            {
+        const transferResponse =
+            await fetch(
+                "https://api.spotify.com/v1/me/player",
+                {
 
-                method: "PUT",
+                    method: "PUT",
 
-                headers: {
+                    headers: {
 
-                    Authorization:
-                        `Bearer ${token}`,
+                        Authorization:
+                            `Bearer ${token}`,
 
-                    "Content-Type":
-                        "application/json"
+                        "Content-Type":
+                            "application/json"
 
-                },
+                    },
 
-                body: JSON.stringify({
+                    body: JSON.stringify({
 
-                    device_ids:
-                        [spotifyDeviceId],
+                        device_ids:
+                            [spotifyDeviceId],
 
-                    play:
-                        false
+                        play:
+                            false
 
-                })
+                    })
 
-            }
-        );
+                }
+            );
+
+
+        if (
+            !transferResponse.ok &&
+            transferResponse.status !== 204
+        ) {
+
+            console.warn(
+                "Playback transfer warning:",
+                await transferResponse.text()
+            );
+
+        }
 
 
         // ======================================
-        // 曲を再生
+        // 再生
         // ======================================
 
         const response =
@@ -2938,6 +3212,10 @@ async function playTrack(
         }
 
 
+        // ======================================
+        // プレイヤー表示
+        // ======================================
+
         showPlayerPanel(
             track
         );
@@ -2969,7 +3247,8 @@ function updatePlayerUI(
 ) {
 
     const currentTrack =
-        state.track_window?.current_track;
+        state.track_window
+            ?.current_track;
 
 
     if (!currentTrack) {
@@ -2988,7 +3267,10 @@ function updatePlayerUI(
     }
 
 
-    // 現在のHTMLに合わせる
+    // ==========================================
+    // タイトル
+    // ==========================================
+
     const title =
         document.getElementById(
             "playerSongTitle"
@@ -2998,17 +3280,29 @@ function updatePlayerUI(
         );
 
 
+    // ==========================================
+    // アーティスト
+    // ==========================================
+
     const artist =
         document.getElementById(
             "playerArtist"
         );
 
 
+    // ==========================================
+    // 画像
+    // ==========================================
+
     const image =
         document.getElementById(
             "playerImage"
         );
 
+
+    // ==========================================
+    // プログレス
+    // ==========================================
 
     const progress =
         document.getElementById(
@@ -3031,6 +3325,10 @@ function updatePlayerUI(
         );
 
 
+    // ==========================================
+    // タイトル表示
+    // ==========================================
+
     if (title) {
 
         title.textContent =
@@ -3039,6 +3337,10 @@ function updatePlayerUI(
     }
 
 
+    // ==========================================
+    // アーティスト表示
+    // ==========================================
+
     if (artist) {
 
         artist.textContent =
@@ -3046,14 +3348,20 @@ function updatePlayerUI(
                 ?.map(
                     a => a.name
                 )
-                .join(", ") || "";
+                .join(", ") ||
+            "";
 
     }
 
 
+    // ==========================================
+    // 画像表示
+    // ==========================================
+
     if (
         image &&
-        currentTrack.album?.images?.length
+        currentTrack.album
+            ?.images?.length
     ) {
 
         image.src =
@@ -3065,6 +3373,10 @@ function updatePlayerUI(
     }
 
 
+    // ==========================================
+    // プログレス
+    // ==========================================
+
     if (progress) {
 
         progress.max =
@@ -3075,6 +3387,10 @@ function updatePlayerUI(
 
     }
 
+
+    // ==========================================
+    // 時間
+    // ==========================================
 
     if (currentTime) {
 
@@ -3096,10 +3412,18 @@ function updatePlayerUI(
     }
 
 
+    // ==========================================
+    // パネル表示
+    // ==========================================
+
     panel.classList.add(
         "show"
     );
 
+
+    // ==========================================
+    // 再生ボタン
+    // ==========================================
 
     const playButton =
         document.getElementById(
@@ -3171,7 +3495,8 @@ function showPlayerPanel(
                 ?.map(
                     a => a.name
                 )
-                .join(", ") || "";
+                .join(", ") ||
+            "";
 
     }
 
@@ -3239,7 +3564,8 @@ async function playNext() {
         currentPlaylist.length
     ) {
 
-        currentTrackIndex = 0;
+        currentTrackIndex =
+            0;
 
     }
 
@@ -3312,7 +3638,7 @@ async function seekPlayback(
 
 
 // ==========================================
-// 音量
+// 音量保存値
 // ==========================================
 
 function getSavedVolume() {
@@ -3382,6 +3708,7 @@ function setupVolumeControl() {
     }
 
 
+    // 既存イベントを上書き
     volumeBar.oninput =
         async () => {
 
@@ -3395,12 +3722,14 @@ function setupVolumeControl() {
                 value / 100;
 
 
+            // 保存
             localStorage.setItem(
                 "musicPickerVolume",
                 String(volume)
             );
 
 
+            // 表示
             if (volumeValue) {
 
                 volumeValue.textContent =
@@ -3409,6 +3738,7 @@ function setupVolumeControl() {
             }
 
 
+            // Spotify Player
             if (spotifyPlayer) {
 
                 try {
@@ -3442,6 +3772,7 @@ document.addEventListener(
     "click",
     event => {
 
+        // 前の曲
         if (
             event.target.closest(
                 "#previousButton, #playerPrevious"
@@ -3455,6 +3786,7 @@ document.addEventListener(
         }
 
 
+        // 次の曲
         if (
             event.target.closest(
                 "#nextButton, #playerNext"
@@ -3468,6 +3800,7 @@ document.addEventListener(
         }
 
 
+        // 再生・一時停止
         if (
             event.target.closest(
                 "#playPauseButton, #playerPlay"
@@ -3489,7 +3822,7 @@ document.addEventListener(
 // ==========================================
 
 document.addEventListener(
-    "input",
+    "change",
     event => {
 
         if (
