@@ -16,7 +16,11 @@
 </head>
 
 <body>
-    <!-- ハンバーガーメニュー -->
+   
+<!-- ==========================================
+     ☰ ハンバーガーメニュー
+========================================== -->
+
 <button id="menuButton" class="menu-button">
     ☰
 </button>
@@ -33,24 +37,12 @@
 
     <div class="menu-items">
 
-        <button class="menu-item" id="homeMenu">
-            🏠 ホーム
-        </button>
-
-        <button class="menu-item" id="searchMenu">
-            🔍 検索
-        </button>
-
-        <button class="menu-item" id="favoritesMenu">
-            ❤️ お気に入り
-        </button>
-
         <button class="menu-item" id="historyMenu">
             🕘 再生履歴
         </button>
 
-        <button class="menu-item" id="topTracksMenu">
-            🔥 Spotify TOP曲
+        <button class="menu-item" id="spotifyAccountMenu">
+            👤 Spotifyアカウント
         </button>
 
         <button class="menu-item" id="settingsMenu">
@@ -61,6 +53,7 @@
 
 </div>
 
+<div id="menuOverlay" class="menu-overlay"></div>
 <!-- メニューを開いたときの背景 -->
 <div id="menuOverlay" class="menu-overlay"></div>
 
@@ -189,7 +182,80 @@
      曲・アーティスト検索
 ========================================== -->
 <div id="searchPage" class="sub-page">
+<!-- ==========================================
+     ⚙️ 設定
+========================================== -->
 
+<section id="settingsPage" class="sub-page">
+
+    <div class="box">
+
+        <h2>⚙️ 設定</h2>
+
+        <!-- テーマ -->
+        <div class="setting-section">
+
+            <h3>🎨 テーマ</h3>
+
+            <div class="theme-options">
+
+                <button
+                    class="theme-option"
+                    data-theme="light"
+                >
+                    ☀️
+                    <span>ライト</span>
+                </button>
+
+                <button
+                    class="theme-option"
+                    data-theme="dark"
+                >
+                    🌙
+                    <span>ダーク</span>
+                </button>
+
+                <button
+                    class="theme-option"
+                    data-theme="pink"
+                >
+                    🌸
+                    <span>ピンク</span>
+                </button>
+
+                <button
+                    class="theme-option"
+                    data-theme="blue"
+                >
+                    🌊
+                    <span>ブルー</span>
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- アプリ情報 -->
+
+        <div class="setting-section">
+
+            <h3>ℹ️ Music Pickerについて</h3>
+
+            <p class="setting-description">
+                Music Pickerは、今の気分やジャンルから
+                音楽を探せるアプリです。
+            </p>
+
+            <p class="setting-version">
+                Version 1.0.0
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
     <div class="box">
 
         <h2>🔍 曲・アーティスト検索</h2>

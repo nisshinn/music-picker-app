@@ -1546,3 +1546,161 @@ select:focus {
     }
 
 }
+/* ==========================================
+   ⚙️ 設定画面
+========================================== */
+
+.setting-section {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #eeeeee;
+}
+
+.setting-section:first-child {
+    margin-top: 5px;
+    padding-top: 0;
+    border-top: none;
+}
+
+.setting-section h3 {
+    margin: 0 0 15px;
+    font-size: 17px;
+}
+
+
+/* テーマ */
+
+.theme-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.theme-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 15px;
+
+    border: 2px solid #eeeeee;
+    border-radius: 15px;
+
+    background: #fafafa;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.theme-option:hover {
+    transform: translateY(-2px);
+}
+
+.theme-option.selected {
+    border-color: #1db954;
+    background: #f1fff5;
+}
+
+
+/* アプリ説明 */
+
+.setting-description {
+    color: #777;
+    line-height: 1.7;
+    font-size: 14px;
+}
+
+.setting-version {
+    color: #aaa;
+    font-size: 12px;
+}
+
+
+/* ==========================================
+   🌙 ダークテーマ
+========================================== */
+
+body.theme-dark {
+    background: #18181b;
+    color: white;
+}
+
+body.theme-dark .box {
+    background: #27272a;
+}
+
+body.theme-dark .subtitle {
+    color: #aaa;
+}
+
+body.theme-dark .setting-section {
+    border-color: #444;
+}
+
+body.theme-dark .setting-description {
+    color: #aaa;
+}
+
+body.theme-dark .theme-option {
+    background: #333338;
+    border-color: #444;
+    color: white;
+}
+
+body.theme-dark .theme-option.selected {
+    border-color: #1db954;
+    background: #203b29;
+}
+
+
+/* ==========================================
+   🌸 ピンクテーマ
+========================================== */
+
+body.theme-pink {
+    background: #fff1f7;
+}
+
+body.theme-pink .make-button,
+body.theme-pink .spotify-button {
+    background: #e83e8c;
+}
+
+body.theme-pink .theme-option.selected {
+    border-color: #e83e8c;
+    background: #fff0f7;
+}
+
+
+/* ==========================================
+   🌊 ブルーテーマ
+========================================== */
+
+body.theme-blue {
+    background: #eef7ff;
+}
+
+body.theme-blue .make-button,
+body.theme-blue .spotify-button {
+    background: #1687d9;
+}
+
+body.theme-blue .theme-option.selected {
+    border-color: #1687d9;
+    background: #eef8ff;
+}
+
+
+/* スマホ */
+
+@media (max-width: 600px) {
+
+    .theme-options {
+        grid-template-columns: 1fr;
+    }
+
+}

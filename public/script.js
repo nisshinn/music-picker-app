@@ -2690,3 +2690,165 @@ menuOverlay?.addEventListener(
     "click",
     closeSideMenu
 );
+// ==========================================
+// ☰ メニュー → 設定
+// ==========================================
+
+const settingsMenu =
+    document.getElementById("settingsMenu");
+
+const settingsPage =
+    document.getElementById("settingsPage");
+
+
+settingsMenu?.addEventListener("click", () => {
+
+    // 設定を表示
+    settingsPage.classList.add("active");
+
+    // 他のページを閉じる
+    document
+        .getElementById("searchPage")
+        ?.classList.remove("active");
+
+    document
+        .getElementById("favoritesPage")
+        ?.classList.remove("active");
+
+    document
+        .getElementById("historyPage")
+        ?.classList.remove("active");
+
+    // メニューを閉じる
+    closeSideMenu();
+
+});
+// ==========================================
+// 🎨 テーマ変更
+// ==========================================
+
+const themeOptions =
+    document.querySelectorAll(".theme-option");
+
+
+// 保存されたテーマを読み込む
+const savedTheme =
+    localStorage.getItem("music_picker_theme");
+
+if (savedTheme) {
+
+    document.body.classList.add(
+        `theme-${savedTheme}`
+    );
+
+}
+
+
+// テーマを変更
+themeOptions.forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        const theme =
+            button.dataset.theme;
+
+
+        // 古いテーマを削除
+        document.body.classList.remove(
+            "theme-light",
+            "theme-dark",
+            "theme-pink",
+            "theme-blue"
+        );
+
+
+        // 新しいテーマを追加
+        document.body.classList.add(
+            `theme-${theme}`
+        );
+
+
+        // 保存
+        localStorage.setItem(
+            "music_picker_theme",
+            theme
+        );
+
+
+        // 選択状態
+        themeOptions.forEach(option => {
+            option.classList.remove("selected");
+        });
+
+        button.classList.add("selected");
+
+    });
+
+});
+// ==========================================
+// 🕘 メニュー → 再生履歴
+// ==========================================
+
+const historyMenu =
+    document.getElementById("historyMenu");
+
+
+historyMenu?.addEventListener("click", () => {
+
+    document
+        .getElementById("historyPage")
+        ?.classList.add("active");
+
+    document
+        .getElementById("searchPage")
+        ?.classList.remove("active");
+
+    document
+        .getElementById("favoritesPage")
+        ?.classList.remove("active");
+
+    document
+        .getElementById("settingsPage")
+        ?.classList.remove("active");
+
+
+    showHistory();
+
+    closeSideMenu();
+
+});
+// ==========================================
+// 👤 Spotifyアカウント
+// ==========================================
+
+const spotifyAccountMenu =
+    document.getElementById("spotifyAccountMenu");
+
+
+spotifyAccountMenu?.addEventListener("click", () => {
+
+    const token =
+        localStorage.getItem("spotify_access_token");
+
+
+    if (token) {
+
+        alert(
+            "🎵 Spotifyに接続しています！"
+        );
+
+    } else {
+
+        alert(
+            "Spotifyにログインしてください。"
+        );
+
+        document
+            .getElementById("spotifyLogin")
+            ?.click();
+
+    }
+
+    closeSideMenu();
+
+});
