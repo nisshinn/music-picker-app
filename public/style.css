@@ -1798,4 +1798,540 @@ body.theme-blue .bottom-nav-item.active::before {
 .setting-version {
     color: #aaa;
     font-size: 12px;
+}/* =========================================================
+   サブページ用
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   サブページ本体
+--------------------------------------------------------- */
+
+.sub-page {
+    width: 900px;
+    max-width: calc(100% - 40px);
+    margin: 0 auto;
+    padding: 40px 0 140px;
+    box-sizing: border-box;
+}
+
+.sub-page h1 {
+    text-align: center;
+    margin: 0 0 10px;
+}
+
+.sub-page .subtitle {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+
+/* ---------------------------------------------------------
+   検索ページ
+--------------------------------------------------------- */
+
+#musicSearchInput {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 15px 18px;
+    margin: 20px 0 12px;
+
+    border: 1px solid #ddd;
+    border-radius: 14px;
+
+    font-size: 16px;
+    outline: none;
+}
+
+#musicSearchInput:focus {
+    border-color: #888;
+}
+
+#musicSearchButton {
+    display: block;
+
+    width: 100%;
+    padding: 14px;
+
+    border: none;
+    border-radius: 14px;
+
+    background: #333;
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+#musicSearchButton:hover {
+    opacity: 0.85;
+}
+
+#searchResults {
+    margin-top: 25px;
+}
+
+
+/* ---------------------------------------------------------
+   検索・TOP・お気に入り・履歴 共通
+--------------------------------------------------------- */
+
+.track-item {
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+    min-height: 90px;
+
+    box-sizing: border-box;
+
+    padding: 12px 15px;
+    margin-bottom: 10px;
+
+    background: white;
+
+    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    gap: 14px;
+}
+
+.track-image {
+    width: 64px;
+    height: 64px;
+
+    flex-shrink: 0;
+
+    object-fit: cover;
+
+    border-radius: 8px;
+
+    background: #eee;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.track-info {
+    flex: 1;
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 5px;
+}
+
+.track-info strong {
+    font-size: 16px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-info span {
+    font-size: 13px;
+    color: #777;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    flex-shrink: 0;
+}
+
+.track-actions .spotify-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 8px 12px;
+
+    border-radius: 8px;
+
+    background: #1db954;
+    color: white;
+
+    text-decoration: none;
+
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.track-actions .spotify-button:hover {
+    opacity: 0.85;
+}
+
+
+/* ---------------------------------------------------------
+   お気に入りボタン
+--------------------------------------------------------- */
+
+.favorite-button {
+    width: 38px;
+    height: 38px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #f3f3f3;
+
+    cursor: pointer;
+
+    font-size: 17px;
+}
+
+.favorite-button:hover {
+    transform: scale(1.05);
+}
+
+.favorite-button.active {
+    background: #ffe5ed;
+}
+
+
+/* ---------------------------------------------------------
+   空のページ
+--------------------------------------------------------- */
+
+.empty-message {
+    text-align: center;
+
+    padding: 60px 20px;
+
+    background: white;
+
+    border-radius: 18px;
+
+    border: 1px solid #e5e5e5;
+
+    color: #777;
+}
+
+.empty-message > div {
+    font-size: 42px;
+    margin-bottom: 15px;
+}
+
+.empty-message p {
+    line-height: 1.7;
+}
+
+.empty-message button {
+    margin-top: 15px;
+
+    padding: 12px 20px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #333;
+    color: white;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+/* ---------------------------------------------------------
+   アカウントページ
+--------------------------------------------------------- */
+
+.account-card {
+    max-width: 650px;
+    margin: 30px auto;
+
+    padding: 30px;
+
+    box-sizing: border-box;
+
+    background: white;
+
+    border-radius: 18px;
+
+    border: 1px solid #e5e5e5;
+
+    text-align: center;
+
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+}
+
+#spotifyStatus {
+    font-weight: bold;
+}
+
+#spotifyStatusText {
+    color: #777;
+    margin: 15px 0 25px;
+}
+
+.spotify-login-button {
+    padding: 13px 22px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #1db954;
+    color: white;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+/* ---------------------------------------------------------
+   設定ページ
+--------------------------------------------------------- */
+
+.settings-section {
+    max-width: 700px;
+    margin: 20px auto;
+
+    padding: 25px;
+
+    background: white;
+
+    border-radius: 18px;
+
+    border: 1px solid #e5e5e5;
+}
+
+.settings-section h2 {
+    margin-top: 0;
+}
+
+.theme-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.theme-button {
+    flex: 1;
+    min-width: 120px;
+
+    padding: 12px;
+
+    border: 1px solid #ddd;
+    border-radius: 10px;
+
+    background: #fff;
+
+    cursor: pointer;
+
+    font-weight: bold;
+}
+
+.theme-button.selected {
+    border: 2px solid #333;
+}
+
+#songCount {
+    width: 100%;
+
+    padding: 12px;
+
+    border: 1px solid #ddd;
+    border-radius: 10px;
+
+    font-size: 15px;
+}
+
+#clearHistoryButton {
+    padding: 12px 18px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #555;
+    color: white;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+#settingsMessage {
+    margin-top: 15px;
+    color: #777;
+}
+
+
+/* =========================================================
+   ハンバーガーメニュー
+   元CSSとのクラス名ズレを吸収
+   ========================================================= */
+
+.side-menu.open {
+    transform: translateX(0);
+}
+
+.menu-overlay.show {
+    display: block;
+}
+
+
+/* =========================================================
+   下部ナビ
+   .nav-item と .bottom-nav-item を両対応
+   ========================================================= */
+
+.bottom-nav .nav-item {
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 3px;
+
+    border: none;
+
+    background: transparent;
+
+    cursor: pointer;
+
+    font-size: 13px;
+}
+
+.bottom-nav .nav-item span {
+    font-size: 20px;
+}
+
+.bottom-nav .nav-item small {
+    font-size: 11px;
+}
+
+.bottom-nav .nav-item.active {
+    font-weight: bold;
+}
+
+
+/* =========================================================
+   ダークテーマ
+   ========================================================= */
+
+body[data-theme="dark"] {
+    background: #171717;
+    color: #eee;
+}
+
+body[data-theme="dark"] .track-item,
+body[data-theme="dark"] .empty-message,
+body[data-theme="dark"] .account-card,
+body[data-theme="dark"] .settings-section {
+    background: #242424;
+    border-color: #444;
+}
+
+body[data-theme="dark"] .track-info span,
+body[data-theme="dark"] #spotifyStatusText {
+    color: #aaa;
+}
+
+body[data-theme="dark"] #musicSearchInput,
+body[data-theme="dark"] #songCount,
+body[data-theme="dark"] .theme-button {
+    background: #242424;
+    color: #eee;
+    border-color: #555;
+}
+
+
+/* =========================================================
+   青テーマ
+   ========================================================= */
+
+body[data-theme="blue"] {
+    background: #eaf6ff;
+}
+
+body[data-theme="blue"] .make-playlist-button,
+body[data-theme="blue"] #musicSearchButton {
+    background: #4b8fd8;
+}
+
+
+/* =========================================================
+   ピンクテーマ
+   ========================================================= */
+
+body[data-theme="pink"] {
+    background: #fff0f6;
+}
+
+body[data-theme="pink"] .make-playlist-button,
+body[data-theme="pink"] #musicSearchButton {
+    background: #e77aa8;
+}
+
+
+/* =========================================================
+   スマホ
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .sub-page {
+        width: 100%;
+        max-width: none;
+
+        padding: 25px 15px 130px;
+    }
+
+    .track-item {
+        padding: 10px;
+
+        gap: 10px;
+    }
+
+    .track-image {
+        width: 55px;
+        height: 55px;
+    }
+
+    .track-info strong {
+        font-size: 14px;
+    }
+
+    .track-info span {
+        font-size: 12px;
+    }
+
+    .track-actions .spotify-button {
+        padding: 7px 8px;
+        font-size: 11px;
+    }
+
+    .favorite-button {
+        width: 34px;
+        height: 34px;
+    }
+
+    .account-card,
+    .settings-section {
+        padding: 20px;
+    }
+
+    .theme-button {
+        min-width: 100px;
+    }
+
 }
