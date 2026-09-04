@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Music Picker</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+</head>
+
+<body>
+
+    <div class="app">
+
+        <h1>🎧 Music Picker</h1>
+        <button
+    id="spotifyLogin"
+    class="spotify-login"
+>
+    🎵 Spotifyにログイン
+</button>
+
+<div id="spotifyStatus">
+    Spotify未接続
+</div>
+
+        <p class="subtitle">
+            今の気分に合った音楽をおまかせで選ぼう
+        </p>
+
+
+        <div class="box">
+
+
+            <h2>🎤 アーティスト</h2>
+
+<div class="artist-search">
+
+    <input
+        type="text"
+        id="artistSearch"
+        placeholder="Spotifyからアーティストを検索..."
+        autocomplete="off"
+    >
+
+</div>
+
+<div id="artistResults"></div>
+
+<div
+    id="selectedArtist"
+    class="selected-artist"
+>
+    アーティストが選択されていません
+</div>
+            <h2>🎸 ジャンル</h2>
+
+<select id="genre">
+
+    <option value="all">
+        すべてのジャンル
+    </option>
+
+    <option value="J-POP">
+        J-POP
+    </option>
+
+    <option value="ロック">
+        ロック
+    </option>
+
+    <option value="ポップ">
+        ポップ
+    </option>
+
+    <option value="アニメ">
+        アニメ
+    </option>
+
+    <option value="バラード">
+        バラード
+    </option>
+
+</select>
+
+
+            <h2>😊 今の気分</h2>
+
+            <div class="moods">
+
+                <button data-mood="楽しい">
+                    😊 楽しい
+                </button>
+
+                <button data-mood="テンション高い">
+                    🔥 テンション高い
+                </button>
+
+                <button data-mood="落ち着きたい">
+                    😌 落ち着きたい
+                </button>
+
+                <button data-mood="しんみり">
+                    😢 しんみり
+                </button>
+
+            </div>
+
+
+            <button
+                id="makePlaylist"
+                class="make-button"
+            >
+                🎵 プレイリストを作る
+            </button>
+
+        </div>
+
+
+        <div id="playlist"></div>
+<!-- 再生状況 -->
+<div id="playerPanel" class="player-panel">
+    <img id="playerImage" src="" alt="">
+
+    <div class="player-info">
+        <div id="playerTitle">再生していません</div>
+        <div id="playerArtist">---</div>
+
+        <div class="player-progress">
+            <span id="playerCurrentTime">0:00</span>
+
+            <input
+                id="playerProgress"
+                type="range"
+                min="0"
+                max="100"
+                value="0"
+            >
+
+            <span id="playerDuration">0:00</span>
+        </div>
+
+        <div class="player-controls">
+            <button id="playerPrev">⏮</button>
+            <button id="playerPlay">▶</button>
+            <button id="playerNext">⏭</button>
+        </div>
+
+        <div id="playerStatus">
+            停止中
+        </div>
+    </div>
+</div>
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,936 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    background: #f5f5f7;
+    color: #111;
+}
+
+.app {
+    width: min(900px, 92%);
+    margin: 45px auto 80px;
+}
+
+h1 {
+    text-align: center;
+
+    font-size: 42px;
+    font-weight: 800;
+
+    letter-spacing: -1px;
+
+    margin: 0;
+}
+
+.subtitle {
+    text-align: center;
+
+    color: #777;
+
+    font-size: 15px;
+
+    margin-top: 10px;
+}
+
+.box {
+    background: white;
+
+    padding: 30px;
+
+    margin-top: 30px;
+
+    border-radius: 24px;
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+h2 {
+    font-size: 20px;
+
+    font-weight: 700;
+
+    margin: 10px 0 14px;
+}
+
+select {
+    width: 100%;
+
+    padding: 15px 16px;
+
+    border: 1px solid #ddd;
+
+    border-radius: 14px;
+
+    background: #fafafa;
+
+    font-size: 16px;
+
+    color: #111;
+
+    outline: none;
+
+    cursor: pointer;
+}
+
+select:focus {
+    border-color: #1db954;
+
+    box-shadow:
+        0 0 0 3px rgba(29, 185, 84, 0.12);
+}
+
+.moods {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 12px;
+}
+
+.moods button {
+    padding: 16px;
+
+    border: 1px solid #e5e5e5;
+
+    border-radius: 15px;
+
+    background: #f7f7f7;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.15s;
+}
+
+.moods button:hover {
+    transform: translateY(-2px);
+
+    background: #eeeeee;
+}
+
+.moods button.selected {
+    background: #1db954;
+
+    color: white;
+
+    border-color: #1db954;
+
+    box-shadow:
+        0 6px 15px rgba(29, 185, 84, 0.25);
+}
+
+.make-button {
+    width: 100%;
+
+    margin-top: 24px;
+
+    padding: 17px;
+
+    border: none;
+
+    border-radius: 15px;
+
+    background: #1db954;
+
+    color: white;
+
+    font-size: 17px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: 0.15s;
+}
+
+.make-button:hover {
+    transform: translateY(-2px);
+}
+
+#playlist {
+    margin-top: 30px;
+}
+
+.playlist-title {
+    background: white;
+
+    padding: 30px;
+
+    border-radius: 24px 24px 0 0;
+
+    background:
+        linear-gradient(
+            135deg,
+            #ffffff,
+            #f1fff5
+        );
+}
+
+.playlist-title h2 {
+    margin: 0;
+
+    font-size: 30px;
+
+    font-weight: 800;
+}
+
+.playlist-title p {
+    margin: 8px 0 0;
+
+    color: #777;
+
+    font-size: 14px;
+}
+
+.song {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    background: white;
+
+    padding: 18px 22px;
+
+    border-top: 1px solid #eeeeee;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.song:hover {
+    transform: translateY(-3px);
+
+    background: #fafafa;
+
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.08);
+
+    position: relative;
+    z-index: 2;
+}
+
+.song-cover {
+    width: 70px;
+    height: 70px;
+
+    object-fit: cover;
+
+    border-radius: 12px;
+
+    flex-shrink: 0;
+
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.12);
+
+    transition:
+        transform 0.2s ease;
+}
+
+.song:hover .song-cover {
+    transform: scale(1.05);
+}
+
+.number {
+    width: 28px;
+
+    text-align: center;
+
+    color: #999;
+
+    font-size: 14px;
+
+    font-weight: 600;
+}
+
+.song-info {
+    flex: 1;
+
+    min-width: 0;
+}
+
+.song-name {
+    font-size: 17px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+.artist-name {
+    color: #777;
+
+    margin-top: 5px;
+
+    font-size: 14px;
+}
+.artist-name {
+    color: #888;
+
+    margin-top: 4px;
+
+    font-size: 13px;
+}
+
+.play-button {
+    text-decoration: none;
+
+    background: #1db954;
+
+    color: white;
+
+    padding: 10px 17px;
+
+    border-radius: 22px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    transition:
+        transform 0.15s ease,
+        background 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.play-button:hover {
+    transform: scale(1.05);
+
+    background: #1ed760;
+
+    box-shadow:
+        0 5px 15px rgba(29, 185, 84, 0.3);
+}
+.song:last-child {
+    border-radius: 0 0 24px 24px;
+}
+
+@media (max-width: 600px) {
+
+    .app {
+        width: 94%;
+
+        margin-top: 25px;
+    }
+
+    h1 {
+        font-size: 32px;
+    }
+
+    .box {
+        padding: 20px;
+    }
+
+    .moods {
+        grid-template-columns: 1fr;
+    }
+
+    .song {
+        padding: 15px;
+
+        gap: 10px;
+    }
+}
+/* ==========================================
+   アーティスト検索
+   ========================================== */
+
+.artist-search input {
+
+    width: 100%;
+
+    padding: 15px 17px;
+
+    border: 1px solid #ddd;
+
+    border-radius: 14px;
+
+    background: #fafafa;
+
+    font-size: 16px;
+
+    outline: none;
+
+    transition:
+        border 0.2s,
+        box-shadow 0.2s;
+}
+
+.artist-search input:focus {
+
+    border-color: #1db954;
+
+    box-shadow:
+        0 0 0 3px rgba(
+            29,
+            185,
+            84,
+            0.12
+        );
+
+}
+
+
+/* 検索結果 */
+
+#artistResults {
+
+    margin-top: 10px;
+
+    max-height: 330px;
+
+    overflow-y: auto;
+
+    border-radius: 14px;
+}
+
+
+.artist-result {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 12px;
+
+    background: white;
+
+    border-bottom: 1px solid #eee;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s,
+        transform 0.15s;
+}
+
+
+.artist-result:hover {
+
+    background: #f5fff8;
+
+    transform: translateX(3px);
+
+}
+
+
+.artist-result img,
+.artist-no-image {
+
+    width: 55px;
+
+    height: 55px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    flex-shrink: 0;
+}
+
+
+.artist-no-image {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: #eee;
+
+    font-size: 24px;
+}
+
+
+.artist-result-info {
+
+    min-width: 0;
+
+}
+
+
+.artist-result-name {
+
+    font-weight: 700;
+
+    font-size: 16px;
+}
+
+
+.artist-followers {
+
+    margin-top: 4px;
+
+    color: #888;
+
+    font-size: 12px;
+}
+
+
+/* 選択中アーティスト */
+
+.selected-artist {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    margin-top: 12px;
+
+    padding: 12px 15px;
+
+    border-radius: 14px;
+
+    background: #f0fff5;
+
+    border: 1px solid #bce8ca;
+
+    color: #16853e;
+}
+
+
+.selected-artist img {
+
+    width: 45px;
+
+    height: 45px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+}
+
+
+.selected-artist strong {
+
+    display: block;
+
+    color: #111;
+
+    font-size: 15px;
+}
+
+
+.selected-artist span {
+
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 12px;
+}
+
+
+.search-loading,
+.no-results {
+
+    padding: 18px;
+
+    text-align: center;
+
+    background: white;
+
+    color: #777;
+
+    border-radius: 14px;
+}
+/* =========================================================
+   再生状況パネル
+   ========================================================= */
+
+/* ==========================================
+   🎵 再生プレイヤー
+   ========================================== */
+
+.player-panel {
+    position: fixed;
+    left: 50%;
+    bottom: 12px;
+    transform: translate(-50%, 120%);
+    
+    width: min(620px, calc(100% - 30px));
+    
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 10px 14px;
+
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #e5e5e5;
+    border-radius: 16px;
+
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(20px);
+
+    z-index: 9999;
+
+    /* 最初は画面外 */
+    opacity: 0;
+    pointer-events: none;
+
+    transition:
+        transform 0.3s ease,
+        opacity 0.3s ease;
+}
+
+
+/* 再生中 */
+.player-panel.show {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+
+/* ジャケット */
+#playerImage {
+    width: 52px;
+    height: 52px;
+
+    object-fit: cover;
+    border-radius: 8px;
+
+    background: #eee;
+    flex-shrink: 0;
+}
+
+
+/* プレイヤー情報 */
+.player-info {
+    flex: 1;
+    min-width: 0;
+}
+
+
+/* 曲名 */
+#playerTitle {
+    font-size: 14px;
+    font-weight: 700;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* アーティスト */
+#playerArtist {
+    margin-top: 2px;
+
+    color: #777;
+    font-size: 12px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* プログレス */
+.player-progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    margin-top: 6px;
+}
+
+
+.player-progress span {
+    width: 30px;
+
+    color: #888;
+    font-size: 9px;
+    text-align: center;
+}
+
+
+#playerProgress {
+    flex: 1;
+    height: 3px;
+
+    accent-color: #fa2d48;
+
+    cursor: pointer;
+}
+
+
+/* 操作ボタン */
+.player-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    margin-top: 4px;
+}
+
+
+.player-controls button {
+    width: 28px;
+    height: 28px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #f1f1f3;
+    color: #111;
+
+    cursor: pointer;
+
+    font-size: 12px;
+
+    transition: 0.2s;
+}
+
+
+.player-controls button:hover {
+    transform: scale(1.08);
+}
+
+
+#playerPlay {
+    width: 32px;
+    height: 32px;
+
+    background: #111;
+    color: white;
+
+    font-size: 14px;
+}
+
+
+/* 再生状態 */
+#playerStatus {
+    text-align: center;
+
+    margin-top: 2px;
+
+    color: #fa2d48;
+    font-size: 9px;
+    font-weight: 600;
+}
+
+
+/* スマホ */
+@media (max-width: 600px) {
+
+    .player-panel {
+        width: calc(100% - 20px);
+        bottom: 8px;
+
+        padding: 8px 10px;
+    }
+
+    #playerImage {
+        width: 44px;
+        height: 44px;
+    }
+
+}
+/* ==========================================
+   🎵 曲一覧
+   ========================================== */
+
+.song-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+
+/* 曲カード */
+
+.song-card {
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 10px 14px;
+
+    background: #ffffff;
+
+    border-radius: 14px;
+
+    border: 1px solid #eeeeee;
+
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+
+    transition: transform 0.2s ease,
+                box-shadow 0.2s ease;
+}
+
+
+.song-card:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 6px 18px rgba(0,0,0,0.10);
+}
+
+
+/* 番号 */
+
+.song-number {
+    width: 30px;
+
+    text-align: center;
+
+    color: #888;
+
+    font-size: 14px;
+
+    flex-shrink: 0;
+}
+
+
+/* ジャケット */
+
+.song-cover {
+    width: 58px;
+    height: 58px;
+
+    object-fit: cover;
+
+    border-radius: 9px;
+
+    flex-shrink: 0;
+
+    background: #eee;
+}
+
+
+/* 曲情報 */
+
+.song-info {
+    flex: 1;
+
+    min-width: 0;
+
+    margin-left: 14px;
+}
+
+
+.song-name {
+    font-size: 15px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+.artist-name {
+    margin-top: 4px;
+
+    color: #888;
+
+    font-size: 12px;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+/* Spotifyボタン */
+
+.spotify-button {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    margin-left: 12px;
+
+    padding: 9px 14px;
+
+    background: #1db954;
+
+    color: white;
+
+    text-decoration: none;
+
+    border-radius: 20px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    transition: 0.2s;
+}
+
+
+.spotify-button:hover {
+    transform: scale(1.04);
+}
+
+
+/* スマホ */
+
+@media (max-width: 600px) {
+
+    .song-card {
+        padding: 8px 10px;
+    }
+
+    .song-cover {
+        width: 50px;
+        height: 50px;
+    }
+
+    .song-info {
+        margin-left: 9px;
+    }
+
+    .spotify-button {
+        padding: 8px 10px;
+
+        font-size: 11px;
+    }
+
+    .song-number {
+        width: 22px;
+
+        font-size: 12px;
+    }
+
+}
