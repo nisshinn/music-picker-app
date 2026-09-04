@@ -1380,100 +1380,78 @@ function initAccountPage() {
 function initSettingsPage() {
 
     const themeButtons =
-        document.querySelectorAll(
-            ".theme-option"
-        );
-
+        document.querySelectorAll(".theme-option");
 
     const songCount =
-        document.getElementById(
-            "songCount"
-        );
-
+        document.getElementById("songCount");
 
     const clearHistoryButton =
-        document.getElementById(
-            "clearHistoryButton"
-        );
-
+        document.getElementById("clearHistoryButton");
 
     const message =
-        document.getElementById(
-            "settingsMessage"
-        );
+        document.getElementById("settingsMessage");
 
 
     // ==========================================
-    // テーマ
+    // 保存されているテーマ
     // ==========================================
 
     const savedTheme =
-        localStorage.getItem(
-            "musicPickerTheme"
-        ) || "light";
+        localStorage.getItem("musicPickerTheme") ||
+        "light";
 
 
-    applyTheme(
-        savedTheme
-    );
+    applyTheme(savedTheme);
 
 
     themeButtons.forEach(button => {
 
-        if (
-            button.dataset.theme ===
-            savedTheme
-        ) {
+        const theme =
+            button.dataset.theme;
 
-            button.classList.add(
-                "selected"
-            );
+
+        // 現在のテーマを選択状態にする
+
+        if (theme === savedTheme) {
+
+            button.classList.add("active");
 
         }
 
 
-        button.addEventListener(
-            "click",
-            () => {
+        button.addEventListener("click", () => {
 
-                const theme =
-                    button.dataset.theme;
+            const selectedTheme =
+                button.dataset.theme;
 
 
-                localStorage.setItem(
-                    "musicPickerTheme",
-                    theme
-                );
+            localStorage.setItem(
+                "musicPickerTheme",
+                selectedTheme
+            );
 
 
-                applyTheme(
-                    theme
-                );
+            applyTheme(selectedTheme);
 
 
-                themeButtons.forEach(
-                    btn => {
-                        btn.classList.remove(
-                            "selected"
-                        );
-                    }
-                );
+            themeButtons.forEach(btn => {
+
+                btn.classList.remove("active");
+
+            });
 
 
-                button.classList.add(
-                    "selected"
-                );
+            button.classList.add("active");
 
 
-                if (message) {
+            if (message) {
 
-                    message.textContent =
-                        "テーマを変更しました。";
-
-                }
+                message.textContent =
+                    "テーマを変更しました。";
 
             }
-        );
+
+        });
 
     });
 
@@ -1564,20 +1542,33 @@ function applyTheme(theme) {
     );
 
 
-    if (
-        theme === "dark" ||
-        theme === "pink" ||
-        theme === "blue"
-    ) {
+    if (theme === "dark") {
 
         document.body.classList.add(
-            `theme-${theme}`
+            "theme-dark"
+        );
+
+    }
+
+
+    if (theme === "pink") {
+
+        document.body.classList.add(
+            "theme-pink"
+        );
+
+    }
+
+
+    if (theme === "blue") {
+
+        document.body.classList.add(
+            "theme-blue"
         );
 
     }
 
 }
-
 
 // ==========================================
 // 曲カード作成
