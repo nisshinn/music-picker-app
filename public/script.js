@@ -2363,3 +2363,271 @@ document
 
         }
     );
+    // ==========================================
+// 🔍 曲・アーティスト検索
+// ==========================================
+
+const musicSearchInput =
+    document.getElementById("musicSearchInput");
+
+const musicSearchButton =
+    document.getElementById("musicSearchButton");
+
+const searchResults =
+    document.getElementById("searchResults");
+
+
+async function searchMusic() {
+
+    const query = musicSearchInput.value.trim();
+
+    if (!query) {
+        alert("曲名やアーティスト名を入力してください！");
+        return;
+    }
+
+    searchResults.innerHTML = `
+        <div class="search-loading">
+            🔍 検索中...
+        </div>
+    `;
+
+    try {
+
+        const response = await fetch(
+            `/api/search?q=${encodeURIComponent(query)}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error(data);
+
+            searchResults.innerHTML = `
+                <div class="search-empty">
+                    検索に失敗しました。
+                </div>
+            `;
+
+            return;
+        }
+
+        displaySearchResults(data);
+
+    } catch (error) {
+
+        console.error("検索エラー:", error);
+
+        searchResults.innerHTML = `
+            <div class="search-empty">
+                検索中にエラーが発生しました。
+            </div>
+        `;
+    }
+}
+
+
+function displaySearchResults(data) {
+
+    searchResults.innerHTML = "";
+
+    const tracks = data.tracks || [];
+    const artists = data.artists || [];
+
+    searchSongs = tracks;
+    if (tracks.length === 0 && artists.length === 0) {
+
+        searchResults.innerHTML = `
+            <div class="search-empty">
+                曲やアーティストが見つかりませんでした。
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // ==========================================
+    // アーティスト
+    // ==========================================
+
+    if (artists.length > 0) {
+
+        const title = document.createElement("h2");
+
+        title.className = "search-section-title";
+        title.textContent = "🎤 アーティスト";
+
+        searchResults.appendChild(title);
+
+
+        artists.forEach(artist => {
+
+            const card = document.createElement("div");
+
+            card.className = "search-artist-card";
+
+            card.innerHTML = `
+                <img
+                    src="${artist.image || ""}"
+                    class="search-artist-image"
+                    onerror="this.style.display='none'"
+                >
+
+                <div class="search-artist-info">
+                    <div class="search-artist-name">
+                        ${artist.name}
+                    </div>
+                </div>
+
+                <a
+                    href="${artist.spotifyUrl}"
+                    target="_blank"
+                    class="spotify-button"
+                >
+                    Spotify
+                </a>
+            `;
+
+            searchResults.appendChild(card);
+        });
+    }
+
+
+    // ==========================================
+    // 曲
+    // ==========================================
+
+    if (tracks.length > 0) {
+
+        const title = document.createElement("h2");
+
+        title.className = "search-section-title";
+        title.textContent = "🎵 曲";
+
+        searchResults.appendChild(title);
+
+
+        tracks.forEach((song, index) => {
+
+            const card = document.createElement("div");
+
+            card.className = "song-card search-song-card";
+
+            card.innerHTML = `
+
+                <div class="song-number">
+                    ${index + 1}
+                </div>
+
+                <img
+                    src="${song.image || ""}"
+                    class="song-cover"
+                    onerror="this.style.display='none'"
+                >
+
+                <div class="song-info">
+
+                    <div class="song-name">
+                        ${song.title}
+                    </div>
+
+                    <div class="artist-name">
+                        ${song.artist}
+                    </div>
+
+                </div>
+
+                <div class="song-actions">
+
+                    <button
+                        class="play-button"
+                        onclick="playSearchSong(${index})"
+                    >
+                        ▶️
+                    </button>
+
+                    <button
+                        class="favorite-button"
+                        onclick="toggleFavoriteFromSearch(${index})"
+                    >
+                        ${isFavorite(song.uri) ? "❤️" : "🤍"}
+                    </button>
+
+                    <a
+                        href="${song.spotifyUrl}"
+                        target="_blank"
+                        class="spotify-button"
+                    >
+                        Spotify
+                    </a>
+
+                </div>
+            `;
+
+            searchResults.appendChild(card);
+        });
+    }
+}
+
+
+// ==========================================
+// 検索結果の曲を再生
+// ==========================================
+
+let searchSongs = [];
+
+
+function playSearchSong(index) {
+
+    const song = searchSongs[index];
+
+    if (!song) return;
+
+    playSingleSongFromList(song);
+}
+
+
+// ==========================================
+// 検索結果のお気に入り
+// ==========================================
+
+function toggleFavoriteFromSearch(index) {
+
+    const song = searchSongs[index];
+
+    if (!song) return;
+
+    toggleFavorite(song);
+
+    displaySearchResults({
+        tracks: searchSongs,
+        artists: []
+    });
+}
+
+
+// ==========================================
+// 検索ボタン
+// ==========================================
+
+musicSearchButton?.addEventListener(
+    "click",
+    searchMusic
+);
+
+
+// ==========================================
+// Enterキーでも検索
+// ==========================================
+
+musicSearchInput?.addEventListener(
+    "keydown",
+    event => {
+
+        if (event.key === "Enter") {
+            searchMusic();
+        }
+
+    }
+);

@@ -1241,3 +1241,124 @@ select:focus {
         gap: 5px;
     }
 }
+/* ==========================================
+   曲・アーティスト検索
+========================================== */
+
+.music-search-input {
+    width: 100%;
+    padding: 16px 18px;
+    border: 1px solid #ddd;
+    border-radius: 15px;
+    background: #fafafa;
+    font-size: 16px;
+    outline: none;
+}
+
+.music-search-input:focus {
+    border-color: #1db954;
+    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.12);
+}
+
+.search-section-title {
+    margin: 30px 0 15px;
+    font-size: 21px;
+}
+
+.search-artist-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.06);
+}
+
+.search-artist-image {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.search-artist-info {
+    flex: 1;
+}
+
+.search-artist-name {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.search-song-card {
+    margin-bottom: 8px;
+}
+
+.search-loading,
+.search-empty {
+    background: white;
+    padding: 30px;
+    margin-top: 20px;
+    border-radius: 18px;
+    text-align: center;
+    color: #777;
+}
+
+.song-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.favorite-button {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
+    background: #f3f3f3;
+    font-size: 19px;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.favorite-button:hover {
+    transform: scale(1.08);
+    background: #eeeeee;
+}
+
+.spotify-button {
+    text-decoration: none;
+    background: #1db954;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.spotify-button:hover {
+    background: #1ed760;
+}
+
+@media (max-width: 600px) {
+
+    .search-song-card {
+        flex-wrap: wrap;
+    }
+
+    .song-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .search-artist-card {
+        padding: 12px;
+    }
+
+    .spotify-button {
+        padding: 9px 12px;
+    }
+}

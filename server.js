@@ -846,7 +846,64 @@ app.get(
     }
 );
 
+// ==========================================
+// 曲・アーティスト検索
+// ==========================================
+app.get("/api/search", async (req, res) => {
+    try {
+        const q = req.query.q;
 
+        if (!q) {
+            return res.json([]);
+        }
+
+        const token = await getSpotifyToken();
+
+        const response = await fetch(
+            `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track,artist&limit=10`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Spotify Search Error:", data);
+            return res.status(response.status).json(data);
+        }
+
+        const tracks = (data.tracks?.items || []).map(track => ({
+            type: "track",
+            uri: track.uri,
+            title: track.name,
+            artist: track.artists.map(a => a.name).join(", "),
+            image: track.album?.images?.[0]?.url || "",
+            spotifyUrl: track.external_urls?.spotify || ""
+        }));
+
+        const artists = (data.artists?.items || []).map(artist => ({
+            type: "artist",
+            id: artist.id,
+            name: artist.name,
+            image: artist.images?.[0]?.url || "",
+            spotifyUrl: artist.external_urls?.spotify || ""
+        }));
+
+        res.json({
+            tracks,
+            artists
+        });
+
+    } catch (error) {
+        console.error("検索エラー:", error);
+        res.status(500).json({
+            error: "検索に失敗しました"
+        });
+    }
+});
 // ==========================================
 // 🔥 Spotify TOP曲
 // ==========================================
