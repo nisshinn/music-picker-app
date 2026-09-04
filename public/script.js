@@ -1,4 +1,3 @@
-
 // ==============================
 // 🕘 再生履歴
 // ==============================
@@ -10,7 +9,9 @@ function addToHistory(song) {
     if (!song || !song.uri) return;
 
     // 同じ曲があれば一度削除
-    playHistory = playHistory.filter(item => item.uri !== song.uri);
+    playHistory = playHistory.filter(
+        item => item.uri !== song.uri
+    );
 
     // 最新を先頭に追加
     playHistory.unshift({
@@ -28,9 +29,12 @@ function addToHistory(song) {
         JSON.stringify(playHistory)
     );
 }
+
+
 // ==========================================
 // 選択中のアーティスト
 // ==========================================
+
 let selectedMood = "";
 let selectedGenre = "all";
 let selectedArtistId = "";
@@ -89,13 +93,10 @@ function toggleFavorite(song) {
     );
 
     // 表示を更新
-    showPlaylist(
-        selectedMood,
-        selectedArtistName || "おすすめ",
-        playlistSongs
-    );
-
+    showPlaylist(playlistSongs);
 }
+
+
 // ==========================================
 // アーティスト検索
 // ==========================================
@@ -520,20 +521,10 @@ document
 
 
                 // ======================================
-                // 表示するアーティスト名
+                // プレイリスト表示
                 // ======================================
 
-                const displayArtist =
-                    selectedArtistId
-                        ? selectedArtistName
-                        : "Spotify";
-
-
-                showPlaylist(
-                    selectedMood,
-                    displayArtist,
-                    playlist
-                );
+                showPlaylist(playlist);
 
 
             } catch (error) {
@@ -557,194 +548,220 @@ document
     );
 
 
-    function showPlaylist(playlist) {
+// ==========================================
+// プレイリスト表示
+// ==========================================
 
-        const area = document.getElementById("playlist");
-    
-        // 今再生しているプレイリストを保存
-        playlistSongs = playlist;
-    
-        area.innerHTML = `
-    
-            <div class="playlist-title">
-    
-                <h2>
-                    🎧 Spotifyおすすめ
-                </h2>
-    
-                <p>
-                    ${escapeHtml(selectedArtistName || "おすすめ")}
-                    ×
-                    ${escapeHtml(selectedMood)}
-                    のおすすめ5曲
-                </p>
-    
-                <button
-    id="playAllButton"
-    class="play-all-button"
->
-    ▶️ 5曲まとめて再生
-</button>
+function showPlaylist(playlist) {
 
-<button
-    id="playSpotifyButton"
-    class="play-all-button"
->
-    🎵 Spotifyで5曲再生
-</button>
-    
+    const area =
+        document.getElementById("playlist");
+
+    // 今再生しているプレイリストを保存
+    playlistSongs =
+        playlist;
+
+    area.innerHTML = `
+
+        <div class="playlist-title">
+
+            <h2>
+                🎧 Spotifyおすすめ
+            </h2>
+
+            <p>
+                ${escapeHtml(selectedArtistName || "おすすめ")}
+                ×
+                ${escapeHtml(selectedMood)}
+                のおすすめ5曲
+            </p>
+
+            <button
+                id="playAllButton"
+                class="play-all-button"
+            >
+                ▶️ 5曲まとめて再生
+            </button>
+
+            <button
+                id="playSpotifyButton"
+                class="play-all-button"
+            >
+                🎵 Spotifyで5曲再生
+            </button>
+
+        </div>
+
+        <div class="song-list"></div>
+
+    `;
+
+    const songList =
+        area.querySelector(".song-list");
+
+
+    // ======================================
+    // 5曲を表示
+    // ======================================
+
+    playlist.forEach((song, index) => {
+
+        const div =
+            document.createElement("div");
+
+        div.className =
+            "song-card";
+
+        div.dataset.uri =
+            song.uri || "";
+
+        div.innerHTML = `
+
+            <div class="song-number">
+                ${index + 1}
             </div>
-    
-            <div class="song-list"></div>
-    
+
+            ${
+                song.image
+                    ? `
+                        <img
+                            class="song-cover"
+                            src="${song.image}"
+                            alt=""
+                        >
+                      `
+                    : `
+                        <div class="song-cover song-no-image">
+                            🎵
+                        </div>
+                      `
+            }
+
+            <div class="song-info">
+
+                <div class="song-name">
+                    ${escapeHtml(song.title)}
+                </div>
+
+                <div class="artist-name">
+                    ${escapeHtml(song.artist)}
+                </div>
+
+            </div>
+
+            <div class="song-actions">
+
+                <button
+                    class="favorite-button"
+                    onclick="toggleFavorite(playlistSongs[${index}])"
+                >
+                    ${isFavorite(song.uri) ? "❤️" : "♡"}
+                </button>
+
+                <button
+                    class="spotify-button"
+                    onclick="playSingleSong(${index})"
+                >
+                    ▶ 再生
+                </button>
+
+            </div>
+
         `;
-    
-        const songList =
-            area.querySelector(".song-list");
-    
-    
-        // ======================================
-        // 5曲を表示
-        // ======================================
-    
-        playlist.forEach((song, index) => {
-    
-            const div =
-                document.createElement("div");
-    
-            div.className =
-                "song-card";
-    
-            div.dataset.uri =
-                song.uri || "";
-    
-            div.innerHTML = `
-    
-                <div class="song-number">
-                    ${index + 1}
-                </div>
-    
-    
-                ${
-                    song.image
-                        ? `
-                            <img
-                                class="song-cover"
-                                src="${song.image}"
-                                alt=""
-                            >
-                          `
-                        : `
-                            <div class="song-cover song-no-image">
-                                🎵
-                            </div>
-                          `
-                }
-    
-    
-                <div class="song-info">
-    
-                    <div class="song-name">
-                        ${escapeHtml(song.title)}
-                    </div>
-    
-                    <div class="artist-name">
-                        ${escapeHtml(song.artist)}
-                    </div>
-    
-                </div>
-    
-    
-                <!-- 1曲だけサイト内で再生 -->
-                <div class="song-actions">
 
-    <button
-        class="favorite-button"
-        onclick="toggleFavorite(playlistSongs[${index}])"
-    >
-        ${isFavorite(song.uri) ? "❤️" : "♡"}
-    </button>
+        songList.appendChild(div);
 
-    <button
-        class="spotify-button"
-        onclick="playSingleSong(${index})"
-    >
-        ▶ 再生
-    </button>
+    });
 
-</div>
-    
-            `;
-    
-            songList.appendChild(div);
-    
-        });
-    
-    
-        // ======================================
-        // 5曲まとめて再生
-        // ======================================
-    
-        const playAllButton =
-            document.getElementById("playAllButton");
-    
-        if (playAllButton) {
-    
-            playAllButton.addEventListener(
-                "click",
-                () => {
-    
-                    playPlaylist(playlist);
-    
-                }
-            );
-    
-        }
+
+    // ======================================
+    // 5曲まとめて再生
+    // ======================================
+
+    const playAllButton =
+        document.getElementById("playAllButton");
+
+    if (playAllButton) {
+
+        playAllButton.addEventListener(
+            "click",
+            () => {
+
+                playPlaylist(playlist);
+
+            }
+        );
+
+    }
+
+
+    // ======================================
+    // Spotify側で5曲再生
+    // ======================================
+
     const playSpotifyButton =
-    document.getElementById("playSpotifyButton");
+        document.getElementById(
+            "playSpotifyButton"
+        );
 
-if (playSpotifyButton) {
+    if (playSpotifyButton) {
 
-    playSpotifyButton.addEventListener(
-        "click",
-        () => {
+        playSpotifyButton.addEventListener(
+            "click",
+            () => {
 
-            playPlaylistOnSpotify(playlist);
+                playPlaylistOnSpotify(playlist);
 
-        }
-    );
+            }
+        );
+
+    }
 
 }
-    }
-    // ==========================================
+
+
+// ==========================================
 // 1曲だけサイト内で再生
 // ==========================================
 
 async function playSingleSong(index) {
 
-    const song = playlistSongs[index];
-    addToHistory(song);
+    const song =
+        playlistSongs[index];
 
     if (!song) {
         console.log("曲が見つかりません");
         return;
     }
 
-    // Spotifyプレイヤーが接続されているか
-    if (!spotifyPlayer || !spotifyDeviceId) {
+    // 再生履歴に追加
+    addToHistory(song);
 
-        alert("先にSpotifyに接続してください");
+
+    // Spotifyプレイヤーが接続されているか
+    if (
+        !spotifyPlayer ||
+        !spotifyDeviceId
+    ) {
+
+        alert(
+            "先にSpotifyに接続してください"
+        );
 
         return;
     }
+
 
     // 曲のURIがない場合
     if (!song.uri) {
 
-        alert("この曲はサイト内で再生できません");
+        alert(
+            "この曲はサイト内で再生できません"
+        );
 
         return;
     }
+
 
     // アクセストークン
     const token =
@@ -754,10 +771,13 @@ async function playSingleSong(index) {
 
     if (!token) {
 
-        alert("Spotifyにログインしてください");
+        alert(
+            "Spotifyにログインしてください"
+        );
 
         return;
     }
+
 
     try {
 
@@ -1080,156 +1100,178 @@ window.onSpotifyWebPlaybackSDKReady =
         // ★再生状況
         // ==========================================
 
-spotifyPlayer.addListener(
-    "player_state_changed",
-    function (state) {
+        spotifyPlayer.addListener(
+            "player_state_changed",
+            function (state) {
 
-        const panel =
-            document.getElementById("playerPanel");
+                const panel =
+                    document.getElementById(
+                        "playerPanel"
+                    );
 
-        if (!state) {
+                if (!state) {
 
-            // 再生状態がない → 非表示
-            if (panel) {
-                panel.classList.remove("show");
+                    if (panel) {
+                        panel.classList.remove("show");
+                    }
+
+                    return;
+                }
+
+
+                const track =
+                    state.track_window.current_track;
+
+
+                if (!track) {
+                    return;
+                }
+
+
+                // プレイヤーを表示
+                if (panel) {
+                    panel.classList.add("show");
+                }
+
+
+                // 曲名
+                const title =
+                    document.getElementById(
+                        "playerTitle"
+                    );
+
+                if (title) {
+
+                    title.textContent =
+                        track.name;
+
+                }
+
+
+                // アーティスト
+                const artist =
+                    document.getElementById(
+                        "playerArtist"
+                    );
+
+                if (artist) {
+
+                    artist.textContent =
+                        track.artists
+                            .map(a => a.name)
+                            .join(", ");
+
+                }
+
+
+                // ジャケット
+                const image =
+                    document.getElementById(
+                        "playerImage"
+                    );
+
+                if (image) {
+
+                    image.src =
+                        track.album.images?.[0]?.url || "";
+
+                }
+
+
+                // 再生 / 一時停止ボタン
+                const playButton =
+                    document.getElementById(
+                        "playerPlay"
+                    );
+
+                if (playButton) {
+
+                    playButton.textContent =
+                        state.paused
+                            ? "▶"
+                            : "Ⅱ";
+
+                }
+
+
+                // 再生状態
+                const status =
+                    document.getElementById(
+                        "playerStatus"
+                    );
+
+                if (status) {
+
+                    status.textContent =
+                        state.paused
+                            ? "一時停止中"
+                            : "▶ 再生中";
+
+                }
+
+
+                // プログレスバー
+                updatePlayerProgress(state);
+
+
+                // 何曲目か
+                updatePlaylistPosition(track);
+
             }
-
-            return;
-        }
-
-
-        const track =
-            state.track_window.current_track;
-
-
-        if (!track) {
-            return;
-        }
-
-
-        // ======================================
-        // プレイヤーを表示
-        // ======================================
-
-        if (panel) {
-            panel.classList.add("show");
-        }
-
-
-        // 曲名
-        const title =
-            document.getElementById("playerTitle");
-
-        if (title) {
-            title.textContent =
-                track.name;
-        }
-
-
-        // アーティスト
-        const artist =
-            document.getElementById("playerArtist");
-
-        if (artist) {
-            artist.textContent =
-                track.artists
-                    .map(a => a.name)
-                    .join(", ");
-        }
-
-
-        // ジャケット
-        const image =
-            document.getElementById("playerImage");
-
-        if (image) {
-
-            image.src =
-                track.album.images?.[0]?.url || "";
-
-        }
-
-
-        // 再生 / 一時停止ボタン
-        const playButton =
-            document.getElementById("playerPlay");
-
-        if (playButton) {
-
-            playButton.textContent =
-                state.paused
-                    ? "▶"
-                    : "Ⅱ";
-
-        }
-
-
-        // 再生状態
-        const status =
-            document.getElementById("playerStatus");
-
-        if (status) {
-
-            status.textContent =
-                state.paused
-                    ? "一時停止中"
-                    : "▶ 再生中";
-
-        }
-
-
-        // プログレスバー
-        updatePlayerProgress(state);
-
-
-        // 何曲目か
-        updatePlaylistPosition(track);
-
-    }
-);
-setInterval(async () => {
-
-    if (!spotifyPlayer) {
-        return;
-    }
-
-    try {
-
-        const state =
-            await spotifyPlayer.getCurrentState();
-
-        const panel =
-            document.getElementById("playerPanel");
-
-
-        if (!state) {
-
-            if (panel) {
-                panel.classList.remove("show");
-            }
-
-            return;
-        }
-
-
-        // 再生中なら表示
-        if (panel) {
-            panel.classList.add("show");
-        }
-
-
-        updatePlayerProgress(state);
-
-    } catch (error) {
-
-        console.error(
-            "プレイヤー状態取得エラー:",
-            error
         );
 
-    }
 
-}, 500);
+        // ==========================================
+        // 定期的に再生位置を更新
+        // ==========================================
+
+        setInterval(
+            async () => {
+
+                if (!spotifyPlayer) {
+                    return;
+                }
+
+                try {
+
+                    const state =
+                        await spotifyPlayer.getCurrentState();
+
+                    const panel =
+                        document.getElementById(
+                            "playerPanel"
+                        );
+
+
+                    if (!state) {
+
+                        if (panel) {
+                            panel.classList.remove("show");
+                        }
+
+                        return;
+                    }
+
+
+                    if (panel) {
+                        panel.classList.add("show");
+                    }
+
+
+                    updatePlayerProgress(state);
+
+                } catch (error) {
+
+                    console.error(
+                        "プレイヤー状態取得エラー:",
+                        error
+                    );
+
+                }
+
+            },
+            500
+        );
 
 
         // ==========================================
@@ -1264,9 +1306,19 @@ let playlistSongs = [];
 // ==========================================
 
 async function playPlaylist(songs) {
-    if (songs && songs.length > 0) {
-    songs.forEach(song => addToHistory(song));
-}
+
+    // 5曲を履歴に追加
+    if (
+        songs &&
+        songs.length > 0
+    ) {
+
+        songs.forEach(
+            song => addToHistory(song)
+        );
+
+    }
+
 
     if (
         !spotifyPlayer ||
@@ -1654,6 +1706,8 @@ if (playerProgress) {
     );
 
 }
+
+
 // ==========================================
 // Spotify側で5曲を再生
 // ==========================================
@@ -1661,28 +1715,51 @@ if (playerProgress) {
 async function playPlaylistOnSpotify(songs) {
 
     if (!songs || songs.length === 0) {
-        alert("再生する曲がありません！");
+
+        alert(
+            "再生する曲がありません！"
+        );
+
         return;
     }
+
 
     const token =
-        localStorage.getItem("spotify_access_token");
+        localStorage.getItem(
+            "spotify_access_token"
+        );
+
 
     if (!token) {
-        alert("先にSpotifyにログインしてください！");
+
+        alert(
+            "先にSpotifyにログインしてください！"
+        );
+
         return;
     }
+
 
     // Spotify URIを取得
     const uris =
         songs
-            .map(song => song.uri)
-            .filter(uri => uri);
+            .map(
+                song => song.uri
+            )
+            .filter(
+                uri => uri
+            );
+
 
     if (uris.length === 0) {
-        alert("Spotifyで再生できる曲がありません！");
+
+        alert(
+            "Spotifyで再生できる曲がありません！"
+        );
+
         return;
     }
+
 
     try {
 
@@ -1701,6 +1778,7 @@ async function playPlaylistOnSpotify(songs) {
                 }
             );
 
+
         if (!devicesResponse.ok) {
 
             const errorText =
@@ -1718,11 +1796,14 @@ async function playPlaylistOnSpotify(songs) {
             return;
         }
 
+
         const devicesData =
             await devicesResponse.json();
 
+
         const devices =
             devicesData.devices || [];
+
 
         console.log(
             "Spotifyデバイス一覧:",
@@ -1754,7 +1835,10 @@ async function playPlaylistOnSpotify(songs) {
 
         // なければ最初のデバイス
         if (!device) {
-            device = devices[0];
+
+            device =
+                devices[0];
+
         }
 
 
@@ -1772,7 +1856,9 @@ async function playPlaylistOnSpotify(songs) {
         const playResponse =
             await fetch(
                 "https://api.spotify.com/v1/me/player/play?device_id=" +
-                encodeURIComponent(device.id),
+                encodeURIComponent(
+                    device.id
+                ),
                 {
                     method: "PUT",
 
@@ -1813,6 +1899,7 @@ async function playPlaylistOnSpotify(songs) {
             "🎵 Spotify側で5曲の再生を開始しました！"
         );
 
+
     } catch (error) {
 
         console.error(
@@ -1823,8 +1910,12 @@ async function playPlaylistOnSpotify(songs) {
         alert(
             "Spotifyとの通信でエラーが発生しました。"
         );
+
     }
+
 }
+
+
 // ==========================================
 // ❤️ お気に入り一覧
 // ==========================================
@@ -1832,11 +1923,15 @@ async function playPlaylistOnSpotify(songs) {
 function showFavorites() {
 
     const list =
-        document.getElementById("favoritesList");
+        document.getElementById(
+            "favoritesList"
+        );
+
 
     if (!list) {
         return;
     }
+
 
     if (favoriteSongs.length === 0) {
 
@@ -1849,73 +1944,83 @@ function showFavorites() {
         return;
     }
 
+
     list.innerHTML = "";
 
-    favoriteSongs.forEach((song, index) => {
 
-        const div =
-            document.createElement("div");
+    favoriteSongs.forEach(
+        (song, index) => {
 
-        div.className = "song-card";
+            const div =
+                document.createElement("div");
 
-        div.innerHTML = `
 
-            <div class="song-number">
-                ${index + 1}
-            </div>
+            div.className =
+                "song-card";
 
-            ${
-                song.image
-                    ? `
-                        <img
-                            class="song-cover"
-                            src="${song.image}"
-                            alt=""
-                        >
-                      `
-                    : `
-                        <div class="song-cover song-no-image">
-                            🎵
-                        </div>
-                      `
-            }
 
-            <div class="song-info">
+            div.innerHTML = `
 
-                <div class="song-name">
-                    ${escapeHtml(song.title)}
+                <div class="song-number">
+                    ${index + 1}
                 </div>
 
-                <div class="artist-name">
-                    ${escapeHtml(song.artist)}
+                ${
+                    song.image
+                        ? `
+                            <img
+                                class="song-cover"
+                                src="${song.image}"
+                                alt=""
+                            >
+                          `
+                        : `
+                            <div class="song-cover song-no-image">
+                                🎵
+                            </div>
+                          `
+                }
+
+                <div class="song-info">
+
+                    <div class="song-name">
+                        ${escapeHtml(song.title)}
+                    </div>
+
+                    <div class="artist-name">
+                        ${escapeHtml(song.artist)}
+                    </div>
+
                 </div>
 
-            </div>
+                <div class="song-actions">
 
-            <div class="song-actions">
+                    <button
+                        class="favorite-button"
+                        onclick="removeFavorite('${song.uri}')"
+                    >
+                        ❤️
+                    </button>
 
-                <button
-                    class="favorite-button"
-                    onclick="removeFavorite('${song.uri}')"
-                >
-                    ❤️
-                </button>
+                    <button
+                        class="spotify-button"
+                        onclick="playFavoriteSong(${index})"
+                    >
+                        ▶ 再生
+                    </button>
 
-                <button
-                    class="spotify-button"
-                    onclick="playFavoriteSong(${index})"
-                >
-                    ▶ 再生
-                </button>
+                </div>
 
-            </div>
+            `;
 
-        `;
+            list.appendChild(div);
 
-        list.appendChild(div);
+        }
+    );
 
-    });
 }
+
+
 function removeFavorite(uri) {
 
     favoriteSongs =
@@ -1923,51 +2028,81 @@ function removeFavorite(uri) {
             song => song.uri !== uri
         );
 
+
     localStorage.setItem(
         "favorite_songs",
         JSON.stringify(favoriteSongs)
     );
 
+
     showFavorites();
+
 }
+
+
 async function playFavoriteSong(index) {
 
     const song =
         favoriteSongs[index];
 
+
     if (!song) {
         return;
     }
 
+
     await playSingleSongFromList(song);
+
 }
+
+
 async function playSingleSongFromList(song) {
 
-    if (!spotifyPlayer || !spotifyDeviceId) {
+    // 履歴に追加
+    addToHistory(song);
 
-        alert("先にSpotifyに接続してください");
+
+    if (
+        !spotifyPlayer ||
+        !spotifyDeviceId
+    ) {
+
+        alert(
+            "先にSpotifyに接続してください"
+        );
 
         return;
+
     }
+
 
     const token =
         localStorage.getItem(
             "spotify_access_token"
         );
 
+
     if (!token) {
 
-        alert("Spotifyにログインしてください");
+        alert(
+            "Spotifyにログインしてください"
+        );
 
         return;
+
     }
+
 
     if (!song.uri) {
 
-        alert("この曲は再生できません");
+        alert(
+            "この曲は再生できません"
+        );
 
         return;
+
     }
+
 
     try {
 
@@ -1975,21 +2110,28 @@ async function playSingleSongFromList(song) {
             await fetch(
                 `https://api.spotify.com/v1/me/player/play?device_id=${spotifyDeviceId}`,
                 {
+
                     method: "PUT",
 
                     headers: {
+
                         "Authorization":
                             `Bearer ${token}`,
 
                         "Content-Type":
                             "application/json"
+
                     },
 
                     body: JSON.stringify({
-                        uris: [song.uri]
+                        uris: [
+                            song.uri
+                        ]
                     })
+
                 }
             );
+
 
         if (!response.ok) {
 
@@ -1997,115 +2139,227 @@ async function playSingleSongFromList(song) {
                 await response.text()
             );
 
-            alert("再生できませんでした");
+            alert(
+                "再生できませんでした"
+            );
 
             return;
+
         }
+
 
     } catch (error) {
 
         console.error(error);
 
-        alert("再生中にエラーが発生しました");
-    }
-}
-function showHistory() {
-    const area = document.getElementById("historyList");
+        alert(
+            "再生中にエラーが発生しました"
+        );
 
-    if (!area) return;
+    }
+
+}
+
+
+// ==========================================
+// 🕘 再生履歴
+// ==========================================
+
+function showHistory() {
+
+    const area =
+        document.getElementById(
+            "historyList"
+        );
+
+
+    if (!area) {
+        return;
+    }
+
 
     if (playHistory.length === 0) {
+
         area.innerHTML = `
             <p class="empty-message">
                 まだ再生履歴がありません。
             </p>
         `;
+
         return;
     }
+
 
     area.innerHTML = "";
 
-    playHistory.forEach((song, index) => {
-        const div = document.createElement("div");
 
-        div.className = "song-card";
+    playHistory.forEach(
+        (song, index) => {
 
-        div.innerHTML = `
-            <div class="song-number">${index + 1}</div>
+            const div =
+                document.createElement("div");
 
-            ${
-                song.image
-                    ? `<img class="song-cover" src="${song.image}" alt="">`
-                    : `<div class="song-cover song-no-image">🎵</div>`
-            }
 
-            <div class="song-info">
-                <div class="song-name">
-                    ${escapeHtml(song.title)}
+            div.className =
+                "song-card";
+
+
+            div.innerHTML = `
+
+                <div class="song-number">
+                    ${index + 1}
                 </div>
 
-                <div class="artist-name">
-                    ${escapeHtml(song.artist)}
+                ${
+                    song.image
+                        ? `
+                            <img
+                                class="song-cover"
+                                src="${song.image}"
+                                alt=""
+                            >
+                          `
+                        : `
+                            <div class="song-cover song-no-image">
+                                🎵
+                            </div>
+                          `
+                }
+
+                <div class="song-info">
+
+                    <div class="song-name">
+                        ${escapeHtml(song.title)}
+                    </div>
+
+                    <div class="artist-name">
+                        ${escapeHtml(song.artist)}
+                    </div>
+
                 </div>
-            </div>
 
-            <button
-                class="spotify-button"
-                onclick="playHistorySong(${index})">
-                ▶ 再生
-            </button>
-        `;
+                <button
+                    class="spotify-button"
+                    onclick="playHistorySong(${index})"
+                >
+                    ▶ 再生
+                </button>
 
-        area.appendChild(div);
-    });
+            `;
+
+            area.appendChild(div);
+
+        }
+    );
+
 }
+
+
 function playHistorySong(index) {
-    const song = playHistory[index];
 
-    if (!song) return;
+    const song =
+        playHistory[index];
 
-    playSingleSongFromList(song);
-}
-// ==============================
-// 🔥 Spotify TOP曲
-// ==============================
 
-document.getElementById("topTracksButton")?.addEventListener("click", async () => {
-
-    const token = localStorage.getItem("spotify_access_token");
-
-    if (!token) {
-        alert("先にSpotifyへログインしてください！");
+    if (!song) {
         return;
     }
 
-    try {
-        const response = await fetch("/api/top-tracks", {
-            headers: {
-                Authorization: `Bearer ${token}`
+
+    playSingleSongFromList(song);
+
+}
+
+
+// ==========================================
+// 🔥 Spotify TOP曲
+// ==========================================
+
+document
+    .getElementById("topTracksButton")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const token =
+                localStorage.getItem(
+                    "spotify_access_token"
+                );
+
+
+            if (!token) {
+
+                alert(
+                    "先にSpotifyへログインしてください！"
+                );
+
+                return;
             }
-        });
 
-        const songs = await response.json();
 
-        if (!response.ok) {
-            console.error(songs);
-            alert("TOP曲を取得できませんでした。");
-            return;
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/top-tracks",
+                        {
+                            headers: {
+                                Authorization:
+                                    `Bearer ${token}`
+                            }
+                        }
+                    );
+
+
+                const songs =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    console.error(
+                        songs
+                    );
+
+                    alert(
+                        "TOP曲を取得できませんでした。"
+                    );
+
+                    return;
+                }
+
+
+                if (!songs.length) {
+
+                    alert(
+                        "TOP曲が見つかりませんでした。"
+                    );
+
+                    return;
+                }
+
+
+                // 最大5曲
+                const playlist =
+                    songs.slice(0, 5);
+
+
+                showPlaylist(
+                    playlist
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "TOP曲取得エラー:",
+                    error
+                );
+
+                alert(
+                    "TOP曲の取得中にエラーが発生しました。"
+                );
+
+            }
+
         }
-
-        if (!songs.length) {
-            alert("TOP曲が見つかりませんでした。");
-            return;
-        }
-
-        // 最大5曲
-        const playlist = songs.slice(0, 5);
-
-        showPlaylist(playlist);
-
-    } catch (error) {
-        console.error("TOP曲取得エラー:", error);
-        alert("TOP曲の取得中にエラーが発生しました。");
-    }
-});
+    );
