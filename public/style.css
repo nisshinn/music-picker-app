@@ -2434,3 +2434,138 @@ body[data-theme="pink"] #musicSearchButton {
     }
 
 }
+/* ==========================================
+   お気に入りボタン
+========================================== */
+
+.favorite-button {
+    min-width: 120px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    background: #fff;
+    color: #555;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.favorite-button:hover {
+    transform: translateY(-1px);
+}
+
+.favorite-button.active {
+    background: #ffe5ed;
+    border-color: #ff6b9a;
+    color: #e83e70;
+}
+
+
+/* ==========================================
+   選択中アーティスト
+========================================== */
+
+.selected-artist {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    background: #f3f4ff;
+    border: 2px solid #8b7cff;
+}
+
+.selected-artist img,
+.selected-artist .artist-no-image {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.selected-artist strong {
+    display: block;
+    font-size: 17px;
+}
+
+.selected-artist span {
+    display: block;
+    margin-top: 3px;
+    font-size: 12px;
+    color: #777;
+}
+
+
+/* ==========================================
+   プレイヤー
+========================================== */
+
+#playerArtist {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #777;
+}
+
+
+/* ==========================================
+   音量
+========================================== */
+
+.volume-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 420px;
+    margin: 12px auto 0;
+}
+
+.volume-icon {
+    font-size: 18px;
+    width: 25px;
+}
+
+#volumeBar {
+    flex: 1;
+    cursor: pointer;
+}
+
+#volumeValue {
+    width: 42px;
+    text-align: right;
+    font-size: 13px;
+    color: #666;
+}
+
+
+/* ==========================================
+   プレイリスト
+========================================== */
+
+.play-all-button {
+    cursor: pointer;
+}
+
+.play-all-button:hover {
+    transform: translateY(-1px);
+}
+
+
+/* ==========================================
+   スマホ
+========================================== */
+
+@media (max-width: 600px) {
+
+    .favorite-button {
+        min-width: 105px;
+        padding: 7px 9px;
+        font-size: 12px;
+    }
+
+    .volume-container {
+        width: 90%;
+    }
+
+}

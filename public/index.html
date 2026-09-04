@@ -224,59 +224,81 @@
              🎵 再生プレイヤー
         ====================================== -->
 
-        <div
-            id="playerPanel"
-            class="player-panel">
+<section id="playerPanel" class="player-panel">
 
-            <img
-                id="playerImage"
-                src=""
-                alt="">
+    <div id="playerSongTitle">
+        再生していません
+    </div>
 
-            <div class="player-info">
+    <div id="playerArtist"></div>
 
-                <div id="playerTitle">
-                    再生していません
-                </div>
+    <div class="player-controls">
 
-                <div id="playerArtist">
-                    -
-                </div>
+        <button
+            id="previousButton"
+            type="button">
+            ⏮
+        </button>
 
-                <div class="player-progress">
+        <button
+            id="playPauseButton"
+            type="button">
+            ▶
+        </button>
 
-                    <span id="currentTime">
-                        0:00
-                    </span>
+        <button
+            id="nextButton"
+            type="button">
+            ⏭
+        </button>
 
-                    <input
-                        type="range"
-                        id="playerProgress"
-                        min="0"
-                        max="100"
-                        value="0">
+    </div>
 
-                    <span id="duration">
-                        0:00
-                    </span>
 
-                </div>
+    <div class="progress-container">
 
-                <div class="player-controls">
+        <span id="currentTime">
+            0:00
+        </span>
 
-                    <button id="playerPrevious">
-                        ⏮
-                    </button>
+        <input
+            type="range"
+            id="progressBar"
+            min="0"
+            max="100"
+            value="0"
+        >
 
-                    <button id="playerPlay">
-                        ▶
-                    </button>
+        <span id="duration">
+            0:00
+        </span>
 
-                    <button id="playerNext">
-                        ⏭
-                    </button>
+    </div>
 
-                </div>
+
+    <!-- 音量 -->
+
+    <div class="volume-container">
+
+        <span class="volume-icon">
+            🔊
+        </span>
+
+        <input
+            type="range"
+            id="volumeBar"
+            min="0"
+            max="100"
+            value="50"
+        >
+
+        <span id="volumeValue">
+            50%
+        </span>
+
+    </div>
+
+</section>
 
                 <div id="playerStatus">
                     Spotify未接続
