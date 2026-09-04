@@ -225,7 +225,19 @@
         ====================================== -->
 
 <section id="playerPanel" class="player-panel">
+<div class="volume-container">
+    <span>🔊</span>
 
+    <input
+        type="range"
+        id="volumeBar"
+        min="0"
+        max="100"
+        value="50"
+    >
+
+    <span id="volumeValue">50%</span>
+</div>
     <div id="playerSongTitle">
         再生していません
     </div>
