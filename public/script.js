@@ -2631,3 +2631,62 @@ musicSearchInput?.addEventListener(
 
     }
 );
+// ==========================================
+// 🔍 検索ページを開く
+// ==========================================
+
+const searchButton =
+    document.getElementById("searchButton");
+
+const searchPage =
+    document.getElementById("searchPage");
+
+
+searchButton?.addEventListener("click", () => {
+
+    searchPage.classList.toggle("active");
+
+});
+// ==========================================
+// ☰ ハンバーガーメニュー
+// ==========================================
+
+const menuButton =
+    document.getElementById("menuButton");
+
+const sideMenu =
+    document.getElementById("sideMenu");
+
+const closeMenu =
+    document.getElementById("closeMenu");
+
+const menuOverlay =
+    document.getElementById("menuOverlay");
+
+
+// メニューを開く
+menuButton?.addEventListener("click", () => {
+
+    sideMenu.classList.add("active");
+    menuOverlay.classList.add("active");
+
+});
+
+
+// メニューを閉じる
+function closeSideMenu() {
+
+    sideMenu.classList.remove("active");
+    menuOverlay.classList.remove("active");
+
+}
+
+closeMenu?.addEventListener(
+    "click",
+    closeSideMenu
+);
+
+menuOverlay?.addEventListener(
+    "click",
+    closeSideMenu
+);

@@ -16,6 +16,53 @@
 </head>
 
 <body>
+    <!-- ハンバーガーメニュー -->
+<button id="menuButton" class="menu-button">
+    ☰
+</button>
+
+<div id="sideMenu" class="side-menu">
+
+    <div class="menu-header">
+        <h2>メニュー</h2>
+
+        <button id="closeMenu" class="close-menu">
+            ×
+        </button>
+    </div>
+
+    <div class="menu-items">
+
+        <button class="menu-item" id="homeMenu">
+            🏠 ホーム
+        </button>
+
+        <button class="menu-item" id="searchMenu">
+            🔍 検索
+        </button>
+
+        <button class="menu-item" id="favoritesMenu">
+            ❤️ お気に入り
+        </button>
+
+        <button class="menu-item" id="historyMenu">
+            🕘 再生履歴
+        </button>
+
+        <button class="menu-item" id="topTracksMenu">
+            🔥 Spotify TOP曲
+        </button>
+
+        <button class="menu-item" id="settingsMenu">
+            ⚙️ 設定
+        </button>
+
+    </div>
+
+</div>
+
+<!-- メニューを開いたときの背景 -->
+<div id="menuOverlay" class="menu-overlay"></div>
 
     <div class="app">
 
@@ -134,6 +181,9 @@
 
         <button id="topTracksButton" class="feature-button">
     🔥 Spotify TOP曲
+</button>
+<button id="searchButton" class="feature-button">
+    🔍 曲・アーティスト検索
 </button>
 <!-- ==========================================
      曲・アーティスト検索
