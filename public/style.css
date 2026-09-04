@@ -1,101 +1,197 @@
+/* ==========================================
+   Music Picker - style.css
+========================================== */
+
+
+/* ==========================================
+   基本設定
+========================================== */
+
 * {
     box-sizing: border-box;
 }
 
-
-/* ==========================================
-   基本
-========================================== */
-
-html {
-    scroll-behavior: smooth;
+html,
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
 }
 
 body {
-    margin: 0;
-    padding-bottom: 100px;
-
     font-family:
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
 
-    background: #f5f5f7;
-    color: #111;
+    background: #f5f7fb;
+    color: #222;
+
+    padding-bottom: 90px;
 
     transition:
-        background 0.3s ease,
-        color 0.3s ease;
-}
-
-button,
-input,
-select {
-    font-family: inherit;
-}
-
-button {
-    -webkit-tap-highlight-color: transparent;
-}
-
-.app {
-    width: min(900px, 92%);
-    margin: 45px auto 120px;
+        background 0.3s,
+        color 0.3s;
 }
 
 
 /* ==========================================
-   ホームタイトル
+   メイン
+========================================== */
+
+#app,
+.sub-page {
+    width: min(100%, 1000px);
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+
+/* ==========================================
+   タイトル
 ========================================== */
 
 h1 {
-    text-align: center;
-
-    font-size: 42px;
-    font-weight: 800;
-
-    letter-spacing: -1px;
-
     margin: 0;
+    font-size: 32px;
+}
+
+h2 {
+    margin-top: 0;
 }
 
 .subtitle {
-    text-align: center;
-
     color: #777;
-
-    font-size: 15px;
-
-    margin-top: 10px;
+    margin-top: 8px;
 }
 
 
 /* ==========================================
-   基本ボックス
+   ハンバーガーメニュー
 ========================================== */
 
-.box {
+.menu-button {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+
+    width: 48px;
+    height: 48px;
+
+    border: none;
+    border-radius: 14px;
+
     background: white;
 
-    padding: 30px;
-    margin-top: 30px;
-
-    border-radius: 24px;
-
     box-shadow:
-        0 10px 30px rgba(0, 0, 0, 0.06);
+        0 4px 15px rgba(0, 0, 0, 0.12);
 
-    transition:
-        background 0.3s ease,
-        box-shadow 0.3s ease;
+    font-size: 25px;
+
+    cursor: pointer;
+
+    z-index: 1000;
 }
 
-h2 {
-    font-size: 20px;
-    font-weight: 700;
+.side-menu {
+    position: fixed;
 
-    margin: 10px 0 14px;
+    top: 0;
+    left: -300px;
+
+    width: 280px;
+    height: 100vh;
+
+    padding: 25px 20px;
+
+    background: white;
+
+    box-shadow:
+        5px 0 25px rgba(0, 0, 0, 0.15);
+
+    z-index: 1100;
+
+    transition: left 0.3s ease;
+}
+
+.side-menu.open {
+    left: 0;
+}
+
+.side-menu h2 {
+    margin-top: 50px;
+}
+
+.side-menu > button:not(.close-menu) {
+    display: block;
+
+    width: 100%;
+
+    margin: 10px 0;
+    padding: 14px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #f2f4f8;
+
+    text-align: left;
+
+    font-size: 16px;
+
+    cursor: pointer;
+}
+
+.close-menu {
+    position: absolute;
+
+    top: 15px;
+    right: 15px;
+
+    width: 40px;
+    height: 40px;
+
+    border: none;
+    background: transparent;
+
+    font-size: 30px;
+
+    cursor: pointer;
+}
+
+.menu-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0, 0, 0, 0.35);
+
+    z-index: 1050;
+
+    opacity: 0;
+    visibility: hidden;
+
+    transition: 0.3s;
+}
+
+.menu-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+
+/* ==========================================
+   ホーム
+========================================== */
+
+#app {
+    text-align: center;
+}
+
+#app > h1 {
+    margin-top: 15px;
+    margin-bottom: 30px;
 }
 
 
@@ -103,44 +199,54 @@ h2 {
    Spotifyログイン
 ========================================== */
 
-.spotify-login {
-    display: block;
-
-    margin: 22px auto 8px;
-
-    padding: 11px 20px;
-
+.spotify-login-button {
     border: none;
-    border-radius: 22px;
+    border-radius: 14px;
+
+    padding: 13px 22px;
 
     background: #1db954;
     color: white;
 
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: bold;
 
     cursor: pointer;
 
-    transition:
-        transform 0.15s ease,
-        box-shadow 0.15s ease;
+    transition: transform 0.2s;
 }
 
-.spotify-login:hover {
+.spotify-login-button:hover {
     transform: translateY(-2px);
+}
+
+
+/* ==========================================
+   入力欄
+========================================== */
+
+input,
+select {
+    width: 100%;
+
+    padding: 14px 16px;
+
+    border: 1px solid #ddd;
+    border-radius: 12px;
+
+    background: white;
+
+    font-size: 16px;
+
+    outline: none;
+}
+
+input:focus,
+select:focus {
+    border-color: #7c83ff;
 
     box-shadow:
-        0 6px 15px rgba(29, 185, 84, 0.25);
-}
-
-#spotifyStatus {
-    text-align: center;
-
-    color: #777;
-
-    font-size: 12px;
-
-    margin-bottom: 12px;
+        0 0 0 3px rgba(124, 131, 255, 0.15);
 }
 
 
@@ -148,190 +254,92 @@ h2 {
    アーティスト検索
 ========================================== */
 
-.artist-search {
-    position: relative;
+#artistSearch {
+    max-width: 600px;
+    margin: 10px auto;
 }
-
-.artist-search input {
-    width: 100%;
-
-    padding: 15px 17px;
-
-    border: 1px solid #ddd;
-    border-radius: 14px;
-
-    background: #fafafa;
-
-    font-size: 16px;
-
-    outline: none;
-
-    transition:
-        border 0.2s,
-        box-shadow 0.2s,
-        background 0.2s;
-}
-
-.artist-search input:focus {
-    border-color: #1db954;
-
-    box-shadow:
-        0 0 0 3px rgba(29, 185, 84, 0.12);
-}
-
-
-/* ==========================================
-   アーティスト検索結果
-========================================== */
 
 #artistResults {
-    margin-top: 10px;
-
-    max-height: 330px;
-
-    overflow-y: auto;
-
-    border-radius: 14px;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .artist-result {
     display: flex;
-
     align-items: center;
 
-    gap: 14px;
+    gap: 12px;
 
-    padding: 12px;
+    padding: 10px;
+
+    margin-top: 5px;
 
     background: white;
 
-    border-bottom: 1px solid #eee;
+    border-radius: 12px;
 
     cursor: pointer;
 
-    transition:
-        background 0.15s,
-        transform 0.15s;
+    text-align: left;
+
+    transition: 0.2s;
 }
 
 .artist-result:hover {
-    background: #f5fff8;
+    transform: translateY(-1px);
 
-    transform: translateX(3px);
+    background: #f0f2ff;
 }
 
 .artist-result img,
-.artist-no-image {
-    width: 55px;
-    height: 55px;
+.selected-artist-card img {
+    width: 50px;
+    height: 50px;
 
     border-radius: 50%;
 
     object-fit: cover;
-
-    flex-shrink: 0;
 }
 
 .artist-no-image {
-    display: flex;
+    width: 50px;
+    height: 50px;
 
+    display: flex;
     align-items: center;
     justify-content: center;
 
+    border-radius: 50%;
+
     background: #eee;
-
-    font-size: 24px;
-}
-
-.artist-result-info {
-    min-width: 0;
-
-    flex: 1;
-}
-
-.artist-result-name {
-    font-weight: 700;
-
-    font-size: 16px;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-.artist-followers {
-    margin-top: 4px;
-
-    color: #888;
-
-    font-size: 12px;
 }
 
 
 /* ==========================================
-   選択中アーティスト
+   選択アーティスト
 ========================================== */
 
-.selected-artist {
-    display: flex;
+#selectedArtist {
+    margin: 15px auto;
+
+    max-width: 600px;
+}
+
+.selected-artist-card {
+    display: inline-flex;
 
     align-items: center;
 
     gap: 12px;
 
-    margin-top: 12px;
-
-    padding: 12px 15px;
+    padding: 10px 16px;
 
     border-radius: 14px;
-
-    background: #f0fff5;
-
-    border: 1px solid #bce8ca;
-
-    color: #16853e;
-}
-
-.selected-artist img {
-    width: 45px;
-    height: 45px;
-
-    border-radius: 50%;
-
-    object-fit: cover;
-
-    flex-shrink: 0;
-}
-
-.selected-artist strong {
-    display: block;
-
-    color: #111;
-
-    font-size: 15px;
-}
-
-.selected-artist span {
-    display: block;
-
-    margin-top: 3px;
-
-    font-size: 12px;
-}
-
-.search-loading,
-.no-results {
-    padding: 18px;
-
-    text-align: center;
 
     background: white;
 
-    color: #777;
-
-    border-radius: 14px;
+    box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.08);
 }
 
 
@@ -339,40 +347,9 @@ h2 {
    ジャンル
 ========================================== */
 
-select {
-    width: 100%;
-
-    padding: 15px 16px;
-
-    border: 1px solid #ddd;
-
-    border-radius: 14px;
-
-    background: #fafafa;
-
-    font-size: 16px;
-
-    color: #111;
-
-    outline: none;
-
-    cursor: pointer;
-
-    transition:
-        border 0.2s,
-        box-shadow 0.2s;
-}
-
-select:focus {
-    border-color: #1db954;
-
-    box-shadow:
-        0 0 0 3px rgba(
-            29,
-            185,
-            84,
-            0.12
-        );
+#genre {
+    max-width: 600px;
+    margin: 15px auto;
 }
 
 
@@ -381,55 +358,45 @@ select:focus {
 ========================================== */
 
 .moods {
-    display: grid;
+    display: flex;
 
-    grid-template-columns: 1fr 1fr;
+    justify-content: center;
 
-    gap: 12px;
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin: 20px auto;
+
+    max-width: 700px;
 }
 
 .moods button {
-    padding: 16px;
+    padding: 12px 18px;
 
-    border: 1px solid #e5e5e5;
+    border: 2px solid transparent;
 
-    border-radius: 15px;
+    border-radius: 999px;
 
-    background: #f7f7f7;
+    background: white;
 
-    font-size: 15px;
-
-    font-weight: 600;
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, 0.08);
 
     cursor: pointer;
 
-    transition:
-        transform 0.15s ease,
-        background 0.15s ease,
-        border 0.15s ease,
-        box-shadow 0.15s ease;
+    font-size: 15px;
+
+    transition: 0.2s;
 }
 
 .moods button:hover {
     transform: translateY(-2px);
-
-    background: #eeeeee;
 }
 
 .moods button.selected {
-    background: #1db954;
-
+    background: #7278ff;
     color: white;
-
-    border-color: #1db954;
-
-    box-shadow:
-        0 6px 15px rgba(
-            29,
-            185,
-            84,
-            0.25
-        );
 }
 
 
@@ -437,51 +404,31 @@ select:focus {
    プレイリスト作成ボタン
 ========================================== */
 
-.make-button {
-    width: 100%;
-
-    margin-top: 24px;
-
-    padding: 17px;
-
+#makePlaylist {
     border: none;
 
-    border-radius: 15px;
+    padding: 15px 30px;
 
-    background: #1db954;
+    border-radius: 999px;
 
+    background: #222;
     color: white;
 
-    font-size: 17px;
-
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: bold;
 
     cursor: pointer;
 
-    transition:
-        transform 0.15s ease,
-        box-shadow 0.15s ease,
-        opacity 0.15s ease;
+    transition: 0.2s;
 }
 
-.make-button:hover {
+#makePlaylist:hover {
     transform: translateY(-2px);
-
-    box-shadow:
-        0 6px 15px rgba(
-            29,
-            185,
-            84,
-            0.2
-        );
 }
 
-.make-button:disabled {
+#makePlaylist:disabled {
     opacity: 0.6;
-
     cursor: wait;
-
-    transform: none;
 }
 
 
@@ -490,476 +437,223 @@ select:focus {
 ========================================== */
 
 #playlist {
-    margin-top: 30px;
+    margin-top: 35px;
+
+    text-align: left;
 }
 
-.playlist-title {
-    background:
-        linear-gradient(
-            135deg,
-            #ffffff,
-            #f1fff5
-        );
-
-    padding: 30px;
-
-    border-radius: 24px 24px 0 0;
-}
-
-.playlist-title h2 {
-    margin: 0;
-
-    font-size: 30px;
-
-    font-weight: 800;
-}
-
-.playlist-title p {
-    margin: 8px 0 18px;
-
-    color: #777;
-
-    font-size: 14px;
-}
-
-
-/* ==========================================
-   5曲再生ボタン
-========================================== */
-
-.play-all-button {
-    border: none;
-
-    padding: 11px 17px;
-
-    margin-right: 8px;
-    margin-top: 6px;
-
-    border-radius: 22px;
-
-    background: #1db954;
-
-    color: white;
-
-    font-size: 13px;
-
-    font-weight: 700;
-
-    cursor: pointer;
-
-    transition:
-        transform 0.15s ease,
-        box-shadow 0.15s ease;
-}
-
-.play-all-button:hover {
-    transform: translateY(-2px);
-
-    box-shadow:
-        0 5px 14px rgba(
-            29,
-            185,
-            84,
-            0.25
-        );
-}
-
-
-/* Spotify側で再生 */
-
-#playSpotifyButton {
-    background: #111;
-}
-
-#playSpotifyButton:hover {
-    box-shadow:
-        0 5px 14px rgba(
-            0,
-            0,
-            0,
-            0.2
-        );
-}
-
-
-/* ==========================================
-   曲一覧
-========================================== */
-
-.song-list {
+.playlist-header {
     display: flex;
 
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 15px;
+}
+
+.playlist-header h2 {
+    margin: 0;
+}
+
+.playlist-header p {
+    color: #777;
+}
+
+.playlist-songs {
+    display: flex;
     flex-direction: column;
 
     gap: 10px;
-
-    margin-top: 15px;
 }
 
-
-/* ==========================================
-   曲カード
-========================================== */
-
-.song-card {
+.playlist-song,
+.track-item {
     display: flex;
 
     align-items: center;
 
-    width: 100%;
+    gap: 12px;
 
-    padding: 10px 14px;
-
-    background: #ffffff;
-
-    border-radius: 14px;
-
-    border: 1px solid #eeeeee;
-
-    box-shadow:
-        0 2px 8px rgba(
-            0,
-            0,
-            0,
-            0.05
-        );
-
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        background 0.2s ease;
-}
-
-.song-card:hover {
-    transform: translateY(-2px);
-
-    box-shadow:
-        0 6px 18px rgba(
-            0,
-            0,
-            0,
-            0.10
-        );
-}
-
-
-/* ==========================================
-   曲番号
-========================================== */
-
-.song-number {
-    width: 30px;
-
-    text-align: center;
-
-    color: #888;
-
-    font-size: 14px;
-
-    flex-shrink: 0;
-}
-
-
-/* ==========================================
-   ジャケット
-========================================== */
-
-.song-cover {
-    width: 58px;
-    height: 58px;
-
-    object-fit: cover;
-
-    border-radius: 9px;
-
-    flex-shrink: 0;
-
-    background: #eee;
-
-    box-shadow:
-        0 3px 10px rgba(
-            0,
-            0,
-            0,
-            0.08
-        );
-}
-
-.song-no-image {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    font-size: 24px;
-}
-
-
-/* ==========================================
-   曲情報
-========================================== */
-
-.song-info {
-    flex: 1;
-
-    min-width: 0;
-
-    margin-left: 14px;
-}
-
-.song-name {
-    font-size: 15px;
-
-    font-weight: 700;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-.artist-name {
-    margin-top: 4px;
-
-    color: #888;
-
-    font-size: 12px;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-
-/* ==========================================
-   曲ボタン部分
-========================================== */
-
-.song-actions {
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    flex-shrink: 0;
-
-    margin-left: 10px;
-}
-
-
-/* ==========================================
-   お気に入りボタン
-========================================== */
-
-.favorite-button {
-    width: 38px;
-    height: 38px;
-
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    border: none;
-
-    background: #f3f3f3;
-
-    font-size: 21px;
-
-    cursor: pointer;
-
-    border-radius: 50%;
-
-    transition:
-        transform 0.15s ease,
-        background 0.15s ease;
-}
-
-.favorite-button:hover {
-    transform: scale(1.1);
-
-    background: #fff0f3;
-}
-
-
-/* ==========================================
-   Spotify再生ボタン
-========================================== */
-
-.spotify-button {
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    flex-shrink: 0;
-
-    padding: 9px 14px;
-
-    background: #1db954;
-
-    color: white;
-
-    border: none;
-
-    text-decoration: none;
-
-    border-radius: 20px;
-
-    font-size: 13px;
-
-    font-weight: 700;
-
-    cursor: pointer;
-
-    transition:
-        transform 0.15s ease,
-        box-shadow 0.15s ease,
-        background 0.15s ease;
-}
-
-.spotify-button:hover {
-    transform: scale(1.04);
-
-    background: #1ed760;
-
-    box-shadow:
-        0 4px 10px rgba(
-            29,
-            185,
-            84,
-            0.25
-        );
-}
-
-
-/* ==========================================
-   🔍 検索ページ
-========================================== */
-
-.music-search-input {
-    width: 100%;
-
-    padding: 16px 18px;
-
-    border: 1px solid #ddd;
-
-    border-radius: 15px;
-
-    background: #fafafa;
-
-    font-size: 16px;
-
-    outline: none;
-
-    transition:
-        border 0.2s,
-        box-shadow 0.2s;
-}
-
-.music-search-input:focus {
-    border-color: #1db954;
-
-    box-shadow:
-        0 0 0 3px rgba(
-            29,
-            185,
-            84,
-            0.12
-        );
-}
-
-.search-section-title {
-    margin: 30px 0 15px;
-
-    font-size: 21px;
-}
-
-.search-artist-card {
-    display: flex;
-
-    align-items: center;
-
-    gap: 15px;
-
-    padding: 15px;
-
-    margin-bottom: 10px;
+    padding: 12px;
 
     background: white;
 
     border-radius: 16px;
 
     box-shadow:
-        0 5px 18px rgba(
-            0,
-            0,
-            0,
-            0.06
-        );
-
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
+        0 3px 12px rgba(0, 0, 0, 0.06);
 }
 
-.search-artist-card:hover {
-    transform: translateY(-2px);
-
-    box-shadow:
-        0 8px 20px rgba(
-            0,
-            0,
-            0,
-            0.09
-        );
-}
-
-.search-artist-image {
-    width: 58px;
-    height: 58px;
-
-    border-radius: 50%;
-
-    object-fit: cover;
-
-    flex-shrink: 0;
-}
-
-.search-artist-info {
-    flex: 1;
-
-    min-width: 0;
-}
-
-.search-artist-name {
-    font-size: 16px;
-
-    font-weight: 700;
-}
-
-.search-song-card {
-    margin-bottom: 8px;
-}
-
-.search-loading,
-.search-empty {
-    background: white;
-
-    padding: 30px;
-
-    margin-top: 20px;
-
-    border-radius: 18px;
+.song-number {
+    width: 25px;
 
     text-align: center;
 
+    color: #888;
+}
+
+.song-image,
+.track-image {
+    width: 60px;
+    height: 60px;
+
+    flex-shrink: 0;
+
+    border-radius: 10px;
+
+    object-fit: cover;
+}
+
+.no-image {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: #eee;
+}
+
+.song-info,
+.track-info {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+
+    flex: 1;
+}
+
+.song-info strong,
+.track-info strong {
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+.song-info span,
+.track-info span {
+    margin-top: 4px;
+
     color: #777;
+
+    font-size: 14px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+
+/* ==========================================
+   曲のボタン
+========================================== */
+
+.track-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+}
+
+.spotify-button {
+    display: inline-block;
+
+    padding: 8px 12px;
+
+    border-radius: 999px;
+
+    background: #1db954;
+    color: white;
+
+    text-decoration: none;
+
+    font-size: 13px;
+    font-weight: bold;
+
+    white-space: nowrap;
+}
+
+.favorite-button {
+    width: 38px;
+    height: 38px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: #f1f2f5;
+
+    cursor: pointer;
+
+    font-size: 17px;
+}
+
+.favorite-button.active {
+    background: #ffe6ec;
+}
+
+
+/* ==========================================
+   下部ナビゲーション
+========================================== */
+
+.bottom-nav {
+    position: fixed;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    height: 75px;
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    background: rgba(255, 255, 255, 0.96);
+
+    border-top: 1px solid #ddd;
+
+    z-index: 900;
+}
+
+.nav-item {
+    width: 90px;
+
+    border: none;
+
+    background: transparent;
+
+    cursor: pointer;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 4px;
+
+    color: #777;
+
+    font-size: 22px;
+}
+
+.nav-item small {
+    font-size: 11px;
+}
+
+.nav-item:hover {
+    color: #555;
 }
 
 
@@ -968,1267 +662,470 @@ select:focus {
 ========================================== */
 
 .sub-page {
-    display: none;
-
-    margin-top: 30px;
+    min-height: calc(100vh - 90px);
 }
 
-.sub-page.active {
-    display: block;
-}
-
-.sub-page > .box {
-    margin-top: 0;
-}
-
-.sub-page h2 {
-    margin-top: 0;
-
-    margin-bottom: 20px;
-
-    font-size: 25px;
-}
-
-
-/* ==========================================
-   お気に入り・履歴
-========================================== */
-
-#favoritesList,
-#historyList,
-#topTracksList {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 10px;
-}
-
-.empty-message {
-    padding: 30px;
-
-    text-align: center;
-
-    color: #888;
-
-    background: #f8f8f8;
-
-    border-radius: 14px;
-
-    line-height: 1.7;
-}
-
-
-/* ==========================================
-   🔥 TOP曲
-========================================== */
-
-#topTracksList .song-card {
-    margin-bottom: 0;
-}
-
-
-/* ==========================================
-   ☰ ハンバーガーメニュー
-========================================== */
-
-.menu-button {
-    position: fixed;
-
-    top: 20px;
-    left: 20px;
-
-    width: 50px;
-    height: 50px;
-
-    border: none;
-
-    border-radius: 15px;
-
-    background: white;
-
-    color: #111;
-
-    font-size: 25px;
-
-    cursor: pointer;
-
-    box-shadow:
-        0 5px 20px rgba(
-            0,
-            0,
-            0,
-            0.1
-        );
-
-    z-index: 1000;
-
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.menu-button:hover {
-    transform: scale(1.05);
-
-    box-shadow:
-        0 7px 25px rgba(
-            0,
-            0,
-            0,
-            0.14
-        );
-}
-
-
-/* ==========================================
-   サイドメニュー
-========================================== */
-
-.side-menu {
-    position: fixed;
-
-    top: 0;
-    left: -320px;
-
-    width: 300px;
-    height: 100vh;
-
-    background: white;
-
-    padding: 25px;
-
-    box-shadow:
-        5px 0 25px rgba(
-            0,
-            0,
-            0,
-            0.15
-        );
-
-    z-index: 1002;
-
-    transition:
-        left 0.3s ease;
-
-    overflow-y: auto;
-}
-
-.side-menu.active {
-    left: 0;
-}
-
-
-/* ==========================================
-   メニューヘッダー
-========================================== */
-
-.menu-header {
+.page-header {
     display: flex;
 
     align-items: center;
 
-    justify-content: space-between;
+    gap: 15px;
 
-    margin-bottom: 25px;
+    margin-bottom: 10px;
 }
 
-.menu-header h2 {
-    margin: 0;
-
-    font-size: 24px;
+.page-header h1 {
+    font-size: 28px;
 }
 
-
-/* ==========================================
-   閉じるボタン
-========================================== */
-
-.close-menu {
-    width: 40px;
-    height: 40px;
+.back-button {
+    width: 45px;
+    height: 45px;
 
     border: none;
 
     border-radius: 12px;
 
-    background: #f1f1f1;
+    background: white;
 
-    color: #111;
-
-    font-size: 25px;
+    font-size: 22px;
 
     cursor: pointer;
 
-    transition:
-        transform 0.15s ease,
-        background 0.15s ease;
-}
-
-.close-menu:hover {
-    transform: scale(1.05);
-
-    background: #e8e8e8;
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, 0.08);
 }
 
 
 /* ==========================================
-   メニュー項目
+   検索ページ
 ========================================== */
 
-.menu-items {
+.search-box {
+    display: flex;
+
+    gap: 10px;
+
+    margin: 25px 0;
+}
+
+.search-box input {
+    flex: 1;
+}
+
+.search-box button {
+    padding: 0 20px;
+
+    border: none;
+
+    border-radius: 12px;
+
+    background: #222;
+    color: white;
+
+    cursor: pointer;
+}
+
+#searchResults {
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+
+/* ==========================================
+   お気に入り
+========================================== */
+
+#favoritesList,
+#topTracksList,
+#historyList {
     display: flex;
 
     flex-direction: column;
 
-    gap: 8px;
+    gap: 10px;
+
+    margin-top: 25px;
 }
 
-.menu-item {
-    width: 100%;
+
+/* ==========================================
+   空のページ
+========================================== */
+
+.empty-message {
+    text-align: center;
+
+    padding: 60px 20px;
+
+    color: #777;
+}
+
+.empty-message > div {
+    font-size: 50px;
+
+    margin-bottom: 15px;
+}
+
+.empty-message button {
+    margin-top: 15px;
+
+    padding: 12px 20px;
+
+    border: none;
+
+    border-radius: 999px;
+
+    background: #222;
+    color: white;
+
+    cursor: pointer;
+}
+
+
+/* ==========================================
+   アカウント
+========================================== */
+
+.account-card {
+    margin-top: 30px;
+
+    padding: 35px 20px;
+
+    text-align: center;
+
+    background: white;
+
+    border-radius: 20px;
+
+    box-shadow:
+        0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+.account-icon {
+    font-size: 60px;
+
+    margin-bottom: 15px;
+}
+
+.account-card h2 {
+    margin-bottom: 8px;
+}
+
+.account-card p {
+    color: #777;
+}
+
+.account-page .spotify-login-button {
+    display: block;
+
+    margin: 20px auto;
+}
+
+.account-info {
+    margin-top: 30px;
+
+    padding: 20px;
+
+    background: white;
+
+    border-radius: 16px;
+}
+
+.account-info p {
+    color: #666;
+
+    line-height: 1.7;
+}
+
+
+/* ==========================================
+   設定
+========================================== */
+
+.settings-section {
+    margin-top: 25px;
+
+    padding: 22px;
+
+    background: white;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+.settings-section h2 {
+    margin-bottom: 8px;
+}
+
+.settings-section p {
+    color: #777;
+
+    line-height: 1.6;
+}
+
+.theme-buttons {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin-top: 15px;
+}
+
+.theme-button {
+    flex: 1;
+
+    min-width: 100px;
 
     padding: 15px;
 
-    border: none;
+    border: 2px solid transparent;
 
     border-radius: 14px;
 
-    background: #f7f7f7;
-
-    color: #111;
-
-    text-align: left;
-
-    font-size: 16px;
-
-    font-weight: 600;
+    background: #f3f4f7;
 
     cursor: pointer;
 
-    transition:
-        background 0.15s ease,
-        transform 0.15s ease;
+    font-size: 15px;
 }
 
-.menu-item:hover {
-    background: #eeeeee;
+.theme-button span {
+    display: block;
 
-    transform: translateX(4px);
+    margin-top: 5px;
 }
 
-
-/* ==========================================
-   メニュー背景
-========================================== */
-
-.menu-overlay {
-    position: fixed;
-
-    inset: 0;
-
-    background: rgba(
-        0,
-        0,
-        0,
-        0.35
-    );
-
-    opacity: 0;
-
-    visibility: hidden;
-
-    z-index: 1001;
-
-    transition:
-        opacity 0.3s ease,
-        visibility 0.3s ease;
+.theme-button.selected {
+    border-color: #7278ff;
 }
 
-.menu-overlay.active {
-    opacity: 1;
-
-    visibility: visible;
+.settings-section select {
+    margin-top: 10px;
 }
 
-
-/* ==========================================
-   📱 下部ナビゲーション
-========================================== */
-
-.bottom-nav {
-    position: fixed;
-
-    left: 50%;
-    bottom: 0;
-
-    transform: translateX(-50%);
-
-    width: min(
-        900px,
-        100%
-    );
-
-    height: 72px;
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(4, 1fr);
-
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            0.96
-        );
-
-    border-top:
-        1px solid #e5e5e5;
-
-    box-shadow:
-        0 -5px 20px rgba(
-            0,
-            0,
-            0,
-            0.08
-        );
-
-    backdrop-filter: blur(20px);
-
-    z-index: 9000;
-}
-
-.bottom-nav-item {
-    position: relative;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-    justify-content: center;
-
-    gap: 3px;
+.settings-action-button {
+    padding: 12px 18px;
 
     border: none;
 
-    background: transparent;
+    border-radius: 12px;
 
-    color: #888;
+    background: #f0f1f4;
 
     cursor: pointer;
-
-    font-size: 21px;
-
-    transition:
-        color 0.2s ease,
-        transform 0.2s ease;
 }
 
-.bottom-nav-item small {
-    font-size: 11px;
+.settings-message {
+    margin-top: 20px;
 
-    font-weight: 600;
-}
+    text-align: center;
 
-.bottom-nav-item:hover {
-    color: #111;
+    color: #7278ff;
 
-    transform: translateY(-2px);
-}
-
-.bottom-nav-item.active {
-    color: #1db954;
-}
-
-.bottom-nav-item.active::before {
-    content: "";
-
-    position: absolute;
-
-    top: 0;
-
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    width: 35px;
-    height: 3px;
-
-    background: #1db954;
-
-    border-radius:
-        0 0 5px 5px;
+    font-weight: bold;
 }
 
 
 /* ==========================================
-   🎵 再生プレイヤー
+   プレイヤー
 ========================================== */
 
-.player-panel {
+#playerPanel {
     position: fixed;
 
     left: 50%;
-    bottom: 82px;
+    bottom: 80px;
 
-    transform:
-        translate(-50%, 120%);
+    transform: translateX(-50%);
 
-    width:
-        min(
-            620px,
-            calc(100% - 30px)
-        );
+    width: min(700px, calc(100% - 20px));
 
-    display: flex;
+    padding: 12px 15px;
 
-    align-items: center;
-
-    gap: 12px;
-
-    padding: 10px 14px;
-
-    background:
-        rgba(
-            255,
-            255,
-            255,
-            0.96
-        );
-
-    border:
-        1px solid #e5e5e5;
+    background: white;
 
     border-radius: 16px;
 
     box-shadow:
-        0 6px 25px rgba(
-            0,
-            0,
-            0,
-            0.12
-        );
+        0 5px 25px rgba(0, 0, 0, 0.15);
 
-    backdrop-filter: blur(20px);
-
-    z-index: 8999;
-
-    opacity: 0;
-
-    pointer-events: none;
-
-    transition:
-        transform 0.3s ease,
-        opacity 0.3s ease;
+    z-index: 850;
 }
 
-.player-panel.show {
-    transform:
-        translate(-50%, 0);
-
-    opacity: 1;
-
-    pointer-events: auto;
+.player-title {
+    font-weight: bold;
 }
 
-
-/* ==========================================
-   プレイヤー画像
-========================================== */
-
-#playerImage {
-    width: 52px;
-    height: 52px;
-
-    object-fit: cover;
-
-    border-radius: 8px;
-
-    background: #eee;
-
-    flex-shrink: 0;
-}
-
-
-/* ==========================================
-   プレイヤー情報
-========================================== */
-
-.player-info {
-    flex: 1;
-
-    min-width: 0;
-}
-
-#playerTitle {
-    font-size: 14px;
-
-    font-weight: 700;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-#playerArtist {
-    margin-top: 2px;
-
+.player-artist {
     color: #777;
 
-    font-size: 12px;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
+    font-size: 13px;
 }
-
-
-/* ==========================================
-   プログレスバー
-========================================== */
 
 .player-progress {
-    display: flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    margin-top: 6px;
-}
-
-.player-progress span {
-    width: 30px;
-
-    color: #888;
-
-    font-size: 9px;
-
-    text-align: center;
-}
-
-#playerProgress {
-    flex: 1;
-
-    height: 3px;
-
-    accent-color: #fa2d48;
-
-    cursor: pointer;
+    width: 100%;
 }
 
 
 /* ==========================================
-   プレイヤー操作
+   ダークテーマ
 ========================================== */
 
-.player-controls {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 8px;
-
-    margin-top: 4px;
+body[data-theme="dark"] {
+    background: #15161a;
+    color: #eee;
 }
 
-.player-controls button {
-    width: 28px;
-    height: 28px;
-
-    border: none;
-
-    border-radius: 50%;
-
-    background: #f1f1f3;
-
-    color: #111;
-
-    cursor: pointer;
-
-    font-size: 12px;
-
-    transition:
-        transform 0.2s ease,
-        background 0.2s ease;
+body[data-theme="dark"] .side-menu,
+body[data-theme="dark"] .menu-button,
+body[data-theme="dark"] .artist-result,
+body[data-theme="dark"] .selected-artist-card,
+body[data-theme="dark"] .playlist-song,
+body[data-theme="dark"] .track-item,
+body[data-theme="dark"] .account-card,
+body[data-theme="dark"] .account-info,
+body[data-theme="dark"] .settings-section,
+body[data-theme="dark"] .back-button,
+body[data-theme="dark"] #playerPanel {
+    background: #22242a;
+    color: #eee;
 }
 
-.player-controls button:hover {
-    transform: scale(1.08);
-
-    background: #e7e7e9;
+body[data-theme="dark"] input,
+body[data-theme="dark"] select {
+    background: #22242a;
+    color: #eee;
+    border-color: #444;
 }
 
-#playerPlay {
-    width: 32px;
-    height: 32px;
-
-    background: #111;
-
-    color: white;
-
-    font-size: 14px;
+body[data-theme="dark"] .moods button,
+body[data-theme="dark"] .theme-button {
+    background: #292b32;
+    color: #eee;
 }
 
-
-/* ==========================================
-   再生状態
-========================================== */
-
-#playerStatus {
-    text-align: center;
-
-    margin-top: 2px;
-
-    color: #fa2d48;
-
-    font-size: 9px;
-
-    font-weight: 600;
+body[data-theme="dark"] .side-menu > button:not(.close-menu) {
+    background: #2b2d34;
+    color: #eee;
 }
 
-
-/* ==========================================
-   ⚙️ 設定画面
-========================================== */
-
-.setting-section {
-    margin-top: 25px;
-
-    padding-top: 20px;
-
-    border-top:
-        1px solid #eeeeee;
+body[data-theme="dark"] .bottom-nav {
+    background: rgba(30, 31, 36, 0.97);
+    border-color: #333;
 }
 
-.setting-section:first-child {
-    margin-top: 5px;
-
-    padding-top: 0;
-
-    border-top: none;
-}
-
-.setting-section h3 {
-    margin: 0 0 15px;
-
-    font-size: 17px;
-}
-
-
-/* ==========================================
-   🎨 テーマ
-========================================== */
-
-.theme-options {
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 10px;
-}
-
-.theme-option {
-    display: flex;
-
-    align-items: center;
-
-    gap: 10px;
-
-    padding: 15px;
-
-    border:
-        2px solid #eeeeee;
-
-    border-radius: 15px;
-
-    background: #fafafa;
-
-    color: #111;
-
-    font-size: 15px;
-
-    font-weight: 600;
-
-    cursor: pointer;
-
-    transition:
-        transform 0.2s ease,
-        border 0.2s ease,
-        background 0.2s ease;
-}
-
-.theme-option:hover {
-    transform: translateY(-2px);
-}
-
-.theme-option.selected {
-    border-color: #1db954;
-
-    background: #f1fff5;
-}
-
-
-/* ==========================================
-   アプリ説明
-========================================== */
-
-.setting-description {
-    color: #777;
-
-    line-height: 1.7;
-
-    font-size: 14px;
-}
-
-.setting-version {
-    color: #aaa;
-
-    font-size: 12px;
-}
-
-
-/* ==========================================
-   🌙 ダークテーマ
-========================================== */
-
-body.theme-dark {
-    background: #18181b;
-
-    color: white;
-}
-
-body.theme-dark .box {
-    background: #27272a;
-
-    box-shadow:
-        0 10px 30px rgba(
-            0,
-            0,
-            0,
-            0.25
-        );
-}
-
-body.theme-dark .subtitle {
+body[data-theme="dark"] .nav-item {
     color: #aaa;
 }
 
-body.theme-dark h2,
-body.theme-dark h3 {
-    color: white;
-}
-
-body.theme-dark .artist-search input,
-body.theme-dark .music-search-input,
-body.theme-dark select {
-    background: #333338;
-
-    border-color: #444;
-
-    color: white;
-}
-
-body.theme-dark .artist-result,
-body.theme-dark .search-artist-card,
-body.theme-dark .song-card,
-body.theme-dark .search-loading,
-body.theme-dark .search-empty {
-    background: #2d2d32;
-
-    border-color: #444;
-
-    color: white;
-}
-
-body.theme-dark .artist-result:hover {
-    background: #34343a;
-}
-
-body.theme-dark .song-name,
-body.theme-dark .artist-result-name,
-body.theme-dark .search-artist-name {
-    color: white;
-}
-
-body.theme-dark .artist-name,
-body.theme-dark .artist-followers {
-    color: #aaa;
-}
-
-body.theme-dark .favorite-button {
-    background: #3a3a40;
-}
-
-body.theme-dark .menu-button,
-body.theme-dark .side-menu {
-    background: #27272a;
-
-    color: white;
-}
-
-body.theme-dark .close-menu,
-body.theme-dark .menu-item {
-    background: #333338;
-
-    color: white;
-}
-
-body.theme-dark .menu-item:hover {
-    background: #3c3c42;
-}
-
-body.theme-dark .bottom-nav {
-    background:
-        rgba(
-            30,
-            30,
-            34,
-            0.96
-        );
-
-    border-color: #444;
-}
-
-body.theme-dark .bottom-nav-item {
-    color: #aaa;
-}
-
-body.theme-dark .bottom-nav-item.active {
-    color: #1ed760;
-}
-
-body.theme-dark .player-panel {
-    background:
-        rgba(
-            39,
-            39,
-            42,
-            0.96
-        );
-
-    border-color: #444;
-
-    color: white;
-}
-
-body.theme-dark #playerArtist,
-body.theme-dark .setting-description {
-    color: #aaa;
-}
-
-body.theme-dark .player-controls button {
-    background: #3a3a40;
-
-    color: white;
-}
-
-body.theme-dark .theme-option {
-    background: #333338;
-
-    border-color: #444;
-
-    color: white;
-}
-
-body.theme-dark .theme-option.selected {
-    border-color: #1db954;
-
-    background: #203b29;
-}
-
-body.theme-dark .setting-section {
-    border-color: #444;
-}
-
-body.theme-dark .empty-message {
-    background: #333338;
-
+body[data-theme="dark"] .subtitle,
+body[data-theme="dark"] .song-info span,
+body[data-theme="dark"] .track-info span,
+body[data-theme="dark"] .account-info p {
     color: #aaa;
 }
 
 
 /* ==========================================
-   🌸 ピンクテーマ
+   ブルーテーマ
 ========================================== */
 
-body.theme-pink {
-    background: #fff1f7;
+body[data-theme="blue"] {
+    background: #eaf6ff;
 }
 
-body.theme-pink .make-button,
-body.theme-pink .spotify-button {
-    background: #e83e8c;
+body[data-theme="blue"] .moods button.selected {
+    background: #298dcc;
 }
 
-body.theme-pink .spotify-login {
-    background: #e83e8c;
-}
-
-body.theme-pink .moods button.selected {
-    background: #e83e8c;
-
-    border-color: #e83e8c;
-}
-
-body.theme-pink .bottom-nav-item.active {
-    color: #e83e8c;
-}
-
-body.theme-pink .bottom-nav-item.active::before {
-    background: #e83e8c;
-}
-
-body.theme-pink .theme-option.selected {
-    border-color: #e83e8c;
-
-    background: #fff0f7;
+body[data-theme="blue"] #makePlaylist {
+    background: #1677b8;
 }
 
 
 /* ==========================================
-   🌊 ブルーテーマ
-========================================== */
-
-body.theme-blue {
-    background: #eef7ff;
-}
-
-body.theme-blue .make-button,
-body.theme-blue .spotify-button {
-    background: #1687d9;
-}
-
-body.theme-blue .spotify-login {
-    background: #1687d9;
-}
-
-body.theme-blue .moods button.selected {
-    background: #1687d9;
-
-    border-color: #1687d9;
-}
-
-body.theme-blue .bottom-nav-item.active {
-    color: #1687d9;
-}
-
-body.theme-blue .bottom-nav-item.active::before {
-    background: #1687d9;
-}
-
-body.theme-blue .theme-option.selected {
-    border-color: #1687d9;
-
-    background: #eef8ff;
-}
-
-
-/* ==========================================
-   📱 スマホ
+   スマホ対応
 ========================================== */
 
 @media (max-width: 600px) {
 
-    body {
-        padding-bottom: 90px;
+    #app,
+    .sub-page {
+        padding: 25px 12px;
     }
-
-
-    .app {
-        width: 94%;
-
-        margin-top: 25px;
-
-        margin-bottom: 110px;
-    }
-
 
     h1 {
-        font-size: 32px;
+        font-size: 27px;
     }
 
-
-    .subtitle {
-        font-size: 13px;
+    .page-header h1 {
+        font-size: 23px;
     }
-
-
-    .box {
-        padding: 20px;
-
-        border-radius: 20px;
-    }
-
-
-    h2 {
-        font-size: 18px;
-    }
-
-
-    /* 気分 */
-
-    .moods {
-        grid-template-columns: 1fr;
-    }
-
-
-    /* プレイリスト */
-
-    .playlist-title {
-        padding: 20px;
-
-        border-radius:
-            20px 20px 0 0;
-    }
-
-
-    .playlist-title h2 {
-        font-size: 24px;
-    }
-
-
-    /* 5曲再生ボタン */
-
-    .play-all-button {
-        width: 100%;
-
-        margin-top: 8px;
-
-        margin-right: 0;
-    }
-
-
-    /* 曲カード */
-
-    .song-card {
-        padding: 8px 10px;
-
-        min-width: 0;
-    }
-
-
-    .song-number {
-        width: 22px;
-
-        font-size: 12px;
-    }
-
-
-    .song-cover {
-        width: 50px;
-        height: 50px;
-    }
-
-
-    .song-info {
-        margin-left: 9px;
-
-        min-width: 0;
-    }
-
-
-    .song-name {
-        font-size: 14px;
-    }
-
-
-    .artist-name {
-        font-size: 11px;
-    }
-
-
-    /* 曲ボタン */
-
-    .song-actions {
-        gap: 3px;
-
-        margin-left: 5px;
-    }
-
-
-    .favorite-button {
-        width: 32px;
-        height: 32px;
-
-        padding: 3px;
-
-        font-size: 18px;
-    }
-
-
-    .spotify-button {
-        padding: 8px 10px;
-
-        font-size: 11px;
-    }
-
-
-    /* 検索 */
-
-    .search-artist-card {
-        padding: 12px;
-    }
-
-
-    .search-artist-image {
-        width: 50px;
-        height: 50px;
-    }
-
-
-    .search-artist-name {
-        font-size: 14px;
-    }
-
-
-    /* サブページ */
-
-    .sub-page {
-        margin-top: 20px;
-    }
-
-
-    .sub-page h2 {
-        font-size: 22px;
-    }
-
-
-    /* ハンバーガー */
 
     .menu-button {
-        top: 15px;
-        left: 15px;
+        width: 44px;
+        height: 44px;
 
-        width: 45px;
-        height: 45px;
-
-        font-size: 22px;
+        top: 10px;
+        left: 10px;
     }
-
-
-    .side-menu {
-        width: 280px;
-    }
-
-
-    /* 下部ナビ */
 
     .bottom-nav {
-        height: 68px;
+        height: 70px;
+
+        gap: 0;
     }
 
+    .nav-item {
+        flex: 1;
 
-    .bottom-nav-item {
-        font-size: 19px;
+        width: auto;
+
+        font-size: 20px;
     }
 
-
-    .bottom-nav-item small {
-        font-size: 10px;
-    }
-
-
-    /* プレイヤー */
-
-    .player-panel {
-        width:
-            calc(
-                100% - 20px
-            );
-
-        bottom: 76px;
-
-        padding: 8px 10px;
+    .playlist-song,
+    .track-item {
+        padding: 9px;
 
         gap: 8px;
     }
 
-
-    #playerImage {
-        width: 44px;
-        height: 44px;
+    .song-image,
+    .track-image {
+        width: 50px;
+        height: 50px;
     }
-
-
-    .player-controls {
-        gap: 5px;
-    }
-
-
-    .player-controls button {
-        width: 26px;
-        height: 26px;
-    }
-
-
-    #playerPlay {
-        width: 30px;
-        height: 30px;
-    }
-
-
-    /* 設定 */
-
-    .theme-options {
-        grid-template-columns: 1fr;
-    }
-
-}
-
-
-/* ==========================================
-   📱 さらに小さい画面
-========================================== */
-
-@media (max-width: 400px) {
-
-    .app {
-        width: 96%;
-    }
-
-
-    .box {
-        padding: 16px;
-    }
-
-
-    .song-number {
-        display: none;
-    }
-
-
-    .song-info {
-        margin-left: 7px;
-    }
-
 
     .spotify-button {
-        padding: 7px 8px;
+        padding: 7px 9px;
 
-        font-size: 10px;
+        font-size: 11px;
     }
-
 
     .favorite-button {
-        width: 30px;
-        height: 30px;
-
-        font-size: 17px;
+        width: 34px;
+        height: 34px;
     }
 
+    .search-box {
+        flex-direction: column;
+    }
 
-    .bottom-nav-item small {
-        font-size: 9px;
+    .search-box button {
+        padding: 13px;
+    }
+
+    .theme-button {
+        min-width: 80px;
     }
 
 }

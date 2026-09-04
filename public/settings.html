@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>設定 - Music Picker</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ==========================================
+         ハンバーガーメニュー
+    ========================================== -->
+
+    <button id="menuButton" class="menu-button">
+        ☰
+    </button>
+
+    <div id="sideMenu" class="side-menu">
+
+        <button id="closeMenu" class="close-menu">
+            ×
+        </button>
+
+        <h2>メニュー</h2>
+
+        <button onclick="location.href='history.html'">
+            🕘 履歴
+        </button>
+
+        <button onclick="location.href='account.html'">
+            🎵 Spotifyアカウント
+        </button>
+
+        <button onclick="location.href='settings.html'">
+            ⚙️ 設定
+        </button>
+
+    </div>
+
+    <div id="menuOverlay" class="menu-overlay"></div>
+
+
+    <!-- ==========================================
+         設定ページ
+    ========================================== -->
+
+    <main class="sub-page settings-page">
+
+        <div class="page-header">
+
+            <button
+                class="back-button"
+                onclick="location.href='index.html'">
+
+                ←
+
+            </button>
+
+            <h1>⚙️ 設定</h1>
+
+        </div>
+
+
+        <!-- ======================================
+             テーマ設定
+        ====================================== -->
+
+        <section class="settings-section">
+
+            <h2>🎨 テーマ</h2>
+
+            <p>
+                Music Pickerの見た目を変更できます。
+            </p>
+
+
+            <div class="theme-buttons">
+
+                <button
+                    class="theme-button"
+                    data-theme="light">
+
+                    ☀️
+                    <span>ライト</span>
+
+                </button>
+
+
+                <button
+                    class="theme-button"
+                    data-theme="dark">
+
+                    🌙
+                    <span>ダーク</span>
+
+                </button>
+
+
+                <button
+                    class="theme-button"
+                    data-theme="blue">
+
+                    💙
+                    <span>ブルー</span>
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- ======================================
+             曲数設定
+        ====================================== -->
+
+        <section class="settings-section">
+
+            <h2>🎵 プレイリストの曲数</h2>
+
+            <p>
+                Music Pickerで選ぶ曲の数を設定します。
+            </p>
+
+
+            <select id="songCount">
+
+                <option value="5">5曲</option>
+                <option value="10">10曲</option>
+
+            </select>
+
+        </section>
+
+
+        <!-- ======================================
+             その他
+        ====================================== -->
+
+        <section class="settings-section">
+
+            <h2>🔧 その他</h2>
+
+            <button
+                id="clearHistoryButton"
+                class="settings-action-button">
+
+                🗑️ 履歴を削除
+
+            </button>
+
+        </section>
+
+
+        <!-- ======================================
+             保存メッセージ
+        ====================================== -->
+
+        <p
+            id="settingsMessage"
+            class="settings-message">
+
+        </p>
+
+    </main>
+
+
+    <!-- ==========================================
+         下のナビゲーション
+    ========================================== -->
+
+    <nav class="bottom-nav">
+
+        <button
+            onclick="location.href='index.html'"
+            class="nav-item">
+
+            <span>🏠</span>
+            <small>ホーム</small>
+
+        </button>
+
+
+        <button
+            onclick="location.href='search.html'"
+            class="nav-item">
+
+            <span>🔍</span>
+            <small>検索</small>
+
+        </button>
+
+
+        <button
+            onclick="location.href='favorites.html'"
+            class="nav-item">
+
+            <span>❤️</span>
+            <small>お気に入り</small>
+
+        </button>
+
+
+        <button
+            onclick="location.href='top-tracks.html'"
+            class="nav-item">
+
+            <span>🔥</span>
+            <small>TOP曲</small>
+
+        </button>
+
+    </nav>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

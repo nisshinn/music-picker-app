@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>検索 - Music Picker</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ==========================================
+         ハンバーガーメニュー
+    ========================================== -->
+
+    <button id="menuButton" class="menu-button">
+        ☰
+    </button>
+
+    <div id="sideMenu" class="side-menu">
+
+        <button id="closeMenu" class="close-menu">
+            ×
+        </button>
+
+        <h2>メニュー</h2>
+
+        <button onclick="location.href='history.html'">
+            🕘 履歴
+        </button>
+
+        <button onclick="location.href='account.html'">
+            🎵 Spotifyアカウント
+        </button>
+
+        <button onclick="location.href='settings.html'">
+            ⚙️ 設定
+        </button>
+
+    </div>
+
+    <div id="menuOverlay" class="menu-overlay"></div>
+
+
+    <!-- ==========================================
+         検索ページ
+    ========================================== -->
+
+    <main class="sub-page search-page">
+
+        <div class="page-header">
+
+            <button
+                class="back-button"
+                onclick="location.href='index.html'">
+
+                ←
+
+            </button>
+
+            <h1>🔍 検索</h1>
+
+        </div>
+
+
+        <p class="subtitle">
+            曲やアーティストを検索
+        </p>
+
+
+        <!-- ======================================
+             検索ボックス
+        ====================================== -->
+
+        <div class="music-search-box">
+
+            <input
+                type="text"
+                id="musicSearchInput"
+                placeholder="曲名・アーティスト名を入力..."
+                autocomplete="off">
+
+            <button id="musicSearchButton">
+                🔍
+            </button>
+
+        </div>
+
+
+        <!-- ======================================
+             検索結果
+        ====================================== -->
+
+        <section
+            id="searchResults"
+            class="search-results">
+
+            <p class="search-message">
+                曲名やアーティスト名を入力して検索してください
+            </p>
+
+        </section>
+
+    </main>
+
+
+    <!-- ==========================================
+         下のナビゲーション
+    ========================================== -->
+
+    <nav class="bottom-nav">
+
+        <button
+            onclick="location.href='index.html'"
+            class="nav-item">
+
+            <span>🏠</span>
+            <small>ホーム</small>
+
+        </button>
+
+
+        <button
+            onclick="location.href='search.html'"
+            class="nav-item active">
+
+            <span>🔍</span>
+            <small>検索</small>
+
+        </button>
+
+
+        <button
+            onclick="location.href='favorites.html'"
+            class="nav-item">
+
+            <span>❤️</span>
+            <small>お気に入り</small>
+
+        </button>
+
+
+        <button
+            onclick="location.href='top-tracks.html'"
+            class="nav-item">
+
+            <span>🔥</span>
+            <small>TOP曲</small>
+
+        </button>
+
+    </nav>
+
+
+    <!-- ==========================================
+         JavaScript
+    ========================================== -->
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
