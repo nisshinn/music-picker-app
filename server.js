@@ -371,20 +371,6 @@ app.get(
                 code_verifier: pkceVerifier
             });
 
-            const response = await fetch(
-                "https://accounts.spotify.com/api/token",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/x-www-form-urlencoded"
-                    },
-
-                    body: body
-                }
-            );
-
             const data = await response.json();
 
             if (!response.ok) {
@@ -548,6 +534,22 @@ async function getSpotifyToken() {
         ) * 1000;
 
     return clientCredentialsToken;
+}
+// ========================================
+// ユーザーのSpotifyアクセストークン取得
+// ========================================
+function getUserAccessToken(req) {
+
+    const auth =
+        req.headers.authorization || "";
+
+    if (!auth.startsWith("Bearer ")) {
+        return "";
+    }
+
+    return auth
+        .slice(7)
+        .trim();
 }
 
 // ========================================
@@ -1368,127 +1370,6 @@ app.post(
 
         try {
 
-            // ========================================
-// Spotifyの自分のプレイリスト一覧を取得
-// ========================================
-app.get("/api/my-playlists", async (req, res) => {
-    try {
-        if (!spotifyAccessToken) {
-            return res.status(401).json({
-                error: "Spotifyにログインしてください"
-            });
-        }
-
-        const response = await fetch(
-            "https://api.spotify.com/v1/me/playlists?limit=50",
-            {
-                headers: {
-                    Authorization: `Bearer ${spotifyAccessToken}`
-                }
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.error("Spotify Playlist List Error:", data);
-
-            return res.status(response.status).json({
-                error: data?.error?.message || "プレイリスト取得に失敗しました"
-            });
-        }
-
-        const playlists = (data.items || [])
-            .filter(Boolean)
-            .map(playlist => ({
-                id: playlist.id,
-                name: playlist.name,
-                image: playlist.images?.[0]?.url || "",
-                description: playlist.description || "",
-                tracksTotal: playlist.items?.total ?? 0,
-                spotifyUrl: playlist.external_urls?.spotify || "",
-                owner: playlist.owner?.display_name || ""
-            }));
-
-        res.json({
-            success: true,
-            playlists
-        });
-
-    } catch (error) {
-        console.error("My Playlists Error:", error);
-
-        res.status(500).json({
-            error: "プレイリスト取得中にエラーが発生しました"
-        });
-    }
-});
-
-
-// ========================================
-// Spotifyのプレイリスト内の曲を取得
-// ========================================
-app.get("/api/my-playlists/:playlistId/items", async (req, res) => {
-    try {
-        if (!spotifyAccessToken) {
-            return res.status(401).json({
-                error: "Spotifyにログインしてください"
-            });
-        }
-
-        const playlistId = req.params.playlistId;
-
-        const response = await fetch(
-            `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/items?limit=50`,
-            {
-                headers: {
-                    Authorization: `Bearer ${spotifyAccessToken}`
-                }
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.error("Spotify Playlist Items Error:", data);
-
-            return res.status(response.status).json({
-                error: data?.error?.message || "曲の取得に失敗しました"
-            });
-        }
-
-        const tracks = (data.items || [])
-            .map(item => item.track)
-            .filter(track => track && track.type === "track")
-            .map(track => ({
-                id: track.id,
-                uri: track.uri,
-                title: track.name,
-                name: track.name,
-                artist: track.artists?.map(a => a.name).join(", ") || "",
-                artists: track.artists || [],
-                image: track.album?.images?.[0]?.url || "",
-                album: {
-                    name: track.album?.name || "",
-                    images: track.album?.images || []
-                },
-                duration_ms: track.duration_ms,
-                spotifyUrl: track.external_urls?.spotify || ""
-            }));
-
-        res.json({
-            success: true,
-            tracks
-        });
-
-    } catch (error) {
-        console.error("My Playlist Items Error:", error);
-
-        res.status(500).json({
-            error: "プレイリストの曲取得中にエラーが発生しました"
-        });
-    }
-});
 
             // --------------------------------
             // Spotifyログイン確認
@@ -1806,6 +1687,314 @@ app.get("/api/my-playlists/:playlistId/items", async (req, res) => {
 
         }
 
+    }
+);
+
+// ========================================
+// Spotifyの自分のプレイリスト一覧を取得
+// ========================================
+app.get(
+    "/api/my-playlists",
+    async (req, res) => {
+
+        try {
+
+            // ブラウザから送られたトークンを優先
+            const accessToken =
+                getUserAccessToken(req) ||
+                spotifyAccessToken;
+
+            if (!accessToken) {
+
+                return res
+                    .status(401)
+                    .json({
+                        error:
+                            "Spotifyにログインしてください"
+                    });
+            }
+
+
+            console.log(
+                "Spotifyプレイリスト一覧を取得"
+            );
+
+
+            const response =
+                await fetch(
+                    "https://api.spotify.com/v1/me/playlists?limit=50",
+                    {
+                        headers: {
+                            Authorization:
+                                `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                console.error(
+                    "Spotify Playlist List Error:",
+                    response.status,
+                    data
+                );
+
+                return res
+                    .status(response.status)
+                    .json({
+                        error:
+                            data?.error?.message ||
+                            "プレイリスト取得に失敗しました"
+                    });
+            }
+
+
+            const playlists =
+                (data.items || [])
+                    .filter(Boolean)
+                    .map(
+                        playlist => ({
+
+                            id:
+                                playlist.id,
+
+                            name:
+                                playlist.name,
+
+                            image:
+                                playlist.images?.[0]?.url ||
+                                "",
+
+                            description:
+                                playlist.description ||
+                                "",
+
+                            tracksTotal:
+                                playlist.items?.total ??
+                                0,
+
+                            spotifyUrl:
+                                playlist.external_urls
+                                    ?.spotify ||
+                                "",
+
+                            owner:
+                                playlist.owner
+                                    ?.display_name ||
+                                ""
+                        })
+                    );
+
+
+            console.log(
+                "取得プレイリスト数:",
+                playlists.length
+            );
+
+
+            res.json({
+                success:
+                    true,
+
+                playlists:
+                    playlists
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "My Playlists Error:",
+                error
+            );
+
+
+            res
+                .status(500)
+                .json({
+                    error:
+                        error.message ||
+                        "プレイリスト取得中にエラーが発生しました"
+                });
+        }
+    }
+);
+
+// ========================================
+// Spotifyプレイリスト内の曲を取得
+// ========================================
+app.get(
+    "/api/my-playlists/:playlistId/items",
+    async (req, res) => {
+
+        try {
+
+            const accessToken =
+                getUserAccessToken(req) ||
+                spotifyAccessToken;
+
+
+            if (!accessToken) {
+
+                return res
+                    .status(401)
+                    .json({
+                        error:
+                            "Spotifyにログインしてください"
+                    });
+            }
+
+
+            const playlistId =
+                req.params.playlistId;
+
+
+            console.log(
+                "Spotifyプレイリスト曲取得:",
+                playlistId
+            );
+
+
+            const response =
+                await fetch(
+                    `https://api.spotify.com/v1/playlists/${encodeURIComponent(
+                        playlistId
+                    )}/items?limit=50`,
+                    {
+                        headers: {
+                            Authorization:
+                                `Bearer ${accessToken}`
+                        }
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                console.error(
+                    "Spotify Playlist Items Error:",
+                    response.status,
+                    data
+                );
+
+                return res
+                    .status(response.status)
+                    .json({
+                        error:
+                            data?.error?.message ||
+                            "プレイリストの曲取得に失敗しました"
+                    });
+            }
+
+
+            const tracks =
+                (data.items || [])
+                    .map(
+                        item =>
+                            item.track
+                    )
+                    .filter(
+                        track =>
+                            track &&
+                            track.type === "track"
+                    )
+                    .map(
+                        track => ({
+
+                            id:
+                                track.id,
+
+                            uri:
+                                track.uri,
+
+                            title:
+                                track.name,
+
+                            name:
+                                track.name,
+
+                            artist:
+                                track.artists
+                                    ?.map(
+                                        a => a.name
+                                    )
+                                    .join(", ") ||
+                                "",
+
+                            artists:
+                                track.artists ||
+                                [],
+
+                            image:
+                                track.album
+                                    ?.images?.[0]?.url ||
+                                "",
+
+                            album: {
+
+                                name:
+                                    track.album
+                                        ?.name ||
+                                    "",
+
+                                images:
+                                    track.album
+                                        ?.images ||
+                                    []
+                            },
+
+                            duration_ms:
+                                track.duration_ms,
+
+                            spotifyUrl:
+                                track.external_urls
+                                    ?.spotify ||
+                                ""
+                        })
+                    );
+
+
+            console.log(
+                "取得曲数:",
+                tracks.length
+            );
+
+
+            res.json({
+
+                success:
+                    true,
+
+                tracks:
+                    tracks
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "My Playlist Items Error:",
+                error
+            );
+
+
+            res
+                .status(500)
+                .json({
+                    error:
+                        error.message ||
+                        "プレイリストの曲取得中にエラーが発生しました"
+                });
+        }
     }
 );
 // ========================================

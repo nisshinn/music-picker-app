@@ -5194,7 +5194,13 @@ async function loadSpotifyPlaylists() {
 
     try {
 
-        const response = await fetch("/api/my-playlists");
+        const token = localStorage.getItem("spotifyAccessToken");
+
+const response = await fetch("/api/my-playlists", {
+    headers: {
+        Authorization: `Bearer ${token}`
+    }
+});
 
         const data = await response.json();
 
@@ -9690,9 +9696,16 @@ async function openSpotifyPlaylist(playlist) {
 
     try {
 
-        const response = await fetch(
-            `/api/my-playlists/${encodeURIComponent(playlist.id)}/items`
-        );
+        const token = localStorage.getItem("spotifyAccessToken");
+
+const response = await fetch(
+    `/api/my-playlists/${encodeURIComponent(playlist.id)}/items`,
+    {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    }
+);
 
         const data = await response.json();
 
