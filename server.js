@@ -524,74 +524,61 @@ async function searchSpotifyTracks(
     );
 }
 
-// ========================================
-// 最大80曲取得
-//
-// 50曲 + 30曲
-// ========================================
+async function get80Tracks(token, query) {
+    console.log("Spotifyから最大80曲取得:", query);
 
-async function get80Tracks(
-    token,
-    query
-) {
+    const all = [];
 
-    console.log(
-        "Spotifyから最大80曲取得:",
-        query
-    );
+    // Spotify Search APIは1回最大10曲
+    // 10曲 × 8回 = 最大80曲
+    for (let offset = 0; offset < 80; offset += 10) {
+        try {
+            const data = await searchSpotifyTracks(
+                token,
+                query,
+                10,
+                offset
+            );
 
-    // ====================================
-    // 1回目
-    // 50曲
-    // ====================================
+            const tracks = data.tracks?.items || [];
 
-    const first =
-        await searchSpotifyTracks(
-            token,
-            query,
-            50,
-            0
-        );
+            console.log(
+                `${offset + 1}～${offset + tracks.length}曲目:`,
+                tracks.length,
+                "曲"
+            );
 
-    const firstTracks =
-        first.tracks?.items || [];
+            all.push(...tracks);
 
-    console.log(
-        "1回目:",
-        firstTracks.length,
-        "曲"
-    );
+            // これ以上結果がない場合は終了
+            if (tracks.length < 10) {
+                break;
+            }
 
-    // ====================================
-    // 2回目
-    // 30曲
-    // ====================================
+            // APIへの連続アクセスを少し間隔を空ける
+            if (offset < 70) {
+                await new Promise(resolve =>
+                    setTimeout(resolve, 200)
+                );
+            }
 
-    const second =
-        await searchSpotifyTracks(
-            token,
-            query,
-            30,
-            50
-        );
+        } catch (error) {
+            console.error(
+                `offset ${offset} の取得失敗:`,
+                error
+            );
 
-    const secondTracks =
-        second.tracks?.items || [];
+            // 429ならそこで終了
+            if (
+                error.status === 429 ||
+                error.reason === "QUOTA_EXCEEDED"
+            ) {
+                throw error;
+            }
 
-    console.log(
-        "2回目:",
-        secondTracks.length,
-        "曲"
-    );
-
-    // ====================================
-    // 合体
-    // ====================================
-
-    const all = [
-        ...firstTracks,
-        ...secondTracks
-    ];
+            break;
+        }
+    }
 
     console.log(
         "取得合計:",
@@ -599,12 +586,8 @@ async function get80Tracks(
         "曲"
     );
 
-    // ====================================
     // 重複削除
-    // ====================================
-
-    const unique =
-        uniqueTracks(all);
+    const unique = uniqueTracks(all);
 
     console.log(
         "重複削除後:",
@@ -612,9 +595,8 @@ async function get80Tracks(
         "曲"
     );
 
-    return unique;
+    return unique.slice(0, 80);
 }
-
 // ========================================
 // アーティスト検索
 // ========================================
@@ -647,7 +629,7 @@ app.get(
                         "artist",
 
                     limit:
-                        "50",
+                        "10",
 
                     market:
                         "JP"
