@@ -2882,7 +2882,13 @@ enableMediaSession: true,
 
         // 🔒 iPhoneロック画面
         updateMediaSession(currentTrack);
-        //updateMediaSessionPosition(state);
+
+// Spotify SDKのMedia Session設定が終わった後に
+setTimeout(() => {
+    updateMediaSessionPosition(state);
+}, 100);
+    
+updatePlayerInfo(currentTrack);
 
         updatePlayerInfo(currentTrack);
 
@@ -7304,38 +7310,34 @@ function updateMediaSessionPosition(state) {
     if (!state) return;
     if (!("mediaSession" in navigator)) return;
 
-    const duration =
-        Number(state.duration || 0) / 1000;
-
-    const position =
-        Number(state.position || 0) / 1000;
+    const duration = Number(state.duration) / 1000;
+    const position = Number(state.position) / 1000;
 
     if (!Number.isFinite(duration) || duration <= 0) {
         return;
     }
 
-    const safePosition =
-        Math.max(
-            0,
-            Math.min(position, duration)
-        );
+    const safePosition = Math.max(
+        0,
+        Math.min(position, duration)
+    );
 
     try {
         navigator.mediaSession.setPositionState({
             duration: duration,
-            playbackRate: Number(state.playbackRate || 1),
-            position: safePosition
+            position: safePosition,
+            playbackRate: Number(state.playbackRate || 1)
         });
 
         console.log(
-            "📱 MediaSession時間:",
+            "✅ 正しい時間をMedia Sessionへ設定:",
             duration,
             "秒"
         );
 
     } catch (error) {
-        console.warn(
-            "MediaSession時間設定エラー:",
+        console.error(
+            "❌ setPositionState:",
             error
         );
     }
