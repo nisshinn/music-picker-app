@@ -2639,14 +2639,6 @@ async function playTrack(
         }
 
 updateMediaSession(track);
-
-setTimeout(() => {
-    updateMediaSession(track);
-}, 300);
-
-setTimeout(() => {
-    updateMediaSession(track);
-}, 1000);
  // ----------------------------------------------------
 // 再生成功
 // ----------------------------------------------------
@@ -7226,12 +7218,12 @@ function updateMediaSession(track) {
     console.log("🔵 updateMediaSession 実行");
 
     if (!track) return;
-    if (!("mediaSession" in navigator)) return;
 
     const title =
         track.title ||
         track.name ||
         "Music Picker";
+<<<<<<< HEAD
 
     const artist =
         track.artist ||
@@ -7241,13 +7233,22 @@ function updateMediaSession(track) {
     const album =
         track.album?.name ||
         "Music Picker";
+=======
+>>>>>>> parent of 4827c27 (Update script.js)
 
+    const artist =
+        track.artist ||
+        getArtistText(track) ||
+        "";
+
+    // ジャケット画像を取得
     const image =
         track.image ||
         track.album?.images?.[0]?.url ||
         track.images?.[0]?.url ||
         "";
 
+<<<<<<< HEAD
     try {
         navigator.mediaSession.metadata =
             new MediaMetadata({
@@ -7291,12 +7292,143 @@ function updateMediaSession(track) {
             artist,
             album
         );
+=======
+    console.log("📱 iPhone Media Session:", {
+        title: title,
+        artist: artist,
+        image: image
+    });
+
+    // Media Sessionに対応しているか確認
+    if (!("mediaSession" in navigator)) {
+        console.warn("Media Session API が利用できません");
+        return;
+    }
+
+    // ==========================================
+    // 🎵 曲名・アーティスト・ジャケットをiPhoneへ渡す
+    // ==========================================
+    try {
+
+        if (image) {
+
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: title,
+                artist: artist,
+                album: track.album?.name || "Music Picker",
+
+                artwork: [
+                    {
+                        src: image,
+                        sizes: "512x512"
+                    }
+                ]
+            });
+
+        } else {
+
+            // ジャケット画像が取得できなかった場合
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: title,
+                artist: artist,
+                album: track.album?.name || "Music Picker"
+            });
+
+            console.warn("⚠️ ジャケット画像がありません");
+        }
+
+        console.log("✅ iPhone用Media Session設定完了");
+>>>>>>> parent of 4827c27 (Update script.js)
 
     } catch (error) {
         console.error(
             "Media Session設定エラー:",
             error
         );
+    }
+
+
+    // ==========================================
+    // ▶ 再生
+    // ==========================================
+    try {
+        navigator.mediaSession.setActionHandler(
+            "play",
+            () => {
+                togglePlayback();
+            }
+        );
+    } catch (error) {
+        console.warn("play設定:", error);
+    }
+
+
+    // ==========================================
+    // ⏸ 一時停止
+    // ==========================================
+    try {
+        navigator.mediaSession.setActionHandler(
+            "pause",
+            () => {
+                togglePlayback();
+            }
+        );
+    } catch (error) {
+        console.warn("pause設定:", error);
+    }
+
+
+    // ==========================================
+    // ⏭ 次の曲
+    // ==========================================
+    try {
+        navigator.mediaSession.setActionHandler(
+            "nexttrack",
+            () => {
+                playNext();
+            }
+        );
+    } catch (error) {
+        console.warn("nexttrack設定:", error);
+    }
+
+
+    // ==========================================
+    // ⏮ 前の曲
+    // ==========================================
+    try {
+        navigator.mediaSession.setActionHandler(
+            "previoustrack",
+            () => {
+                playPrevious();
+            }
+        );
+    } catch (error) {
+        console.warn("previoustrack設定:", error);
+    }
+}
+function updateMediaSessionPosition(state) {
+    if (!state) return;
+    if (!("mediaSession" in navigator)) return;
+    if (!("setPositionState" in navigator.mediaSession)) return;
+
+    const duration = Number(state.duration || 0);
+    const position = Number(state.position || 0);
+    const playbackRate = Number(state.playbackSpeed || 1);
+
+    if (duration <= 0) return;
+
+    try {
+        navigator.mediaSession.setPositionState({
+            duration: duration / 1000,
+            playbackRate: playbackRate,
+            position: Math.min(
+                position / 1000,
+                duration / 1000
+            )
+        });
+    } catch (error) {
+        console.warn("Media Session position:", error);
     }
 }
 function updateMediaSessionPosition(state) {
