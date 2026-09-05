@@ -27,6 +27,10 @@ let pkceVerifier = "";
 // ログインしたユーザーのアクセストークン
 let spotifyAccessToken = "";
 
+// Client Credentials用トークン
+let clientCredentialsToken = "";
+let clientCredentialsExpiresAt = 0;
+
 
 // ========================================
 // 設定確認
@@ -36,7 +40,10 @@ console.log("----------------------------------------");
 console.log("Music Picker");
 console.log("----------------------------------------");
 console.log("PORT:", PORT);
-console.log("CLIENT_ID:", CLIENT_ID ? "設定済み" : "未設定");
+console.log(
+    "CLIENT_ID:",
+    CLIENT_ID ? "設定済み" : "未設定"
+);
 console.log(
     "CLIENT_SECRET:",
     CLIENT_SECRET ? "設定済み" : "未設定"
@@ -87,7 +94,12 @@ async function spotifyFetch(url, options = {}) {
             data?.error_description ||
             `Spotify API Error ${response.status}`;
 
-        throw new Error(message);
+        const error = new Error(message);
+
+        error.status = response.status;
+        error.reason = data?.error?.reason;
+
+        throw error;
     }
 
     return data;
@@ -111,61 +123,64 @@ app.get("/auth/login", (req, res) => {
                 );
         }
 
-        // -----------------------------
+
+        // --------------------------------
         // PKCE verifier
-        // -----------------------------
+        // --------------------------------
 
-        const verifier =
-            base64url(
-                crypto.randomBytes(64)
-            );
+        const verifier = base64url(
+            crypto.randomBytes(64)
+        );
 
-        // -----------------------------
+
+        // --------------------------------
         // PKCE challenge
-        // -----------------------------
+        // --------------------------------
 
-        const challenge =
-            base64url(
-                crypto
-                    .createHash("sha256")
-                    .update(verifier)
-                    .digest()
-            );
+        const challenge = base64url(
+            crypto
+                .createHash("sha256")
+                .update(verifier)
+                .digest()
+        );
+
 
         pkceVerifier = verifier;
 
-        // -----------------------------
+
+        // --------------------------------
         // Spotify認証パラメータ
-        // -----------------------------
+        // --------------------------------
 
-        const params =
-            new URLSearchParams({
+        const params = new URLSearchParams({
 
-                client_id: CLIENT_ID,
+            client_id: CLIENT_ID,
 
-                response_type: "code",
+            response_type: "code",
 
-                redirect_uri: REDIRECT_URI,
+            redirect_uri: REDIRECT_URI,
 
-                code_challenge_method: "S256",
+            code_challenge_method: "S256",
 
-                code_challenge: challenge,
+            code_challenge: challenge,
 
-                scope: [
-                    "streaming",
-                    "user-read-email",
-                    "user-read-private",
-                    "user-read-playback-state",
-                    "user-modify-playback-state",
-                    "user-read-recently-played",
-                    "user-top-read",
-                    "user-library-read",
-                    "user-library-modify"
-                ].join(" ")
-            });
+            scope: [
+                "streaming",
+                "user-read-email",
+                "user-read-private",
+                "user-read-playback-state",
+                "user-modify-playback-state",
+                "user-read-recently-played",
+                "user-top-read",
+                "user-library-read",
+                "user-library-modify"
+            ].join(" ")
+        });
+
 
         const spotifyLoginUrl =
             `https://accounts.spotify.com/authorize?${params.toString()}`;
+
 
         res.redirect(spotifyLoginUrl);
 
@@ -199,9 +214,9 @@ app.get("/auth/callback", async (req, res) => {
         } = req.query;
 
 
-        // -----------------------------
-        // Spotify側でキャンセルされた
-        // -----------------------------
+        // --------------------------------
+        // Spotify側でキャンセル
+        // --------------------------------
 
         if (error) {
 
@@ -213,9 +228,9 @@ app.get("/auth/callback", async (req, res) => {
         }
 
 
-        // -----------------------------
+        // --------------------------------
         // code確認
-        // -----------------------------
+        // --------------------------------
 
         if (!code) {
 
@@ -227,9 +242,9 @@ app.get("/auth/callback", async (req, res) => {
         }
 
 
-        // -----------------------------
+        // --------------------------------
         // PKCE確認
-        // -----------------------------
+        // --------------------------------
 
         if (!pkceVerifier) {
 
@@ -241,42 +256,40 @@ app.get("/auth/callback", async (req, res) => {
         }
 
 
-        // -----------------------------
+        // --------------------------------
         // トークン取得
-        // -----------------------------
+        // --------------------------------
 
-        const body =
-            new URLSearchParams({
+        const body = new URLSearchParams({
 
-                client_id: CLIENT_ID,
+            client_id: CLIENT_ID,
 
-                grant_type:
-                    "authorization_code",
+            grant_type:
+                "authorization_code",
 
-                code: code,
+            code: code,
 
-                redirect_uri:
-                    REDIRECT_URI,
+            redirect_uri:
+                REDIRECT_URI,
 
-                code_verifier:
-                    pkceVerifier
-            });
+            code_verifier:
+                pkceVerifier
+        });
 
 
-        const response =
-            await fetch(
-                "https://accounts.spotify.com/api/token",
-                {
-                    method: "POST",
+        const response = await fetch(
+            "https://accounts.spotify.com/api/token",
+            {
+                method: "POST",
 
-                    headers: {
-                        "Content-Type":
-                            "application/x-www-form-urlencoded"
-                    },
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded"
+                },
 
-                    body: body
-                }
-            );
+                body: body
+            }
+        );
 
 
         const data =
@@ -298,27 +311,25 @@ app.get("/auth/callback", async (req, res) => {
         }
 
 
-        // -----------------------------
+        // --------------------------------
         // アクセストークン保存
-        // -----------------------------
+        // --------------------------------
 
         spotifyAccessToken =
             data.access_token;
 
 
-        // 使用済みPKCEを削除
+        // 使用済みPKCE削除
         pkceVerifier = "";
 
 
-        // -----------------------------
+        // --------------------------------
         // ブラウザへ戻す
-        // -----------------------------
+        // --------------------------------
 
         res.send(`
 <!DOCTYPE html>
-
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
     <title>Spotifyログイン完了</title>
@@ -327,7 +338,6 @@ app.get("/auth/callback", async (req, res) => {
 <body>
 
     <p>Spotifyログイン完了！</p>
-
     <p>Music Pickerに戻っています...</p>
 
     <script>
@@ -344,7 +354,6 @@ app.get("/auth/callback", async (req, res) => {
     </script>
 
 </body>
-
 </html>
         `);
 
@@ -366,10 +375,22 @@ app.get("/auth/callback", async (req, res) => {
 
 // ========================================
 // Client Credentials Token
-// アーティスト検索などに使用
+// アーティスト検索・曲検索などに使用
 // ========================================
 
 async function getSpotifyToken() {
+
+    // --------------------------------
+    // まだ使えるトークンがあれば再利用
+    // --------------------------------
+
+    if (
+        clientCredentialsToken &&
+        Date.now() < clientCredentialsExpiresAt
+    ) {
+        return clientCredentialsToken;
+    }
+
 
     if (!CLIENT_ID || !CLIENT_SECRET) {
 
@@ -387,25 +408,23 @@ async function getSpotifyToken() {
             .toString("base64");
 
 
-    const response =
-        await fetch(
-            "https://accounts.spotify.com/api/token",
-            {
-                method: "POST",
+    const response = await fetch(
+        "https://accounts.spotify.com/api/token",
+        {
+            method: "POST",
 
-                headers: {
+            headers: {
+                Authorization:
+                    `Basic ${credentials}`,
 
-                    Authorization:
-                        `Basic ${credentials}`,
+                "Content-Type":
+                    "application/x-www-form-urlencoded"
+            },
 
-                    "Content-Type":
-                        "application/x-www-form-urlencoded"
-                },
-
-                body:
-                    "grant_type=client_credentials"
-            }
-        );
+            body:
+                "grant_type=client_credentials"
+        }
+    );
 
 
     const data =
@@ -416,18 +435,37 @@ async function getSpotifyToken() {
 
         console.error(
             "Client Credentials Error:",
+            response.status,
             data
         );
 
-        throw new Error(
+        const error = new Error(
             data.error_description ||
             data.error?.message ||
             "Spotify token取得失敗"
         );
+
+        error.status = response.status;
+        error.reason = data.error?.reason;
+
+        throw error;
     }
 
 
-    return data.access_token;
+    clientCredentialsToken =
+        data.access_token;
+
+
+    // 少し余裕を持たせて期限を設定
+    const expiresIn =
+        Number(data.expires_in || 3600);
+
+    clientCredentialsExpiresAt =
+        Date.now() +
+        (expiresIn - 60) * 1000;
+
+
+    return clientCredentialsToken;
 }
 
 
@@ -446,6 +484,7 @@ app.get("/api/artists", async (req, res) => {
 
 
         if (!q) {
+
             return res.json([]);
         }
 
@@ -490,12 +529,11 @@ app.get("/api/artists", async (req, res) => {
                         artist.name,
 
                     image:
-                        artist.images?.[0]?.url ||
-                        "",
+                        artist.images?.[0]?.url || "",
 
                     spotifyUrl:
-                        artist.external_urls?.spotify ||
-                        ""
+                        artist.external_urls
+                            ?.spotify || ""
                 }));
 
 
@@ -516,6 +554,23 @@ app.get("/api/artists", async (req, res) => {
             error
         );
 
+
+        if (
+            error.status === 429 ||
+            error.reason === "QUOTA_EXCEEDED"
+        ) {
+
+            return res
+                .status(429)
+                .json({
+                    error:
+                        "Spotify APIの利用上限に達しています。",
+                    reason:
+                        "QUOTA_EXCEEDED"
+                });
+        }
+
+
         res
             .status(500)
             .json({
@@ -528,7 +583,11 @@ app.get("/api/artists", async (req, res) => {
 
 
 // ========================================
-// アーティストの曲取得
+// アーティストの曲を取得
+//
+// ★重要
+// アルバムを大量に取得しない
+// Spotify Searchを使って取得する
 // ========================================
 
 app.get(
@@ -545,48 +604,38 @@ app.get(
 
             if (!artistId) {
 
-                return res.json([]);
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "artist id is required"
+                    });
             }
 
 
-            const token =
-                await getSpotifyToken();
-
-
             console.log("----------------------------------------");
+
             console.log(
                 "アーティスト曲取得:",
                 artistId
             );
 
 
-            // ========================================
-            // アルバム取得
-            // ========================================
+            // --------------------------------
+            // Spotifyトークン
+            // --------------------------------
 
-            const albumParams =
-                new URLSearchParams({
-
-                    include_groups:
-                        "album,single,compilation",
-
-                    limit:
-                        "10",
-
-                    market:
-                        "JP"
-                });
+            const token =
+                await getSpotifyToken();
 
 
-            const albumUrl =
-                `https://api.spotify.com/v1/artists/${encodeURIComponent(
-                    artistId
-                )}/albums?${albumParams.toString()}`;
+            // --------------------------------
+            // アーティスト情報を取得
+            // --------------------------------
 
-
-            const albumData =
-                await spotifyFetch(
-                    albumUrl,
+            const artistResponse =
+                await fetch(
+                    `https://api.spotify.com/v1/artists/${encodeURIComponent(artistId)}`,
                     {
                         headers: {
                             Authorization:
@@ -596,176 +645,246 @@ app.get(
                 );
 
 
-            const albums =
-                albumData.items || [];
+            if (!artistResponse.ok) {
+
+                const errorText =
+                    await artistResponse.text();
+
+
+                console.error(
+                    "アーティスト取得失敗:",
+                    artistResponse.status,
+                    errorText
+                );
+
+
+                if (
+                    artistResponse.status === 429
+                ) {
+
+                    return res
+                        .status(429)
+                        .json({
+                            error:
+                                "Spotify APIの利用上限に達しています。",
+                            reason:
+                                "QUOTA_EXCEEDED"
+                        });
+                }
+
+
+                return res
+                    .status(
+                        artistResponse.status
+                    )
+                    .json({
+                        error:
+                            errorText
+                    });
+            }
+
+
+            const artist =
+                await artistResponse.json();
+
+
+            const artistName =
+                artist.name;
 
 
             console.log(
-                "Albums:",
-                albums.length
+                "アーティスト名:",
+                artistName
             );
 
 
-            if (albums.length === 0) {
+            // --------------------------------
+            // アーティスト名で曲検索
+            // --------------------------------
 
-                console.log(
-                    "アルバムがありません"
+            const query =
+                `artist:"${artistName}"`;
+
+
+            const searchParams =
+                new URLSearchParams({
+
+                    q: query,
+
+                    type: "track",
+
+                    market: "JP",
+
+                    limit: "10"
+                });
+
+
+            const searchResponse =
+                await fetch(
+                    `https://api.spotify.com/v1/search?${searchParams.toString()}`,
+                    {
+                        headers: {
+                            Authorization:
+                                `Bearer ${token}`
+                        }
+                    }
                 );
 
-                return res.json([]);
+
+            if (!searchResponse.ok) {
+
+                const errorText =
+                    await searchResponse.text();
+
+
+                console.error(
+                    "アーティスト曲検索失敗:",
+                    searchResponse.status,
+                    errorText
+                );
+
+
+                if (
+                    searchResponse.status === 429
+                ) {
+
+                    return res
+                        .status(429)
+                        .json({
+                            error:
+                                "Spotify APIの利用上限に達しています。",
+                            reason:
+                                "QUOTA_EXCEEDED"
+                        });
+                }
+
+
+                return res
+                    .status(
+                        searchResponse.status
+                    )
+                    .json({
+                        error:
+                            errorText
+                    });
             }
 
 
-            // ========================================
-            // 曲を全部入れる
-            // ========================================
-
-            const allTracks = [];
+            const searchData =
+                await searchResponse.json();
 
 
-            // ========================================
-            // 各アルバム
-            // ========================================
-
-            for (const album of albums) {
-
-                try {
-
-                    const trackParams =
-                        new URLSearchParams({
-
-                            limit:
-                                "50",
-
-                            market:
-                                "JP"
-                        });
+            const items =
+                searchData.tracks?.items || [];
 
 
-                    const trackUrl =
-                        `https://api.spotify.com/v1/albums/${encodeURIComponent(
-                            album.id
-                        )}/tracks?${trackParams.toString()}`;
+            // --------------------------------
+            // 選択したアーティストだけに絞る
+            // --------------------------------
 
+            const tracks =
+                items
+                    .filter(track => {
 
-                    const trackData =
-                        await spotifyFetch(
-                            trackUrl,
-                            {
-                                headers: {
-                                    Authorization:
-                                        `Bearer ${token}`
-                                }
-                            }
+                        return track.artists?.some(
+                            artist =>
+                                artist.id === artistId
                         );
 
+                    })
+                    .map(track => {
 
-                    const tracks =
-                        trackData.items || [];
-
-
-                    console.log(
-                        "Album:",
-                        album.name,
-                        "Tracks:",
-                        tracks.length
-                    );
+                        const image =
+                            track.album
+                                ?.images?.[0]?.url ||
+                            "";
 
 
-                    // ========================================
-                    // 選択したアーティスト本人が参加している曲だけ
-                    // ========================================
-
-                    const artistTracks =
-                        tracks
-
-                            .filter(track => {
-
-                                return track.artists?.some(
+                        const artists =
+                            track.artists
+                                ?.map(
                                     artist =>
-                                        artist.id === artistId
-                                );
-
-                            })
-
-                            .map(track => ({
-
-                                id:
-                                    track.id,
-
-                                title:
-                                    track.name,
-
-                                artist:
-                                    track.artists
-                                        ?.map(
-                                            artist =>
-                                                artist.name
-                                        )
-                                        .join(", ") ||
-                                    "",
-
-                                image:
-                                    album.images?.[0]?.url ||
-                                    "",
-
-                                spotifyUrl:
-                                    track.external_urls
-                                        ?.spotify ||
-                                    "",
-
-                                uri:
-                                    track.uri,
-
-                                artistId:
-                                    artistId
-                            }));
+                                        artist.name
+                                )
+                                .join(", ") ||
+                            "";
 
 
-                    allTracks.push(
-                        ...artistTracks
-                    );
+                        return {
+
+                            id:
+                                track.id,
+
+                            title:
+                                track.name,
+
+                            name:
+                                track.name,
+
+                            artist:
+                                artists,
+
+                            artists:
+                                track.artists || [],
+
+                            artistId:
+                                artistId,
+
+                            image:
+                                image,
+
+                            spotifyUrl:
+                                track.external_urls
+                                    ?.spotify || "",
+
+                            uri:
+                                track.uri
+                        };
+                    });
 
 
-                } catch (error) {
-
-                    console.error(
-                        `アルバム ${album.id} の曲取得失敗:`,
-                        error.message
-                    );
-                }
-            }
-
-
-            // ========================================
+            // --------------------------------
             // 重複削除
-            // ========================================
+            // --------------------------------
 
             const uniqueTracks =
                 Array.from(
-
                     new Map(
-
-                        allTracks.map(
+                        tracks.map(
                             track => [
                                 track.id,
                                 track
                             ]
                         )
-
                     ).values()
-
                 );
 
 
-            // ========================================
+            // --------------------------------
             // シャッフル
-            // ========================================
+            // --------------------------------
 
-            uniqueTracks.sort(
-                () =>
-                    Math.random() - 0.5
-            );
+            for (
+                let i = uniqueTracks.length - 1;
+                i > 0;
+                i--
+            ) {
+
+                const j =
+                    Math.floor(
+                        Math.random() *
+                        (i + 1)
+                    );
+
+
+                [
+                    uniqueTracks[i],
+                    uniqueTracks[j]
+                ] = [
+                    uniqueTracks[j],
+                    uniqueTracks[i]
+                ];
+            }
 
 
             console.log(
@@ -773,14 +892,34 @@ app.get(
                 uniqueTracks.length
             );
 
-            console.log("----------------------------------------");
+
+            if (
+                uniqueTracks.length === 0
+            ) {
+
+                console.log(
+                    "このアーティストの曲が見つかりませんでした"
+                );
+
+                return res.json([]);
+            }
 
 
-            // 最大30曲
+            console.log(
+                "アーティスト曲取得完了:",
+                artistName
+            );
+
+            console.log(
+                "----------------------------------------"
+            );
+
+
+            // 最大10曲
             res.json(
                 uniqueTracks.slice(
                     0,
-                    30
+                    10
                 )
             );
 
@@ -791,6 +930,23 @@ app.get(
                 "Artist Tracks Error:",
                 error
             );
+
+
+            if (
+                error.status === 429 ||
+                error.reason === "QUOTA_EXCEEDED"
+            ) {
+
+                return res
+                    .status(429)
+                    .json({
+                        error:
+                            "Spotify APIの利用上限に達しています。",
+                        reason:
+                            "QUOTA_EXCEEDED"
+                    });
+            }
+
 
             res
                 .status(500)
@@ -872,6 +1028,9 @@ app.get(
                         title:
                             track.name,
 
+                        name:
+                            track.name,
+
                         artist:
                             track.artists
                                 ?.map(
@@ -881,6 +1040,9 @@ app.get(
                                 .join(", ") ||
                             "",
 
+                        artists:
+                            track.artists || [],
+
                         image:
                             track.album
                                 ?.images?.[0]?.url ||
@@ -888,8 +1050,7 @@ app.get(
 
                         spotifyUrl:
                             track.external_urls
-                                ?.spotify ||
-                            "",
+                                ?.spotify || "",
 
                         uri:
                             track.uri,
@@ -910,13 +1071,29 @@ app.get(
 
             res.json(tracks);
 
-
         } catch (error) {
 
             console.error(
                 "Genre Tracks Error:",
                 error
             );
+
+
+            if (
+                error.status === 429 ||
+                error.reason === "QUOTA_EXCEEDED"
+            ) {
+
+                return res
+                    .status(429)
+                    .json({
+                        error:
+                            "Spotify APIの利用上限に達しています。",
+                        reason:
+                            "QUOTA_EXCEEDED"
+                    });
+            }
+
 
             res
                 .status(500)
@@ -989,9 +1166,9 @@ app.get(
                 );
 
 
-            // ========================================
+            // --------------------------------
             // 曲
-            // ========================================
+            // --------------------------------
 
             const tracks =
                 (data.tracks?.items || [])
@@ -1003,6 +1180,9 @@ app.get(
                         title:
                             track.name,
 
+                        name:
+                            track.name,
+
                         artist:
                             track.artists
                                 ?.map(
@@ -1012,6 +1192,9 @@ app.get(
                                 .join(", ") ||
                             "",
 
+                        artists:
+                            track.artists || [],
+
                         image:
                             track.album
                                 ?.images?.[0]?.url ||
@@ -1019,8 +1202,7 @@ app.get(
 
                         spotifyUrl:
                             track.external_urls
-                                ?.spotify ||
-                            "",
+                                ?.spotify || "",
 
                         uri:
                             track.uri,
@@ -1031,9 +1213,9 @@ app.get(
                     }));
 
 
-            // ========================================
+            // --------------------------------
             // アーティスト
-            // ========================================
+            // --------------------------------
 
             const artists =
                 (data.artists?.items || [])
@@ -1051,8 +1233,7 @@ app.get(
 
                         spotifyUrl:
                             artist.external_urls
-                                ?.spotify ||
-                            ""
+                                ?.spotify || ""
                     }));
 
 
@@ -1070,6 +1251,23 @@ app.get(
                 "Search Error:",
                 error
             );
+
+
+            if (
+                error.status === 429 ||
+                error.reason === "QUOTA_EXCEEDED"
+            ) {
+
+                return res
+                    .status(429)
+                    .json({
+                        error:
+                            "Spotify APIの利用上限に達しています。",
+                        reason:
+                            "QUOTA_EXCEEDED"
+                    });
+            }
+
 
             res
                 .status(500)
@@ -1093,32 +1291,30 @@ app.get(
 
         try {
 
-            // ----------------------------------------
+            // --------------------------------
             // ログイン確認
-            // ----------------------------------------
+            // --------------------------------
 
             if (!spotifyAccessToken) {
 
                 return res
                     .status(401)
                     .json({
-
                         error:
                             "Spotifyにログインしてください"
                     });
             }
 
 
-            // ----------------------------------------
+            // --------------------------------
             // Spotifyから取得
-            // ----------------------------------------
+            // --------------------------------
 
             const data =
                 await spotifyFetch(
                     "https://api.spotify.com/v1/me/top/tracks?limit=50",
                     {
                         headers: {
-
                             Authorization:
                                 `Bearer ${spotifyAccessToken}`
                         }
@@ -1126,9 +1322,9 @@ app.get(
                 );
 
 
-            // ----------------------------------------
+            // --------------------------------
             // 整形
-            // ----------------------------------------
+            // --------------------------------
 
             const tracks =
                 (data.items || [])
@@ -1140,6 +1336,9 @@ app.get(
                         title:
                             track.name,
 
+                        name:
+                            track.name,
+
                         artist:
                             track.artists
                                 ?.map(
@@ -1149,6 +1348,9 @@ app.get(
                                 .join(", ") ||
                             "",
 
+                        artists:
+                            track.artists || [],
+
                         image:
                             track.album
                                 ?.images?.[0]?.url ||
@@ -1156,8 +1358,7 @@ app.get(
 
                         spotifyUrl:
                             track.external_urls
-                                ?.spotify ||
-                            "",
+                                ?.spotify || "",
 
                         uri:
                             track.uri,
@@ -1177,6 +1378,7 @@ app.get(
                 "Top Tracks Error:",
                 error
             );
+
 
             res
                 .status(500)
@@ -1200,12 +1402,13 @@ app.listen(
     () => {
 
         console.log("");
+
         console.log(
             "========================================"
         );
 
         console.log(
-            `Music Picker起動！`
+            "Music Picker起動！"
         );
 
         console.log(
@@ -1215,6 +1418,5 @@ app.listen(
         console.log(
             "========================================"
         );
-
     }
 );
