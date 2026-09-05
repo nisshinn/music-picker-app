@@ -1857,77 +1857,45 @@ app.get(
 
 
             const tracks =
-                (data.items || [])
-                    .map(
-                        item =>
-                            item.track
-                    )
-                    .filter(
-                        track =>
-                            track &&
-                            track.type === "track"
-                    )
-                    .map(
-                        track => ({
+    (data.items || [])
+        .map(item => item.item || item.track)
+        .filter(
+            track =>
+                track &&
+                track.type === "track"
+        )
+        .map(track => ({
+            id: track.id,
+            uri: track.uri,
+            title: track.name,
+            name: track.name,
 
-                            id:
-                                track.id,
+            artist:
+                track.artists
+                    ?.map(a => a.name)
+                    .join(", ") || "",
 
-                            uri:
-                                track.uri,
+            artists:
+                track.artists || [],
 
-                            title:
-                                track.name,
+            image:
+                track.album
+                    ?.images?.[0]?.url || "",
 
-                            name:
-                                track.name,
+            album: {
+                name:
+                    track.album?.name || "",
+                images:
+                    track.album?.images || []
+            },
 
-                            artist:
-                                track.artists
-                                    ?.map(
-                                        a => a.name
-                                    )
-                                    .join(", ") ||
-                                "",
+            duration_ms:
+                track.duration_ms,
 
-                            artists:
-                                track.artists ||
-                                [],
-
-                            image:
-                                track.album
-                                    ?.images?.[0]?.url ||
-                                "",
-
-                            album: {
-
-                                name:
-                                    track.album
-                                        ?.name ||
-                                    "",
-
-                                images:
-                                    track.album
-                                        ?.images ||
-                                    []
-                            },
-
-                            duration_ms:
-                                track.duration_ms,
-
-                            spotifyUrl:
-                                track.external_urls
-                                    ?.spotify ||
-                                ""
-                        })
-                    );
-
-
-            console.log(
-                "取得曲数:",
-                tracks.length
-            );
-
+            spotifyUrl:
+                track.external_urls
+                    ?.spotify || ""
+        }));
 
            res.json({
     success: true,
