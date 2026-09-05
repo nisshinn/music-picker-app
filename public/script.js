@@ -2766,38 +2766,26 @@ function setupSpotifyPlayer() {
     }
 
 
-    spotifyPlayer =
-    new Spotify.Player({
+    spotifyPlayer = new Spotify.Player({
 
-        name:
-            "Music Picker",
+    name: "Music Picker",
 
-        enableMediaSession:
-            false,
+    enableMediaSession: true,
 
-        volume:
-            getSavedVolume(),
+    volume: getSavedVolume(),
 
-            getOAuthToken:
-                callback => {
+    getOAuthToken: callback => {
 
-                    const token =
-                        localStorage.getItem(
-                            "spotify_access_token"
-                        ) || "";
+        const token =
+            localStorage.getItem("spotify_access_token") || "";
 
+        spotifyToken = token;
 
-                    spotifyToken =
-                        token;
+        callback(token);
 
+    }
 
-                    callback(
-                        token
-                    );
-
-                }
-
-        });
+});
 
 
     // ========================================================
@@ -2897,20 +2885,27 @@ function setupSpotifyPlayer() {
                 );
 
 
-            currentTrackData =
-                currentTrack;
+            currentTrackData = currentTrack;
 
+const uri = currentTrack.uri;
 
-            const uri =
-                currentTrack.uri;
+// 🔒 iPhoneロック画面用の情報を設定
+updateMediaSession(currentTrack);
 
+// Spotify側に上書きされる場合があるので再設定
+setTimeout(() => {
+    updateMediaSession(currentTrack);
+}, 300);
 
-            if (!isChangingTrack) {
+setTimeout(() => {
+    updateMediaSession(currentTrack);
+}, 1000);
 
-   // Spotifyの状態から勝手にcurrentTrackIndexを変更しない
+if (!isChangingTrack) {
+
+    // Spotifyの状態から勝手にcurrentTrackIndexを変更しない
 
 }
-
 
             updatePlayerInfo(
                 currentTrack
