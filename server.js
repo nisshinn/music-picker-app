@@ -118,6 +118,138 @@ async function spotifyFetch(url, options = {}) {
 // ========================================
 // Spotifyログイン
 // ========================================
+// ========================================
+// Spotifyアカウント変更ページ
+// ========================================
+
+app.get("/account/change", (req, res) => {
+
+    res.send(`
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Spotifyアカウント変更</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            background: #121212;
+            color: white;
+
+            font-family:
+                Arial,
+                "Noto Sans JP",
+                sans-serif;
+        }
+
+        .box {
+            width: min(90%, 420px);
+            padding: 35px;
+
+            background: #1e1e1e;
+            border-radius: 20px;
+
+            text-align: center;
+
+            box-shadow:
+                0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #b3b3b3;
+            line-height: 1.7;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+
+            border: none;
+            border-radius: 30px;
+
+            background: #1ed760;
+            color: #000;
+
+            font-size: 16px;
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .back {
+            background: #333;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="box">
+
+        <h1>🎵 Spotifyアカウント変更</h1>
+
+        <p>
+            現在のMusic Pickerのログイン情報を削除して、
+            Spotifyの認証画面へ進みます。
+        </p>
+
+        <button onclick="changeAccount()">
+            Spotifyアカウントを変更
+        </button>
+
+        <button
+            class="back"
+            onclick="location.href='/'">
+            Music Pickerに戻る
+        </button>
+
+    </div>
+
+    <script>
+
+        function changeAccount() {
+
+            // Music Picker側のトークンを削除
+            localStorage.removeItem(
+                "spotify_access_token"
+            );
+
+            // Spotify認証へ
+            location.href =
+                "/auth/login";
+        }
+
+    </script>
+
+</body>
+
+</html>
+    `);
+});
 
 app.get("/auth/login", (req, res) => {
     try {
@@ -151,8 +283,7 @@ app.get("/auth/login", (req, res) => {
             redirect_uri: REDIRECT_URI,
             code_challenge_method: "S256",
             code_challenge: challenge,
-            // 毎回Spotifyの認証画面を表示
-    show_dialog: "true",
+            show_dialog: "true",
 
             scope: [
                 "streaming",

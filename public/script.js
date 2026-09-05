@@ -6326,8 +6326,9 @@ function initLogout() {
         // Spotifyのログイン・認証画面へ
         // ========================================
 
-        window.location.href =
-            "/auth/login";
+       // アカウント変更ページへ
+window.location.href =
+    "/account/change";
     });
 }
 function updateMediaSession(track) {
