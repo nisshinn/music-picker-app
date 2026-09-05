@@ -2198,3 +2198,21 @@ body[data-theme="night"] .menu-player-button:hover {
     }
 
 }
+.logout-button {
+    width: 100%;
+    padding: 15px;
+    margin-top: 20px;
+    border: none;
+    border-radius: 14px;
+    background: #ffe5e5;
+    color: #d93636;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.logout-button:hover {
+    background: #ffd2d2;
+    transform: translateY(-1px);
+}
