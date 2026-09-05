@@ -2,268 +2,558 @@
 <html lang="ja">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Music Picker</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="/style.css"
+    >
+
 </head>
+
 
 <body>
 
-    <!-- ==========================================
-         ☰ ハンバーガーメニュー
-    ========================================== -->
 
-    <button id="menuButton" class="menu-button">
-        ☰
-    </button>
+<!-- =========================================================
+     ハンバーガーボタン
+     ========================================================= -->
 
-    <div id="sideMenu" class="side-menu">
+<button
+    id="menuButton"
+    class="menu-button"
+    aria-label="メニュー"
+>
+    ☰
+</button>
 
-        <div class="menu-header">
 
-            <h2>メニュー</h2>
+<!-- =========================================================
+     メニュー
+     ========================================================= -->
 
-            <button id="closeMenu" class="close-menu">
-                ×
-            </button>
+<div
+    id="menuOverlay"
+    class="menu-overlay"
+></div>
 
-        </div>
 
-        <div class="menu-items">
+<nav
+    id="sideMenu"
+    class="side-menu"
+>
 
-            <button
-                class="menu-item"
-                onclick="location.href='history.html'">
-                🕘 履歴
-            </button>
-
-            <button
-                class="menu-item"
-                onclick="location.href='account.html'">
-                🎵 Spotifyアカウント
-            </button>
-
-            <button
-                class="menu-item"
-                onclick="location.href='settings.html'">
-                ⚙️ 設定
-            </button>
-
-        </div>
-
+    <div class="menu-title">
+        🎵 Music Picker
     </div>
 
-    <div id="menuOverlay" class="menu-overlay"></div>
+
+    <button
+        class="menu-link active"
+        data-page="homePage"
+    >
+        🏠 ホーム
+    </button>
 
 
-    <!-- ==========================================
-         🏠 ホーム
-    ========================================== -->
-
-    <main class="app">
-
-        <h1>🎵 Music Picker</h1>
-
-        <p class="subtitle">
-            今の気分にぴったりの曲を探そう！
-        </p>
+    <button
+        class="menu-link"
+        data-page="searchPage"
+    >
+        🔎 曲を検索
+    </button>
 
 
-        <!-- ======================================
-             Spotifyログイン
-        ====================================== -->
+    <button
+        class="menu-link"
+        data-page="favoritesPage"
+    >
+        ❤️ お気に入り
+    </button>
 
-        <div class="box">
 
-            <button
+    <button
+        class="menu-link"
+        data-page="historyPage"
+    >
+        📜 履歴
+    </button>
+
+
+    <button
+        class="menu-link"
+        data-page="settingsPage"
+    >
+        ⚙️ 設定
+    </button>
+
+</nav>
+
+
+<!-- =========================================================
+     メイン
+     ========================================================= -->
+
+<main id="app">
+
+
+    <!-- =====================================================
+         ホーム
+         ===================================================== -->
+
+    <section
+        id="homePage"
+        class="page active-page"
+    >
+
+        <header class="main-header">
+
+            <h1>
+                🎵 Music Picker
+            </h1>
+
+            <p>
+                今の気分にぴったりの曲を探そう！
+            </p>
+
+        </header>
+
+
+        <!-- Spotify -->
+
+        <section class="spotify-box">
+
+            <a
+                href="/auth/login"
                 id="spotifyLoginButton"
-                class="spotify-login"
-                onclick="location.href='/auth/login'">
-
+                class="spotify-login-button"
+            >
                 🎵 Spotifyにログイン
-
-            </button>
-
-            <p id="spotifyStatus">
-                Spotify未接続
-            </p>
-
-        </div>
-
-
-        <!-- ======================================
-             アーティスト
-        ====================================== -->
-
-        <div class="box">
-
-            <h2>🎤 アーティスト</h2>
-
-            <p class="section-description">
-                好きなアーティストを選べます
-            </p>
-
-            <div class="artist-search">
-
-                <input
-                    type="text"
-                    id="artistSearch"
-                    placeholder="アーティスト名を入力..."
-                    autocomplete="off">
-
-                <div id="artistResults"></div>
-
-            </div>
+            </a>
 
             <div
-                id="selectedArtist"
-                class="selected-artist"
-                style="display: none;">
+                id="spotifyStatus"
+                class="spotify-status"
+            >
+                Spotify未接続
             </div>
-
-        </div>
-
-
-        <!-- ======================================
-             ジャンル
-        ====================================== -->
-
-        <div class="box">
-
-            <h2>🎼 ジャンル</h2>
-
-            <select id="genre">
-
-                <option value="all">すべて</option>
-
-                <option value="J-POP">J-POP</option>
-
-                <option value="ロック">ロック</option>
-
-                <option value="ポップ">ポップ</option>
-
-                <option value="アニメ">アニメ</option>
-
-                <option value="ボカロ">ボカロ</option>
-
-                <option value="ヒップホップ">ヒップホップ</option>
-
-                <option value="EDM">EDM</option>
-
-                <option value="クラシック">クラシック</option>
-
-                <option value="ジャズ">ジャズ</option>
-
-                <option value="バラード">バラード</option>
-
-            </select>
-
-        </div>
-
-
-        <!-- ======================================
-             気分
-        ====================================== -->
-
-        <div class="box">
-
-            <h2>😊 今の気分</h2>
-
-            <div class="moods">
-
-                <button
-                    class="mood-button"
-                    data-mood="楽しい">
-                    😆 楽しい
-                </button>
-
-                <button
-                    class="mood-button"
-                    data-mood="テンション高い">
-                    🔥 テンション高い
-                </button>
-
-                <button
-                    class="mood-button"
-                    data-mood="落ち着きたい">
-                    😌 落ち着きたい
-                </button>
-
-                <button
-                    class="mood-button"
-                    data-mood="しんみり">
-                    🌙 しんみり
-                </button>
-
-            </div>
-
-            <button
-                id="makePlaylist"
-                class="make-button">
-
-                🎵 5曲選ぶ
-
-            </button>
-
-        </div>
-
-
-        <!-- ======================================
-             🎵 プレイリスト
-        ====================================== -->
-
-        <section id="playlist">
 
         </section>
 
 
-        <!-- ======================================
-             🎵 再生プレイヤー
-        ====================================== -->
+        <!-- アーティスト -->
 
-<section id="playerPanel" class="player-panel">
-<div class="volume-container">
-    <span>🔊</span>
+        <section class="picker-box">
 
-    <input
-        type="range"
-        id="volumeBar"
-        min="0"
-        max="100"
-        value="50"
+            <h2>
+                🎤 アーティスト
+            </h2>
+
+            <p>
+                好きなアーティストを選べます
+            </p>
+
+
+            <input
+                type="text"
+                id="artistSearch"
+                class="artist-search"
+                placeholder="アーティスト名を入力..."
+                autocomplete="off"
+            >
+
+
+            <div
+                id="artistResults"
+                class="artist-results"
+            ></div>
+
+
+            <div
+                id="selectedArtist"
+                class="selected-artist"
+                style="display:none;"
+            ></div>
+
+        </section>
+
+
+        <!-- ジャンル -->
+
+        <section class="picker-box">
+
+            <h2>
+                🎸 ジャンル
+            </h2>
+
+
+            <select
+                id="genre"
+                class="genre-select"
+            >
+
+                <option value="all">
+                    ジャンルを選択
+                </option>
+
+                <option value="j-pop">
+                    J-Pop
+                </option>
+
+                <option value="rock">
+                    Rock
+                </option>
+
+                <option value="pop">
+                    Pop
+                </option>
+
+                <option value="hip-hop">
+                    Hip-Hop
+                </option>
+
+                <option value="electronic">
+                    Electronic
+                </option>
+
+                <option value="anime">
+                    Anime
+                </option>
+
+            </select>
+
+        </section>
+
+
+        <!-- 気分 -->
+
+        <section class="picker-box">
+
+            <h2>
+                😊 今の気分
+            </h2>
+
+
+            <div class="moods">
+
+                <button
+                    type="button"
+                    data-mood="楽しい"
+                >
+                    😆 楽しい
+                </button>
+
+
+                <button
+                    type="button"
+                    data-mood="テンション高い"
+                >
+                    🔥 テンション高い
+                </button>
+
+
+                <button
+                    type="button"
+                    data-mood="落ち着きたい"
+                >
+                    😌 落ち着きたい
+                </button>
+
+
+                <button
+                    type="button"
+                    data-mood="しんみり"
+                >
+                    😢 しんみり
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- 作成 -->
+
+        <button
+            id="makePlaylist"
+            class="make-playlist-button"
+        >
+            🎵 5曲選ぶ
+        </button>
+
+
+        <!-- プレイリスト -->
+
+        <section
+            id="playlist"
+            class="playlist"
+        ></section>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         検索
+         ===================================================== -->
+
+    <section
+        id="searchPage"
+        class="page"
     >
 
-    <span id="volumeValue">50%</span>
-</div>
+        <div class="page-header">
 
-    <div id="playerSongTitle">
-        再生していません
-    </div>
+            <h1>
+                🔎 曲を検索
+            </h1>
 
-    <div id="playerArtist"></div>
+            <p>
+                Spotifyから曲を探します
+            </p>
 
-    <div class="player-controls">
+        </div>
 
-        <button
-            id="previousButton"
-            type="button">
-            ⏮
-        </button>
 
-        <button
-            id="playPauseButton"
-            type="button">
-            ▶
-        </button>
+        <section class="content-box">
 
-        <button
-            id="nextButton"
-            type="button">
-            ⏭
-        </button>
+            <input
+                type="text"
+                id="songSearchInput"
+                class="big-search"
+                placeholder="曲名・アーティスト名を入力..."
+                autocomplete="off"
+            >
+
+
+            <button
+                id="songSearchButton"
+                class="search-button"
+            >
+                🔎 検索
+            </button>
+
+
+            <div
+                id="searchResults"
+                class="search-results"
+            ></div>
+
+        </section>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         お気に入り
+         ===================================================== -->
+
+    <section
+        id="favoritesPage"
+        class="page"
+    >
+
+        <div class="page-header">
+
+            <h1>
+                ❤️ お気に入り
+            </h1>
+
+            <p>
+                お気に入りに追加した曲
+            </p>
+
+        </div>
+
+
+        <section class="content-box">
+
+            <div
+                id="favoritesList"
+                class="track-list"
+            ></div>
+
+        </section>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         履歴
+         ===================================================== -->
+
+    <section
+        id="historyPage"
+        class="page"
+    >
+
+        <div class="page-header">
+
+            <h1>
+                📜 履歴
+            </h1>
+
+            <p>
+                最近作ったプレイリスト
+            </p>
+
+        </div>
+
+
+        <section class="content-box">
+
+            <div
+                id="historyList"
+                class="track-list"
+            ></div>
+
+        </section>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         設定
+         ===================================================== -->
+
+    <section
+        id="settingsPage"
+        class="page"
+    >
+
+        <div class="page-header">
+
+            <h1>
+                ⚙️ 設定
+            </h1>
+
+        </div>
+
+
+        <section class="content-box settings-box">
+
+            <button
+                id="clearFavorites"
+                class="danger-button"
+            >
+                ❤️ お気に入りを全部削除
+            </button>
+
+
+            <button
+                id="clearHistory"
+                class="danger-button"
+            >
+                📜 履歴を全部削除
+            </button>
+
+        </section>
+
+    </section>
+
+</main>
+
+
+
+<!-- =========================================================
+     Spotifyプレイヤー
+     ========================================================= -->
+
+<div
+    id="playerPanel"
+    class="player-panel"
+    style="display:none;"
+>
+
+    <div class="player-main">
+
+
+        <img
+            id="playerImage"
+            class="player-image"
+            src=""
+            alt=""
+        >
+
+
+        <div class="player-info">
+
+            <div
+                id="playerTitle"
+                class="player-title"
+            >
+                曲名
+            </div>
+
+
+            <div
+                id="playerArtist"
+                class="player-artist"
+            >
+                アーティスト
+            </div>
+
+        </div>
+
+
+        <div class="player-controls">
+
+            <button
+                id="previousButton"
+                class="player-button"
+            >
+                ⏮
+            </button>
+
+
+            <button
+                id="playPauseButton"
+                class="player-button play-button"
+            >
+                ▶
+            </button>
+
+
+            <button
+                id="nextButton"
+                class="player-button"
+            >
+                ⏭
+            </button>
+
+        </div>
+
+
+        <div class="volume-container">
+
+            <span>
+                🔊
+            </span>
+
+            <input
+                type="range"
+                id="volumeBar"
+                min="0"
+                max="100"
+                value="50"
+            >
+
+            <span id="volumeValue">
+                50%
+            </span>
+
+        </div>
 
     </div>
 
@@ -274,6 +564,7 @@
             0:00
         </span>
 
+
         <input
             type="range"
             id="progressBar"
@@ -282,124 +573,25 @@
             value="0"
         >
 
+
         <span id="duration">
             0:00
         </span>
 
     </div>
 
-
-    <!-- 音量 -->
-
-    <div class="volume-container">
-
-        <span class="volume-icon">
-            🔊
-        </span>
-
-        <input
-            type="range"
-            id="volumeBar"
-            min="0"
-            max="100"
-            value="50"
-        >
-
-        <span id="volumeValue">
-            50%
-        </span>
-
-    </div>
-
-</section>
-
-                <div id="playerStatus">
-                    Spotify未接続
-                </div>
-
-            </div>
-
-        </div>
-
-    </main>
+</div>
 
 
-    <!-- ==========================================
-         📱 下部ナビゲーション
-    ========================================== -->
 
-    <nav class="bottom-nav">
+<!-- =========================================================
+     JavaScript
+     ========================================================= -->
 
-        <button
-            onclick="location.href='index.html'"
-            class="bottom-nav-item active">
+<script src="/script.js"></script>
 
-            🏠
-            <small>ホーム</small>
-
-        </button>
-
-        <button
-            onclick="location.href='search.html'"
-            class="bottom-nav-item">
-
-            🔍
-            <small>検索</small>
-
-        </button>
-
-        <button
-            onclick="location.href='favorites.html'"
-            class="bottom-nav-item">
-
-            ❤️
-            <small>お気に入り</small>
-
-        </button>
-
-        <button
-            onclick="location.href='top-tracks.html'"
-            class="bottom-nav-item">
-
-            🔥
-            <small>TOP曲</small>
-
-        </button>
-
-    </nav>
-
-
-    <!-- ==========================================
-         Spotify Web Playback SDK
-    ========================================== -->
-
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
-
-    <script>
-        window.onSpotifyWebPlaybackSDKReady = function () {
-
-            console.log(
-                "Spotify Web Playback SDK 読み込み完了"
-            );
-
-            if (
-                typeof setupSpotifyPlayer ===
-                "function"
-            ) {
-                setupSpotifyPlayer();
-            }
-
-        };
-    </script>
-    <script src="/script.js"></script>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
-
-    <!-- ==========================================
-         JavaScript
-    ========================================== -->
-
-    <script src="script.js"></script>
 
 </body>
 
