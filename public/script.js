@@ -2759,13 +2759,16 @@ function setupSpotifyPlayer() {
 
 
     spotifyPlayer =
-        new Spotify.Player({
+    new Spotify.Player({
 
-            name:
-                "Music Picker",
+        name:
+            "Music Picker",
 
-            volume:
-                getSavedVolume(),
+        enableMediaSession:
+            false,
+
+        volume:
+            getSavedVolume(),
 
             getOAuthToken:
                 callback => {
