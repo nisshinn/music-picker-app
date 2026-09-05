@@ -9691,7 +9691,7 @@ async function openSpotifyPlaylist(playlist) {
             return;
         }
 
-        console.log("プレイリストを開く:", playlist);
+        
 
         const response = await fetch(
             `/api/my-playlists/${encodeURIComponent(playlist.id)}/items`,
@@ -9704,10 +9704,6 @@ async function openSpotifyPlaylist(playlist) {
 
         const data = await response.json();
 
-console.log("プレイリスト曲取得結果:", data);
-console.log("data.tracks:", data.tracks);
-console.log("data.items:", data.items);
-
         if (!response.ok) {
             throw new Error(
                 data.error || "プレイリストの曲を取得できませんでした"
@@ -9716,10 +9712,9 @@ console.log("data.items:", data.items);
 
 const rawTracks = data.tracks || data.items || [];
 
-console.log("rawTracks:", rawTracks);
 
 const tracks = normalizeTracks(rawTracks);
-        console.log("再生可能曲:", tracks);
+        
 
         if (!tracks.length) {
             alert("このプレイリストには再生できる曲がありません");
@@ -9737,7 +9732,21 @@ const tracks = normalizeTracks(rawTracks);
 
         list.innerHTML = "";
 
-        const detail = document.createElement("div");
+// 戻るボタン
+const backButton = document.createElement("button");
+backButton.type = "button";
+backButton.className = "library-back-button";
+backButton.textContent = "← プレイリスト一覧に戻る";
+
+backButton.addEventListener("click", () => {
+    updateLibraryPage();
+});
+
+list.appendChild(backButton);
+
+
+// プレイリスト詳細
+const detail = document.createElement("div");
         detail.className = "spotify-playlist-detail";
 
         detail.innerHTML = `
