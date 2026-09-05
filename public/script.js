@@ -2798,6 +2798,31 @@ if ("mediaSession" in navigator) {
             return originalSetPositionState(details);
         };
 }
+console.log("🟢 MediaSession監視コード開始");
+
+if ("mediaSession" in navigator) {
+
+    console.log("🟢 MediaSession APIあり");
+
+    const originalSetPositionState =
+        navigator.mediaSession.setPositionState.bind(
+            navigator.mediaSession
+        );
+
+    navigator.mediaSession.setPositionState = function(details) {
+
+        console.log("🚨 setPositionState捕まえた！");
+        console.log("duration =", details?.duration);
+        console.log("position =", details?.position);
+
+        return originalSetPositionState(details);
+    };
+
+} else {
+
+    console.log("🔴 MediaSession APIなし");
+
+}
     spotifyPlayer = new Spotify.Player({
 
     name: "Music Picker",
