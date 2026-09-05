@@ -7993,6 +7993,7 @@ function initLibraryAccordion() {
             header.classList.toggle("closed");
         });
     });
+<<<<<<< HEAD
 }
 // ============================================================
 // 🎵 フルスクリーン NOW PLAYING
@@ -9210,3 +9211,6 @@ if (
     initFullPlayer();
 
 }
+=======
+}
+>>>>>>> parent of abf927b (再生メニュー)
