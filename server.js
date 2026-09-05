@@ -151,6 +151,8 @@ app.get("/auth/login", (req, res) => {
             redirect_uri: REDIRECT_URI,
             code_challenge_method: "S256",
             code_challenge: challenge,
+            // 毎回Spotifyの認証画面を表示
+    show_dialog: "true",
 
             scope: [
                 "streaming",

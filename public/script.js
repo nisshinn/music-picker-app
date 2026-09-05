@@ -6290,31 +6290,44 @@ console.log(
     "Music Picker script loaded"
 );
 function initLogout() {
-    const logoutButton = document.getElementById("logoutButton");
+    const logoutButton =
+        document.getElementById("logoutButton");
 
     if (!logoutButton) return;
 
     logoutButton.addEventListener("click", () => {
 
-        if (!confirm("ログアウトしますか？")) {
+        if (!confirm("Spotifyアカウントを切り替えますか？")) {
             return;
         }
 
-        // Spotifyのログイン情報を削除
-        localStorage.removeItem("spotify_access_token");
+        // ========================================
+        // Music Picker側のログイン情報を削除
+        // ========================================
+
+        localStorage.removeItem(
+            "spotify_access_token"
+        );
 
         // Spotifyの状態をリセット
         spotifyToken = "";
         spotifyDeviceId = "";
 
-        // Spotifyプレイヤーを切断
+        // ========================================
+        // Spotify Playerを切断
+        // ========================================
+
         if (spotifyPlayer) {
             spotifyPlayer.disconnect();
             spotifyPlayer = null;
         }
 
-        // ログイン画面へ
-        window.location.href = "/login";
+        // ========================================
+        // Spotifyのログイン・認証画面へ
+        // ========================================
+
+        window.location.href =
+            "/auth/login";
     });
 }
 function updateMediaSession(track) {
