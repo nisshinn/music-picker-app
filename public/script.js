@@ -2638,40 +2638,33 @@ async function playTrack(
 
         }
 
-updateMediaSession(track);
- // ----------------------------------------------------
+// ----------------------------------------------------
 // 再生成功
 // ----------------------------------------------------
 
 lastEndedTrackUri = "";
 
-updateMediaSession(track);
+currentTrackData = track;
 
-updateMediaSession(track);
+// プレイヤー表示
+showPlayerPanel();
 
+// 曲情報表示
+updatePlayerInfo(track);
+
+// ロック画面・ジャケット表示
 try {
     updateMediaSession(track);
 } catch (error) {
-    console.warn("MediaSession更新失敗:", error);
+    console.warn(
+        "MediaSession更新失敗:",
+        error
+    );
 }
 
-// MediaSessionが失敗しても必ず終了判定を開始
-startTrackEndTimer(track);
-
-clearTrackEndTimer();
-
-currentTrackData =
-    track;
-
-showPlayerPanel();
-
-updatePlayerInfo(
-    track
-);
-
-updateMediaSession(
-    track
-);
+// ★重要
+// MediaSessionとは完全に独立して
+// 曲終了タイマーを開始する
 
     } catch (error) {
 
@@ -7223,7 +7216,6 @@ function updateMediaSession(track) {
         track.title ||
         track.name ||
         "Music Picker";
-<<<<<<< HEAD
 
     const artist =
         track.artist ||
@@ -7233,13 +7225,8 @@ function updateMediaSession(track) {
     const album =
         track.album?.name ||
         "Music Picker";
-=======
->>>>>>> parent of 4827c27 (Update script.js)
 
-    const artist =
-        track.artist ||
-        getArtistText(track) ||
-        "";
+
 
     // ジャケット画像を取得
     const image =
@@ -7248,7 +7235,6 @@ function updateMediaSession(track) {
         track.images?.[0]?.url ||
         "";
 
-<<<<<<< HEAD
     try {
         navigator.mediaSession.metadata =
             new MediaMetadata({
@@ -7292,53 +7278,6 @@ function updateMediaSession(track) {
             artist,
             album
         );
-=======
-    console.log("📱 iPhone Media Session:", {
-        title: title,
-        artist: artist,
-        image: image
-    });
-
-    // Media Sessionに対応しているか確認
-    if (!("mediaSession" in navigator)) {
-        console.warn("Media Session API が利用できません");
-        return;
-    }
-
-    // ==========================================
-    // 🎵 曲名・アーティスト・ジャケットをiPhoneへ渡す
-    // ==========================================
-    try {
-
-        if (image) {
-
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: title,
-                artist: artist,
-                album: track.album?.name || "Music Picker",
-
-                artwork: [
-                    {
-                        src: image,
-                        sizes: "512x512"
-                    }
-                ]
-            });
-
-        } else {
-
-            // ジャケット画像が取得できなかった場合
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: title,
-                artist: artist,
-                album: track.album?.name || "Music Picker"
-            });
-
-            console.warn("⚠️ ジャケット画像がありません");
-        }
-
-        console.log("✅ iPhone用Media Session設定完了");
->>>>>>> parent of 4827c27 (Update script.js)
 
     } catch (error) {
         console.error(
@@ -7431,35 +7370,7 @@ function updateMediaSessionPosition(state) {
         console.warn("Media Session position:", error);
     }
 }
-function updateMediaSessionPosition(state) {
-    if (!state) return;
-    if (!("mediaSession" in navigator)) return;
 
-    const duration = Number(state.duration || 0) / 1000;
-    const position = Number(state.position || 0) / 1000;
-
-    if (!Number.isFinite(duration) || duration <= 0) {
-        return;
-    }
-
-    const safePosition = Math.max(
-        0,
-        Math.min(position, duration)
-    );
-
-    try {
-        navigator.mediaSession.setPositionState({
-    duration: 60,
-    position: 0,
-    playbackRate: 1
-});
-    } catch (error) {
-        console.warn(
-            "Media Session位置設定:",
-            error
-        );
-    }
-}
 try {
     const duration = Number(track.duration_ms || 0) / 1000;
 
@@ -7993,7 +7904,6 @@ function initLibraryAccordion() {
             header.classList.toggle("closed");
         });
     });
-<<<<<<< HEAD
 }
 // ============================================================
 // 🎵 フルスクリーン NOW PLAYING
@@ -9211,6 +9121,3 @@ if (
     initFullPlayer();
 
 }
-=======
-}
->>>>>>> parent of abf927b (再生メニュー)
