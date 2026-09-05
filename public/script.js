@@ -2882,7 +2882,7 @@ enableMediaSession: true,
 
         // 🔒 iPhoneロック画面
         updateMediaSession(currentTrack);
-        updateMediaSessionPosition(state);
+        //updateMediaSessionPosition(state);
 
         updatePlayerInfo(currentTrack);
 
@@ -7282,8 +7282,7 @@ function updateMediaSession(track) {
                     : []
             });
 
-        navigator.mediaSession.playbackState =
-            "playing";
+        //navigator.mediaSession.playbackState ="playing";
 
         console.log(
             "📱 手動Media Session設定:",
