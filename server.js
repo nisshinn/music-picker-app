@@ -324,121 +324,78 @@ app.get("/auth/login", (req, res) => {
 // Spotifyログイン callback
 // ========================================
 
-app.get(
-    "/auth/callback",
-    async (req, res) => {
+app.get("/auth/callback", async (req, res) => {
+    try {
+        const code = req.query.code;
 
-        try {
+        if (!code) {
+            return res.status(400).send("認証コードがありません");
+        }
 
-            const {
-                code,
-                error
-            } = req.query;
-
-            // Spotify側でキャンセル
-            if (error) {
-                return res
-                    .status(400)
-                    .send(
-                        `Spotifyログインエラー: ${error}`
-                    );
+        const tokenResponse = await fetch(
+            "https://accounts.spotify.com/api/token",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    client_id: CLIENT_ID,
+                    client_secret: CLIENT_SECRET,
+                    grant_type: "authorization_code",
+                    code: code,
+                    redirect_uri: REDIRECT_URI,
+                    code_verifier: pkceVerifier
+                })
             }
-
-            // code確認
-            if (!code) {
-                return res
-                    .status(400)
-                    .send(
-                        "認証コードがありません。"
-                    );
-            }
-
-            // PKCE確認
-            if (!pkceVerifier) {
-                return res
-                    .status(400)
-                    .send(
-                        "PKCE認証情報がありません。もう一度ログインしてください。"
-                    );
-            }
-
-            // トークン取得
-            const body = new URLSearchParams({
-                client_id: CLIENT_ID,
-                grant_type: "authorization_code",
-                code: code,
-                redirect_uri: REDIRECT_URI,
-                code_verifier: pkceVerifier
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                console.error(
-                    "Spotify Token Error:",
-                    data
-                );
-
-                return res
-                    .status(400)
-                    .send(
-                        "Spotify認証に失敗しました。"
-                    );
-            }
-
-            // アクセストークン保存
-            spotifyAccessToken =
-                data.access_token;
-
-            pkceVerifier = "";
-
-            // ブラウザへ戻す
-            res.send(`
-<!DOCTYPE html>
-<html lang="ja">
-
-<head>
-    <meta charset="UTF-8">
-    <title>Spotifyログイン完了</title>
-</head>
-
-<body>
-
-    <p>Spotifyログイン完了！</p>
-    <p>Music Pickerに戻っています...</p>
-
-    <script>
-
-        localStorage.setItem(
-            "spotify_access_token",
-            ${JSON.stringify(spotifyAccessToken)}
         );
 
-        setTimeout(() => {
-            location.href = "/";
-        }, 500);
+        const tokenData = await tokenResponse.json();
 
-    </script>
+        if (!tokenResponse.ok) {
+            console.error("Spotify Token Error:", tokenData);
 
-</body>
-</html>
+            return res.status(500).send(`
+                <h1>Spotifyログインエラー</h1>
+                <pre>${JSON.stringify(tokenData, null, 2)}</pre>
             `);
-
-        } catch (error) {
-
-            console.error(
-                "Callback Error:",
-                error
-            );
-
-            res
-                .status(500)
-                .send(
-                    "ログイン処理中にエラーが発生しました。"
-                );
         }
+
+        spotifyAccessToken = tokenData.access_token;
+
+        console.log("Spotifyログイン成功");
+
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>ログイン成功</title>
+            </head>
+            <body>
+                <p>Spotifyログイン成功！</p>
+
+                <script>
+                    localStorage.setItem(
+                        "spotifyAccessToken",
+                        ${JSON.stringify(tokenData.access_token)}
+                    );
+
+                    location.href = "/";
+                </script>
+            </body>
+            </html>
+        `);
+
+    } catch (error) {
+        console.error("Callback Error:", error);
+
+        res.status(500).send(`
+            <h1>Callback Error</h1>
+            <pre>${error.message}</pre>
+        `);
     }
-);
+});
 
 // ========================================
 // Client Credentials Token
