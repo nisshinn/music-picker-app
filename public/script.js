@@ -2865,14 +2865,7 @@ function setupSpotifyPlayer() {
 } else {
     startProgressTimer();
 }
- function updateMediaSessionPosition(state) {
-    if (!state) return;
-    if (!("mediaSession" in navigator)) return;
 
-    // iPhoneのロック画面に再生時間を送らない
-    // Spotify Web Playback SDK側の再生時間表示に任せる
-    return;
-}
 
     
 
