@@ -2865,6 +2865,12 @@ function setupSpotifyPlayer() {
 } else {
     startProgressTimer();
 }
+console.log("===== Spotify STATE =====");
+console.log("曲名:", state.track_window?.current_track?.name);
+console.log("duration:", state.duration);
+console.log("position:", state.position);
+console.log("duration秒:", Number(state.duration) / 1000);
+console.log("========================");
 
 
     
