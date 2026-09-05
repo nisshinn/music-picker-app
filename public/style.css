@@ -6,10 +6,25 @@
     box-sizing: border-box;
 }
 
+:root {
+    --main-color: #19b957;
+    --main-dark: #149d49;
+    --accent-color: #6354e8;
+
+    --text-color: #111;
+    --sub-text: #64748b;
+
+    --card-bg: rgba(255, 255, 255, 0.94);
+    --input-bg: #fafafa;
+
+    --shadow:
+        0 10px 35px rgba(0, 0, 0, 0.06);
+
+    --radius: 24px;
+}
 
 body {
     margin: 0;
-
     padding: 0;
 
     font-family:
@@ -17,16 +32,185 @@ body {
         "Noto Sans JP",
         sans-serif;
 
-    background: #eaf7ff;
-
-    color: #111;
+    color: var(--text-color);
 
     min-height: 100vh;
+
+    background: #eaf7ff;
+
+    transition:
+        background 0.35s ease,
+        color 0.35s ease;
 }
 
 
 /* ============================================================
-   ハンバーガー
+   テーマ
+   ============================================================ */
+
+/* Ocean */
+
+body[data-theme="ocean"] {
+    --main-color: #19b957;
+    --main-dark: #149d49;
+    --accent-color: #6354e8;
+
+    --text-color: #111827;
+    --sub-text: #64748b;
+
+    --card-bg: rgba(255, 255, 255, 0.95);
+}
+
+
+/* Night */
+
+body[data-theme="night"] {
+    --main-color: #8b7cff;
+    --main-dark: #6f60ed;
+    --accent-color: #a78bfa;
+
+    --text-color: #f5f5f5;
+    --sub-text: #a5a5b5;
+
+    --card-bg: rgba(30, 30, 42, 0.96);
+
+    background: #11111b;
+    color: #f5f5f5;
+}
+
+
+/* Sunset */
+
+body[data-theme="sunset"] {
+    --main-color: #ff7a45;
+    --main-dark: #e85e2d;
+    --accent-color: #ff4f81;
+
+    --text-color: #24150f;
+    --sub-text: #7a6259;
+
+    --card-bg: rgba(255, 248, 244, 0.95);
+
+    background: #fff0e8;
+}
+
+
+/* Sakura */
+
+body[data-theme="sakura"] {
+    --main-color: #ff5c93;
+    --main-dark: #e94478;
+    --accent-color: #c85cff;
+
+    --text-color: #29151f;
+    --sub-text: #816774;
+
+    --card-bg: rgba(255, 248, 252, 0.96);
+
+    background: #fff0f7;
+}
+
+
+/* Classic */
+
+body[data-theme="classic"] {
+    --main-color: #222;
+    --main-dark: #000;
+    --accent-color: #555;
+
+    --text-color: #111;
+    --sub-text: #666;
+
+    --card-bg: #fff;
+
+    background: #f3f3f3;
+}
+
+
+/* ============================================================
+   背景
+   ============================================================ */
+
+body[data-background="default"] {
+    background: #eaf7ff;
+}
+
+body[data-background="gradient"] {
+    background:
+        linear-gradient(
+            135deg,
+            #eaf7ff 0%,
+            #f5edff 50%,
+            #fff0f6 100%
+        );
+}
+
+body[data-background="simple"] {
+    background: #f5f5f5;
+}
+
+
+/* Night用背景 */
+
+body[data-theme="night"][data-background="default"] {
+    background: #11111b;
+}
+
+body[data-theme="night"][data-background="gradient"] {
+    background:
+        linear-gradient(
+            135deg,
+            #11111b,
+            #1c1734,
+            #171e36
+        );
+}
+
+body[data-theme="night"][data-background="simple"] {
+    background: #181818;
+}
+
+
+/* Sunset */
+
+body[data-theme="sunset"][data-background="gradient"] {
+    background:
+        linear-gradient(
+            135deg,
+            #fff0e8,
+            #ffe2d0,
+            #fff0f6
+        );
+}
+
+
+/* Sakura */
+
+body[data-theme="sakura"][data-background="gradient"] {
+    background:
+        linear-gradient(
+            135deg,
+            #fff0f7,
+            #f9e8ff,
+            #ffeaf1
+        );
+}
+
+
+/* ============================================================
+   アニメーションOFF
+   ============================================================ */
+
+body[data-animation="off"] *,
+body[data-animation="off"] *::before,
+body[data-animation="off"] *::after {
+    animation: none !important;
+    transition: none !important;
+}
+
+
+/* ============================================================
+   ハンバーガーボタン
    ============================================================ */
 
 .menu-button {
@@ -39,7 +223,6 @@ body {
     height: 60px;
 
     border: none;
-
     border-radius: 18px;
 
     background: white;
@@ -48,87 +231,160 @@ body {
 
     cursor: pointer;
 
-    z-index: 2000;
+    z-index: 7500;
 
     box-shadow:
-        0 5px 20px rgba(0,0,0,0.08);
+        0 5px 20px rgba(0, 0, 0, 0.08);
 
-    transition: 0.2s;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
-
 
 .menu-button:hover {
     transform: scale(1.05);
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.12);
 }
 
+
+/* ============================================================
+   メニュー背景
+   ============================================================ */
 
 .menu-overlay {
     position: fixed;
 
     inset: 0;
 
-    background: rgba(0,0,0,0.3);
+    background: rgba(0, 0, 0, 0.45);
 
-    z-index: 1500;
+    z-index: 6500;
 
     opacity: 0;
-
     visibility: hidden;
 
     transition:
-        opacity 0.25s,
-        visibility 0.25s;
+        opacity 0.25s ease,
+        visibility 0.25s ease;
 }
-
 
 .menu-overlay.open {
     opacity: 1;
-
     visibility: visible;
 }
 
+
+/* ============================================================
+   サイドメニュー
+   ============================================================ */
 
 .side-menu {
     position: fixed;
 
     top: 0;
-    left: -320px;
+    left: -390px;
 
-    width: 300px;
+    width: 360px;
+    max-width: calc(100vw - 30px);
 
     height: 100vh;
 
-    padding: 30px 20px;
+    padding: 22px 18px 35px;
 
-    background: white;
+    background: var(--card-bg);
 
-    z-index: 1900;
+    z-index: 7000;
 
     box-shadow:
-        5px 0 25px rgba(0,0,0,0.15);
+        8px 0 35px rgba(0, 0, 0, 0.2);
 
     transition:
         left 0.3s ease;
 
     overflow-y: auto;
-}
 
+    backdrop-filter: blur(18px);
+}
 
 .side-menu.open {
     left: 0;
 }
 
 
-.menu-title {
-    font-size: 24px;
+/* ============================================================
+   メニューヘッダー
+   ============================================================ */
 
-    font-weight: bold;
+.side-menu-header {
+    display: flex;
 
-    margin-bottom: 30px;
+    align-items: center;
+    justify-content: space-between;
 
-    padding: 10px;
+    margin-bottom: 12px;
 }
 
+.menu-title {
+    font-size: 23px;
+    font-weight: 800;
+
+    padding: 8px;
+}
+
+.menu-close-button {
+    width: 42px;
+    height: 42px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #f1f1f1;
+
+    font-size: 28px;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+}
+
+.menu-close-button:hover {
+    transform: rotate(90deg);
+    background: #e4e4e4;
+}
+
+
+/* ============================================================
+   メニューセクション
+   ============================================================ */
+
+.menu-section {
+    margin-bottom: 18px;
+
+    padding: 15px;
+
+    border-radius: 20px;
+
+    background: rgba(127, 127, 127, 0.06);
+}
+
+.menu-section-title {
+    margin: 0 0 12px;
+
+    font-size: 15px;
+
+    font-weight: 800;
+}
+
+
+/* ============================================================
+   ページリンク
+   ============================================================ */
 
 .menu-link {
     width: 100%;
@@ -137,32 +393,463 @@ body {
 
     background: transparent;
 
+    color: var(--text-color);
+
     text-align: left;
 
-    padding: 16px;
+    padding: 12px 13px;
 
-    margin-bottom: 6px;
+    margin-bottom: 5px;
 
     border-radius: 12px;
 
-    font-size: 16px;
+    font-size: 14px;
 
     cursor: pointer;
-}
 
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
+}
 
 .menu-link:hover,
 .menu-link.active {
-    background: #f0edff;
+    background: rgba(99, 84, 232, 0.12);
 
-    color: #5c4de8;
+    color: var(--accent-color);
 
     font-weight: bold;
 }
 
 
 /* ============================================================
-   ページ
+   NOW PLAYING
+   ============================================================ */
+
+.now-playing-section {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(99, 84, 232, 0.10),
+            rgba(25, 185, 87, 0.08)
+        );
+}
+
+.menu-player {
+    width: 100%;
+
+    padding: 13px;
+
+    border-radius: 18px;
+
+    background: rgba(255, 255, 255, 0.75);
+
+    box-shadow:
+        0 5px 18px rgba(0, 0, 0, 0.06);
+}
+
+.menu-player-image {
+    display: block;
+
+    width: 100%;
+    aspect-ratio: 1 / 1;
+
+    max-height: 260px;
+
+    object-fit: cover;
+
+    border-radius: 14px;
+
+    background: #ddd;
+
+    margin-bottom: 12px;
+}
+
+.menu-player-info {
+    min-width: 0;
+
+    margin-bottom: 10px;
+}
+
+.menu-player-artist {
+    font-size: 12px;
+
+    color: var(--sub-text);
+
+    margin-bottom: 3px;
+}
+
+.menu-player-title {
+    font-size: 16px;
+
+    font-weight: bold;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+.menu-player-progress {
+    display: grid;
+
+    grid-template-columns: 36px 1fr 36px;
+
+    align-items: center;
+
+    gap: 6px;
+
+    font-size: 9px;
+
+    color: var(--sub-text);
+}
+
+#menuProgressBar {
+    width: 100%;
+}
+
+.menu-player-controls {
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 13px;
+
+    margin-top: 10px;
+}
+
+.menu-player-button {
+    width: 38px;
+    height: 38px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: #ededed;
+
+    color: #222;
+
+    cursor: pointer;
+
+    font-size: 14px;
+
+    transition:
+        transform 0.15s ease,
+        background 0.15s ease;
+}
+
+.menu-player-button:hover {
+    transform: scale(1.07);
+
+    background: #ddd;
+}
+
+.menu-player-button:active {
+    transform: scale(0.94);
+}
+
+.menu-player-button.menu-play-button {
+    width: 46px;
+    height: 46px;
+
+    background: var(--main-color);
+
+    color: white;
+
+    font-size: 17px;
+}
+
+
+/* ============================================================
+   カスタマイズ
+   ============================================================ */
+
+.menu-setting {
+    margin-top: 13px;
+}
+
+.menu-setting-label {
+    margin-bottom: 8px;
+
+    font-size: 13px;
+
+    font-weight: bold;
+}
+
+.menu-setting-row {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+    min-height: 40px;
+}
+
+
+/* ============================================================
+   テーマボタン
+   ============================================================ */
+
+.theme-buttons,
+.background-buttons {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 7px;
+}
+
+.theme-button,
+.background-button {
+    padding: 9px 7px;
+
+    border: 1px solid #ddd;
+
+    border-radius: 10px;
+
+    background: white;
+
+    color: #333;
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.15s ease;
+}
+
+.theme-button:hover,
+.background-button:hover {
+    transform: translateY(-1px);
+
+    border-color: var(--accent-color);
+}
+
+.theme-button.active,
+.background-button.active {
+    border-color: var(--accent-color);
+
+    background:
+        rgba(99, 84, 232, 0.10);
+
+    color: var(--accent-color);
+
+    font-weight: bold;
+}
+
+
+/* ============================================================
+   トグルスイッチ
+   ============================================================ */
+
+.toggle-switch {
+    position: relative;
+
+    display: inline-block;
+
+    width: 46px;
+    height: 26px;
+
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+
+    inset: 0;
+
+    border-radius: 30px;
+
+    background: #ccc;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.toggle-slider::before {
+    content: "";
+
+    position: absolute;
+
+    width: 20px;
+    height: 20px;
+
+    left: 3px;
+    top: 3px;
+
+    border-radius: 50%;
+
+    background: white;
+
+    box-shadow:
+        0 2px 5px rgba(0, 0, 0, 0.2);
+
+    transition: 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--main-color);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+}
+
+
+/* ============================================================
+   音量
+   ============================================================ */
+
+.menu-volume {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+}
+
+#menuVolumeBar {
+    flex: 1;
+}
+
+#menuVolumeValue {
+    width: 42px;
+
+    text-align: right;
+
+    font-size: 12px;
+
+    color: var(--sub-text);
+}
+
+
+/* ============================================================
+   セレクト
+   ============================================================ */
+
+.menu-select {
+    width: 100%;
+
+    height: 42px;
+
+    padding: 0 12px;
+
+    border: 1px solid #ddd;
+
+    border-radius: 11px;
+
+    background: white;
+
+    color: #333;
+
+    font-size: 13px;
+
+    outline: none;
+}
+
+.menu-select:focus {
+    border-color: var(--accent-color);
+}
+
+
+/* ============================================================
+   音楽の好み
+   ============================================================ */
+
+.menu-preference-button {
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 11px 12px;
+
+    margin-bottom: 7px;
+
+    border: 1px solid #ddd;
+
+    border-radius: 12px;
+
+    background: white;
+
+    color: #333;
+
+    text-align: left;
+
+    font-size: 13px;
+
+    cursor: pointer;
+}
+
+.menu-preference-button::after {
+    content: "›";
+
+    font-size: 20px;
+
+    color: #999;
+}
+
+
+/* ============================================================
+   メニュー内ダークテーマ
+   ============================================================ */
+
+body[data-theme="night"] .side-menu,
+body[data-theme="night"] .menu-player {
+    color: #f5f5f5;
+}
+
+body[data-theme="night"] .menu-close-button,
+body[data-theme="night"] .theme-button,
+body[data-theme="night"] .background-button,
+body[data-theme="night"] .menu-select,
+body[data-theme="night"] .menu-preference-button {
+    background: #292938;
+
+    color: #f5f5f5;
+
+    border-color: #414154;
+}
+
+body[data-theme="night"] .menu-player {
+    background: #252535;
+}
+
+body[data-theme="night"] .menu-player-button {
+    background: #3a3a4a;
+
+    color: white;
+}
+
+body[data-theme="night"] .menu-player-button:hover {
+    background: #4a4a5a;
+}
+
+
+/* ============================================================
+   メインアプリ
    ============================================================ */
 
 #app {
@@ -172,14 +859,13 @@ body {
 
     margin: 0 auto;
 
-    padding: 70px 30px 150px;
+    padding:
+        70px 30px 180px;
 }
-
 
 .page {
     display: none;
 }
-
 
 .active-page {
     display: block;
@@ -196,7 +882,6 @@ body {
     margin-bottom: 35px;
 }
 
-
 .main-header h1 {
     font-size: 48px;
 
@@ -205,11 +890,10 @@ body {
     font-weight: 800;
 }
 
-
 .main-header p {
     font-size: 18px;
 
-    color: #64748b;
+    color: var(--sub-text);
 }
 
 
@@ -218,7 +902,7 @@ body {
    ============================================================ */
 
 .spotify-box {
-    background: white;
+    background: var(--card-bg);
 
     border-radius: 28px;
 
@@ -228,10 +912,10 @@ body {
 
     margin-bottom: 35px;
 
-    box-shadow:
-        0 10px 35px rgba(0,0,0,0.06);
-}
+    box-shadow: var(--shadow);
 
+    backdrop-filter: blur(10px);
+}
 
 .spotify-login-button {
     display: inline-flex;
@@ -255,18 +939,16 @@ body {
     font-size: 16px;
 }
 
-
 .spotify-login-button:hover {
     background: #149d49;
 }
-
 
 .spotify-status {
     margin-top: 15px;
 
     font-weight: bold;
 
-    color: #666;
+    color: var(--sub-text);
 }
 
 
@@ -276,7 +958,7 @@ body {
 
 .picker-box,
 .content-box {
-    background: white;
+    background: var(--card-bg);
 
     border-radius: 28px;
 
@@ -284,10 +966,10 @@ body {
 
     margin-bottom: 25px;
 
-    box-shadow:
-        0 10px 35px rgba(0,0,0,0.06);
-}
+    box-shadow: var(--shadow);
 
+    backdrop-filter: blur(10px);
+}
 
 .picker-box h2 {
     margin: 0 0 8px;
@@ -295,11 +977,10 @@ body {
     font-size: 24px;
 }
 
-
 .picker-box p {
     margin: 0 0 18px;
 
-    color: #555;
+    color: var(--sub-text);
 }
 
 
@@ -323,23 +1004,23 @@ body {
 
     outline: none;
 
-    background: #fafafa;
-}
+    background: var(--input-bg);
 
+    color: var(--text-color);
+}
 
 .artist-search:focus,
 .big-search:focus {
-    border-color: #7d6cff;
+    border-color: var(--accent-color);
 
     box-shadow:
-        0 0 0 3px rgba(125,108,255,0.12);
+        0 0 0 3px
+        rgba(125, 108, 255, 0.12);
 }
-
 
 .artist-results {
     margin-top: 10px;
 }
-
 
 .artist-result {
     display: flex;
@@ -357,11 +1038,10 @@ body {
     transition: 0.2s;
 }
 
-
 .artist-result:hover {
-    background: #f1efff;
+    background:
+        rgba(99, 84, 232, 0.08);
 }
-
 
 .artist-result img {
     width: 58px;
@@ -373,7 +1053,6 @@ body {
 
     background: #eee;
 }
-
 
 .artist-result span {
     font-weight: bold;
@@ -390,7 +1069,6 @@ body {
     margin-top: 15px;
 }
 
-
 .selected-artist-card {
     display: flex;
 
@@ -402,11 +1080,11 @@ body {
 
     border-radius: 18px;
 
-    background: #f1efff;
+    background:
+        rgba(125, 108, 255, 0.10);
 
-    border: 2px solid #7d6cff;
+    border: 2px solid var(--accent-color);
 }
-
 
 .selected-artist-image {
     width: 68px;
@@ -421,7 +1099,6 @@ body {
     background: #ddd;
 }
 
-
 .selected-artist-info {
     display: flex;
 
@@ -430,14 +1107,12 @@ body {
     gap: 5px;
 }
 
-
 .selected-artist-info strong {
     font-size: 19px;
 }
 
-
 .selected-check {
-    color: #6253e7;
+    color: var(--accent-color);
 
     font-size: 14px;
 
@@ -463,6 +1138,8 @@ body {
     font-size: 16px;
 
     background: white;
+
+    color: #333;
 }
 
 
@@ -479,7 +1156,6 @@ body {
     gap: 12px;
 }
 
-
 .moods button {
     padding: 16px;
 
@@ -489,27 +1165,30 @@ body {
 
     background: white;
 
+    color: #333;
+
     font-size: 16px;
 
     cursor: pointer;
 
-    transition: 0.2s;
+    transition:
+        0.2s;
 }
-
 
 .moods button:hover {
-    border-color: #7d6cff;
+    border-color: var(--accent-color);
 
-    background: #f8f7ff;
+    background:
+        rgba(125, 108, 255, 0.06);
 }
 
-
 .moods button.selected {
-    border-color: #7d6cff;
+    border-color: var(--accent-color);
 
-    background: #f0edff;
+    background:
+        rgba(125, 108, 255, 0.12);
 
-    color: #5d4ee7;
+    color: var(--accent-color);
 
     font-weight: bold;
 }
@@ -530,7 +1209,7 @@ body {
 
     border-radius: 30px;
 
-    background: #19b957;
+    background: var(--main-color);
 
     color: white;
 
@@ -541,14 +1220,21 @@ body {
     cursor: pointer;
 
     box-shadow:
-        0 8px 20px rgba(25,185,87,0.2);
-}
+        0 8px 20px
+        rgba(25, 185, 87, 0.2);
 
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
 
 .make-playlist-button:hover {
     transform: translateY(-2px);
-}
 
+    box-shadow:
+        0 10px 25px
+        rgba(25, 185, 87, 0.28);
+}
 
 .make-playlist-button:disabled {
     opacity: 0.6;
@@ -567,7 +1253,6 @@ body {
     margin-top: 30px;
 }
 
-
 .playlist-header {
     display: flex;
 
@@ -581,14 +1266,15 @@ body {
 
     padding-bottom: 12px;
 
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom:
+        2px solid rgba(127, 127, 127, 0.2);
 }
+
 .playlist-header h2 {
     margin: 0;
 
     font-size: 26px;
 }
-
 
 .play-all-button {
     border: none;
@@ -597,7 +1283,7 @@ body {
 
     padding: 13px 23px;
 
-    background: #19b957;
+    background: var(--main-color);
 
     color: white;
 
@@ -606,6 +1292,13 @@ body {
     font-size: 15px;
 
     cursor: pointer;
+
+    transition:
+        transform 0.2s ease;
+}
+
+.play-all-button:hover {
+    transform: translateY(-2px);
 }
 
 
@@ -628,24 +1321,24 @@ body {
 
     border-radius: 18px;
 
-    background: white;
+    background: var(--card-bg);
 
     box-shadow:
-        0 5px 18px rgba(0,0,0,0.06);
+        0 5px 18px rgba(0, 0, 0, 0.06);
 
     cursor: pointer;
 
-    transition: 0.2s;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
-
 
 .track-card:hover {
     transform: translateY(-2px);
 
     box-shadow:
-        0 8px 25px rgba(0,0,0,0.1);
+        0 8px 25px rgba(0, 0, 0, 0.1);
 }
-
 
 .track-image {
     width: 76px;
@@ -660,7 +1353,6 @@ body {
     background: #eee;
 }
 
-
 .track-info {
     flex: 1;
 
@@ -668,7 +1360,6 @@ body {
 
     margin-left: 16px;
 }
-
 
 .track-title {
     font-size: 17px;
@@ -682,15 +1373,13 @@ body {
     text-overflow: ellipsis;
 }
 
-
 .track-artist {
     margin-top: 6px;
 
-    color: #777;
+    color: var(--sub-text);
 
     font-size: 14px;
 }
-
 
 .track-actions {
     display: flex;
@@ -703,7 +1392,6 @@ body {
 
     flex-shrink: 0;
 }
-
 
 .track-play-button {
     width: 42px;
@@ -719,7 +1407,6 @@ body {
 
     cursor: pointer;
 }
-
 
 .favorite-button {
     width: 48px;
@@ -738,7 +1425,6 @@ body {
     cursor: pointer;
 }
 
-
 .favorite-button.favorite-active {
     color: #ff3764;
 
@@ -747,10 +1433,8 @@ body {
     background: #fff0f4;
 }
 
-
 .spotify-button {
     min-width: 80px;
-
     height: 42px;
 
     display: flex;
@@ -788,7 +1472,7 @@ body {
 
     border-radius: 12px;
 
-    background: #6354e8;
+    background: var(--accent-color);
 
     color: white;
 
@@ -796,7 +1480,6 @@ body {
 
     cursor: pointer;
 }
-
 
 .search-results {
     margin-top: 25px;
@@ -811,16 +1494,14 @@ body {
     margin-bottom: 25px;
 }
 
-
 .page-header h1 {
     font-size: 34px;
 
     margin: 0 0 8px;
 }
 
-
 .page-header p {
-    color: #666;
+    color: var(--sub-text);
 }
 
 
@@ -836,7 +1517,6 @@ body {
     gap: 12px;
 }
 
-
 .danger-button {
     padding: 14px;
 
@@ -846,6 +1526,8 @@ body {
 
     background: #f2f2f2;
 
+    color: #333;
+
     cursor: pointer;
 }
 
@@ -854,37 +1536,33 @@ body {
    プレイヤー
    ============================================================ */
 
-/* ============================================================
-   プレイヤー
-   ============================================================ */
-
 .player-panel {
-
     position: fixed;
 
-    /* ナビゲーションの上に配置 */
     bottom: 88px;
 
     left: 50%;
+
     transform: translateX(-50%);
 
-    width: min(1100px, calc(100% - 40px));
+    width:
+        min(1100px, calc(100% - 40px));
 
-    background: white;
+    background: var(--card-bg);
 
     border-radius: 22px;
 
     box-shadow:
-        0 -5px 25px rgba(0,0,0,0.12);
+        0 -5px 25px rgba(0, 0, 0, 0.12);
 
     z-index: 5000;
 
     padding: 12px 20px;
+
+    backdrop-filter: blur(15px);
 }
 
-
 .player-main {
-
     display: flex;
 
     align-items: center;
@@ -896,9 +1574,7 @@ body {
     margin: auto;
 }
 
-
 .player-image {
-
     width: 58px;
     height: 58px;
 
@@ -909,17 +1585,13 @@ body {
     background: #eee;
 }
 
-
 .player-info {
-
     min-width: 150px;
 
     flex: 1;
 }
 
-
 .player-title {
-
     font-weight: bold;
 
     white-space: nowrap;
@@ -929,19 +1601,15 @@ body {
     text-overflow: ellipsis;
 }
 
-
 .player-artist {
-
-    color: #777;
+    color: var(--sub-text);
 
     font-size: 13px;
 
     margin-top: 4px;
 }
 
-
 .player-controls {
-
     display: flex;
 
     align-items: center;
@@ -949,9 +1617,7 @@ body {
     gap: 8px;
 }
 
-
 .player-button {
-
     width: 42px;
     height: 42px;
 
@@ -961,28 +1627,24 @@ body {
 
     background: #f0f0f0;
 
+    color: #222;
+
     cursor: pointer;
 
     font-size: 16px;
 }
 
-
 .player-button:hover {
-
     background: #ddd;
 }
 
-
 .play-button {
-
-    background: #19b957;
+    background: var(--main-color);
 
     color: white;
 }
 
-
 .volume-container {
-
     display: flex;
 
     align-items: center;
@@ -992,25 +1654,19 @@ body {
     min-width: 170px;
 }
 
-
 #volumeBar {
-
     width: 110px;
 }
 
-
 #volumeValue {
-
     width: 40px;
 
     font-size: 12px;
 
-    color: #666;
+    color: var(--sub-text);
 }
 
-
 .progress-container {
-
     display: flex;
 
     align-items: center;
@@ -1023,15 +1679,12 @@ body {
 
     font-size: 11px;
 
-    color: #777;
+    color: var(--sub-text);
 }
-
 
 #progressBar {
-
     flex: 1;
 }
-
 
 
 /* ============================================================
@@ -1043,9 +1696,8 @@ body {
 
     text-align: center;
 
-    color: #777;
+    color: var(--sub-text);
 }
-
 
 .no-results,
 .error-message {
@@ -1053,142 +1705,15 @@ body {
 
     text-align: center;
 
-    color: #777;
+    color: var(--sub-text);
 }
 
 
 /* ============================================================
-   スマホ
+   下部ナビゲーション
    ============================================================ */
 
-@media (max-width: 700px) {
-
-    #app {
-        padding:
-            90px 14px 150px;
-    }
-
-
-    .main-header h1 {
-        font-size: 34px;
-    }
-
-
-    .picker-box,
-    .content-box {
-        padding: 22px;
-
-        border-radius: 22px;
-    }
-
-
-    .moods {
-        grid-template-columns: 1fr;
-    }
-
-
-    .track-card {
-        padding: 10px;
-    }
-
-
-    .track-image {
-        width: 62px;
-        height: 62px;
-    }
-
-
-    .track-info {
-        margin-left: 10px;
-    }
-
-
-    .track-title {
-        font-size: 14px;
-    }
-
-
-    .track-artist {
-        font-size: 12px;
-    }
-
-
-    .track-actions {
-        gap: 4px;
-
-        margin-left: 6px;
-    }
-
-
-    .track-play-button {
-        width: 34px;
-        height: 34px;
-    }
-
-
-    .favorite-button {
-        width: 38px;
-        height: 34px;
-
-        font-size: 18px;
-    }
-
-
-    .spotify-button {
-        min-width: 58px;
-
-        height: 34px;
-
-        padding: 0 8px;
-
-        font-size: 11px;
-    }
-
-
-    .playlist-header {
-        flex-direction: column;
-
-        align-items: stretch;
-    }
-
-
-    .play-all-button {
-        width: 100%;
-    }
-
-
-    .player-main {
-        gap: 8px;
-    }
-
-
-    .player-image {
-        width: 45px;
-        height: 45px;
-    }
-
-
-    .player-info {
-        min-width: 80px;
-    }
-
-
-    .volume-container {
-        min-width: 90px;
-    }
-
-
-    #volumeBar {
-        width: 55px;
-    }
-
-}
-/* =========================================================
-   下部ナビゲーション
-   ========================================================= */
-
 .bottom-nav {
-
     position: fixed;
 
     left: 50%;
@@ -1197,8 +1722,8 @@ body {
 
     transform: translateX(-50%);
 
-    /* 今までより小さく */
-    width: min(700px, calc(100% - 40px));
+    width:
+        min(700px, calc(100% - 40px));
 
     height: 70px;
 
@@ -1210,7 +1735,8 @@ body {
 
     padding: 5px 8px;
 
-    background: rgba(25, 25, 25, 0.97);
+    background:
+        rgba(25, 25, 25, 0.97);
 
     border: 1px solid #333;
 
@@ -1224,13 +1750,7 @@ body {
     backdrop-filter: blur(12px);
 }
 
-
-/* =========================================================
-   ナビボタン
-   ========================================================= */
-
 .bottom-nav-link {
-
     position: relative;
 
     width: 25%;
@@ -1267,37 +1787,22 @@ body {
         color 0.2s ease;
 }
 
-
 .bottom-nav-link:hover {
-
-    background: rgba(255, 255, 255, 0.08);
+    background:
+        rgba(255, 255, 255, 0.08);
 }
 
-
 .bottom-nav-link:active {
-
     transform: scale(0.96);
 }
 
-
-/* =========================================================
-   選択中
-   ========================================================= */
-
 .bottom-nav-link.active {
-
     background: #333;
 
     color: #ff3b6b;
 }
 
-
-/* =========================================================
-   アイコン
-   ========================================================= */
-
 .bottom-nav-icon {
-
     font-size: 30px;
 
     line-height: 28px;
@@ -1306,23 +1811,20 @@ body {
 }
 
 
-/* ホーム */
+/* ホームアイコン */
 
 .bottom-nav-link[data-page="homePage"]
 .bottom-nav-icon {
-
     font-size: 32px;
 }
 
 
-/* =========================================================
+/* ============================================================
    検索アイコン
-   ========================================================= */
+   ============================================================ */
 
 .search-icon {
-
     width: 28px;
-
     height: 28px;
 
     border: 4px solid #f5f5f5;
@@ -1334,15 +1836,12 @@ body {
     margin-bottom: 1px;
 }
 
-
 .search-icon::after {
-
     content: "";
 
     position: absolute;
 
     width: 14px;
-
     height: 4px;
 
     background: #f5f5f5;
@@ -1350,31 +1849,266 @@ body {
     border-radius: 5px;
 
     right: -11px;
-
     bottom: -6px;
 
     transform: rotate(48deg);
 }
 
 
-/* =========================================================
+/* ============================================================
+   スクロールバー
+   ============================================================ */
+
+.side-menu::-webkit-scrollbar {
+    width: 7px;
+}
+
+.side-menu::-webkit-scrollbar-thumb {
+    background: rgba(100, 100, 100, 0.3);
+
+    border-radius: 10px;
+}
+
+
+/* ============================================================
    スマホ
-   ========================================================= */
+   ============================================================ */
 
 @media (max-width: 700px) {
 
     #app {
-
         padding:
             90px 14px 180px;
     }
 
 
-    .bottom-nav {
+    /* -------------------------
+       ヘッダー
+       ------------------------- */
 
+    .main-header h1 {
+        font-size: 34px;
+    }
+
+
+    /* -------------------------
+       メニュー
+       ------------------------- */
+
+    .menu-button {
+        top: 14px;
+        left: 14px;
+
+        width: 52px;
+        height: 52px;
+
+        border-radius: 16px;
+
+        font-size: 26px;
+    }
+
+    .side-menu {
+        width: 340px;
+
+        max-width:
+            calc(100vw - 20px);
+
+        padding:
+            18px 13px 30px;
+    }
+
+    .menu-title {
+        font-size: 20px;
+    }
+
+    .menu-section {
+        padding: 13px;
+
+        border-radius: 18px;
+
+        margin-bottom: 13px;
+    }
+
+    .menu-section-title {
+        font-size: 14px;
+    }
+
+    .menu-player-image {
+        max-height: 220px;
+    }
+
+
+    /* -------------------------
+       Picker
+       ------------------------- */
+
+    .picker-box,
+    .content-box {
+        padding: 22px;
+
+        border-radius: 22px;
+    }
+
+
+    /* -------------------------
+       気分
+       ------------------------- */
+
+    .moods {
+        grid-template-columns: 1fr;
+    }
+
+
+    /* -------------------------
+       曲カード
+       ------------------------- */
+
+    .track-card {
+        padding: 10px;
+    }
+
+    .track-image {
+        width: 62px;
+        height: 62px;
+    }
+
+    .track-info {
+        margin-left: 10px;
+    }
+
+    .track-title {
+        font-size: 14px;
+    }
+
+    .track-artist {
+        font-size: 12px;
+    }
+
+    .track-actions {
+        gap: 4px;
+
+        margin-left: 6px;
+    }
+
+    .track-play-button {
+        width: 34px;
+        height: 34px;
+    }
+
+    .favorite-button {
+        width: 38px;
+        height: 34px;
+
+        font-size: 18px;
+    }
+
+    .spotify-button {
+        min-width: 58px;
+
+        height: 34px;
+
+        padding: 0 8px;
+
+        font-size: 11px;
+    }
+
+
+    /* -------------------------
+       プレイリスト
+       ------------------------- */
+
+    .playlist-header {
+        flex-direction: column;
+
+        align-items: stretch;
+    }
+
+    .play-all-button {
+        width: 100%;
+    }
+
+
+    /* -------------------------
+       プレイヤー
+       ------------------------- */
+
+    .player-panel {
+        bottom: 78px;
+
+        width:
+            calc(100% - 20px);
+
+        padding: 9px 12px;
+
+        border-radius: 18px;
+    }
+
+    .player-main {
+        gap: 7px;
+    }
+
+    .player-image {
+        width: 42px;
+        height: 42px;
+    }
+
+    .player-info {
+        min-width: 70px;
+    }
+
+    .player-title {
+        font-size: 13px;
+    }
+
+    .player-artist {
+        font-size: 11px;
+    }
+
+    .player-controls {
+        gap: 3px;
+    }
+
+    .player-button {
+        width: 34px;
+        height: 34px;
+
+        font-size: 13px;
+    }
+
+    .volume-container {
+        min-width: 65px;
+
+        gap: 4px;
+    }
+
+    #volumeBar {
+        width: 45px;
+    }
+
+    #volumeValue {
+        width: 32px;
+
+        font-size: 10px;
+    }
+
+    .progress-container {
+        margin-top: 5px;
+
+        gap: 5px;
+
+        font-size: 9px;
+    }
+
+
+    /* -------------------------
+       下部ナビ
+       ------------------------- */
+
+    .bottom-nav {
         bottom: 8px;
 
-        width: calc(100% - 20px);
+        width:
+            calc(100% - 20px);
 
         height: 64px;
 
@@ -1383,9 +2117,7 @@ body {
         border-radius: 34px;
     }
 
-
     .bottom-nav-link {
-
         width: 25%;
 
         height: 54px;
@@ -1395,137 +2127,74 @@ body {
         border-radius: 28px;
     }
 
-
     .bottom-nav-icon {
-
         font-size: 25px;
 
         line-height: 24px;
     }
 
-
     .bottom-nav-link[data-page="homePage"]
     .bottom-nav-icon {
-
         font-size: 27px;
     }
 
-
     .search-icon {
-
         width: 24px;
-
         height: 24px;
 
         border-width: 3px;
     }
 
-
     .search-icon::after {
-
         width: 12px;
-
         height: 3px;
 
         right: -9px;
-
         bottom: -5px;
     }
 
 
-    /* -----------------------------
-       スマホのプレイヤー
-       ----------------------------- */
+    /* -------------------------
+       テーマボタン
+       ------------------------- */
 
-    .player-panel {
-
-        bottom: 78px;
-
-        width: calc(100% - 20px);
-
-        padding: 9px 12px;
-
-        border-radius: 18px;
+    .theme-buttons,
+    .background-buttons {
+        grid-template-columns:
+            repeat(2, 1fr);
     }
 
+}
 
-    .player-main {
 
-        gap: 7px;
+/* ============================================================
+   さらに小さいスマホ
+   ============================================================ */
+
+@media (max-width: 420px) {
+
+    .side-menu {
+        width: 320px;
     }
 
-
-    .player-image {
-
-        width: 42px;
-
-        height: 42px;
+    .track-actions {
+        flex-wrap: nowrap;
     }
 
+    .spotify-button {
+        min-width: 48px;
 
-    .player-info {
-
-        min-width: 70px;
-    }
-
-
-    .player-title {
-
-        font-size: 13px;
-    }
-
-
-    .player-artist {
-
-        font-size: 11px;
-    }
-
-
-    .player-controls {
-
-        gap: 3px;
-    }
-
-
-    .player-button {
-
-        width: 34px;
-
-        height: 34px;
-
-        font-size: 13px;
-    }
-
-
-    .volume-container {
-
-        min-width: 65px;
-
-        gap: 4px;
-    }
-
-
-    #volumeBar {
-
-        width: 45px;
-    }
-
-
-    #volumeValue {
-
-        width: 32px;
+        padding: 0 5px;
 
         font-size: 10px;
     }
 
+    .favorite-button {
+        width: 34px;
+    }
 
-    .progress-container {
-
-        margin-top: 5px;
-
-        gap: 5px;
-
-        font-size: 9px;
+    .volume-container {
+        display: none;
     }
 
 }

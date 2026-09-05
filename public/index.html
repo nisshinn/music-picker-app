@@ -37,7 +37,7 @@
 
 
 <!-- =========================================================
-     メニュー
+     メニュー背景
      ========================================================= -->
 
 <div
@@ -46,54 +46,542 @@
 ></div>
 
 
+<!-- =========================================================
+     ハンバーガーメニュー
+     ========================================================= -->
+
 <nav
     id="sideMenu"
     class="side-menu"
 >
 
-    <div class="menu-title">
-        🎵 Music Picker
+    <!-- メニューヘッダー -->
+
+    <div class="side-menu-header">
+
+        <div class="menu-title">
+            🎵 Music Picker
+        </div>
+
+        <button
+            id="menuCloseButton"
+            class="menu-close-button"
+            aria-label="メニューを閉じる"
+        >
+            ×
+        </button>
+
     </div>
 
 
-    <button
-        class="menu-link active"
-        data-page="homePage"
-    >
-        🏠 ホーム
-    </button>
+    <!-- =====================================================
+         NOW PLAYING
+         ===================================================== -->
+
+    <section class="menu-section now-playing-section">
+
+        <h3 class="menu-section-title">
+            🎧 NOW PLAYING
+        </h3>
 
 
-    <button
-        class="menu-link"
-        data-page="searchPage"
-    >
-        🔎 曲を検索
-    </button>
+        <div class="menu-player">
+
+            <img
+                id="menuPlayerImage"
+                class="menu-player-image"
+                src=""
+                alt=""
+            >
 
 
-    <button
-        class="menu-link"
-        data-page="favoritesPage"
-    >
-        ❤️ お気に入り
-    </button>
+            <div class="menu-player-info">
+
+                <div
+                    id="menuPlayerArtist"
+                    class="menu-player-artist"
+                >
+                    アーティスト
+                </div>
 
 
-    <button
-        class="menu-link"
-        data-page="historyPage"
-    >
-        📜 履歴
-    </button>
+                <div
+                    id="menuPlayerTitle"
+                    class="menu-player-title"
+                >
+                    曲名
+                </div>
+
+            </div>
 
 
-    <button
-        class="menu-link"
-        data-page="settingsPage"
-    >
-        ⚙️ 設定
-    </button>
+            <div class="menu-player-progress">
+
+                <span id="menuCurrentTime">
+                    0:00
+                </span>
+
+
+                <input
+                    type="range"
+                    id="menuProgressBar"
+                    min="0"
+                    max="100"
+                    value="0"
+                >
+
+
+                <span id="menuDuration">
+                    0:00
+                </span>
+
+            </div>
+
+
+            <div class="menu-player-controls">
+
+                <button
+                    id="menuPreviousButton"
+                    class="menu-player-button"
+                    aria-label="前の曲"
+                >
+                    ⏮
+                </button>
+
+
+                <button
+                    id="menuPlayPauseButton"
+                    class="menu-player-button menu-play-button"
+                    aria-label="再生・一時停止"
+                >
+                    ▶
+                </button>
+
+
+                <button
+                    id="menuNextButton"
+                    class="menu-player-button"
+                    aria-label="次の曲"
+                >
+                    ⏭
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         ページ移動
+         ===================================================== -->
+
+    <section class="menu-section">
+
+        <h3 class="menu-section-title">
+            📱 ページ
+        </h3>
+
+
+        <button
+            class="menu-link active"
+            data-page="homePage"
+        >
+            🏠 ホーム
+        </button>
+
+
+        <button
+            class="menu-link"
+            data-page="searchPage"
+        >
+            🔎 曲を検索
+        </button>
+
+
+        <button
+            class="menu-link"
+            data-page="favoritesPage"
+        >
+            ❤️ お気に入り
+        </button>
+
+
+        <button
+            class="menu-link"
+            data-page="historyPage"
+        >
+            📜 履歴
+        </button>
+
+    </section>
+
+
+    <!-- =====================================================
+         アプリをカスタマイズ
+         ===================================================== -->
+
+    <section class="menu-section">
+
+        <h3 class="menu-section-title">
+            🎨 アプリをカスタマイズ
+        </h3>
+
+
+        <!-- テーマ -->
+
+        <div class="menu-setting">
+
+            <div class="menu-setting-label">
+                🎨 テーマ
+            </div>
+
+
+            <div class="theme-buttons">
+
+                <button
+                    type="button"
+                    class="theme-button"
+                    data-theme="ocean"
+                >
+                    🌊 Ocean
+                </button>
+
+
+                <button
+                    type="button"
+                    class="theme-button"
+                    data-theme="night"
+                >
+                    🌌 Night
+                </button>
+
+
+                <button
+                    type="button"
+                    class="theme-button"
+                    data-theme="sunset"
+                >
+                    🌅 Sunset
+                </button>
+
+
+                <button
+                    type="button"
+                    class="theme-button"
+                    data-theme="sakura"
+                >
+                    🌸 Sakura
+                </button>
+
+
+                <button
+                    type="button"
+                    class="theme-button"
+                    data-theme="classic"
+                >
+                    🎵 Classic
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- 背景 -->
+
+        <div class="menu-setting">
+
+            <div class="menu-setting-label">
+                🖼️ 背景
+            </div>
+
+
+            <div class="background-buttons">
+
+                <button
+                    type="button"
+                    class="background-button"
+                    data-background="default"
+                >
+                    デフォルト
+                </button>
+
+
+                <button
+                    type="button"
+                    class="background-button"
+                    data-background="gradient"
+                >
+                    グラデーション
+                </button>
+
+
+                <button
+                    type="button"
+                    class="background-button"
+                    data-background="simple"
+                >
+                    シンプル
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- アニメーション -->
+
+        <div class="menu-setting menu-setting-row">
+
+            <span>
+                ✨ アニメーション
+            </span>
+
+
+            <label class="toggle-switch">
+
+                <input
+                    type="checkbox"
+                    id="animationToggle"
+                >
+
+                <span class="toggle-slider"></span>
+
+            </label>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         再生設定
+         ===================================================== -->
+
+    <section class="menu-section">
+
+        <h3 class="menu-section-title">
+            🎧 再生設定
+        </h3>
+
+
+        <!-- 音量 -->
+
+        <div class="menu-setting">
+
+            <div class="menu-setting-label">
+                🔊 音量
+            </div>
+
+
+            <div class="menu-volume">
+
+                <input
+                    type="range"
+                    id="menuVolumeBar"
+                    min="0"
+                    max="100"
+                    value="50"
+                >
+
+
+                <span id="menuVolumeValue">
+                    50%
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- 自動再生 -->
+
+        <div class="menu-setting menu-setting-row">
+
+            <span>
+                ▶️ 自動再生
+            </span>
+
+
+            <label class="toggle-switch">
+
+                <input
+                    type="checkbox"
+                    id="autoplayToggle"
+                    checked
+                >
+
+                <span class="toggle-slider"></span>
+
+            </label>
+
+        </div>
+
+
+        <!-- シャッフル -->
+
+        <div class="menu-setting menu-setting-row">
+
+            <span>
+                🔀 シャッフル
+            </span>
+
+
+            <label class="toggle-switch">
+
+                <input
+                    type="checkbox"
+                    id="shuffleToggle"
+                >
+
+                <span class="toggle-slider"></span>
+
+            </label>
+
+        </div>
+
+
+        <!-- リピート -->
+
+        <div class="menu-setting">
+
+            <div class="menu-setting-label">
+                🔁 リピート
+            </div>
+
+
+            <select
+                id="repeatMode"
+                class="menu-select"
+            >
+
+                <option value="off">
+                    OFF
+                </option>
+
+                <option value="one">
+                    1曲
+                </option>
+
+                <option value="all">
+                    全曲
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- プレイヤー常時表示 -->
+
+        <div class="menu-setting menu-setting-row">
+
+            <span>
+                🎚️ プレイヤーを常に表示
+            </span>
+
+
+            <label class="toggle-switch">
+
+                <input
+                    type="checkbox"
+                    id="alwaysShowPlayerToggle"
+                >
+
+                <span class="toggle-slider"></span>
+
+            </label>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         音楽の好み
+         ===================================================== -->
+
+    <section class="menu-section">
+
+        <h3 class="menu-section-title">
+            🎵 音楽の好み
+        </h3>
+
+
+        <button
+            type="button"
+            class="menu-preference-button"
+            id="favoriteGenreSetting"
+        >
+            🎼 よく聴くジャンル
+        </button>
+
+
+        <button
+            type="button"
+            class="menu-preference-button"
+            id="favoriteArtistSetting"
+        >
+            🎤 好きなアーティスト
+        </button>
+
+
+        <button
+            type="button"
+            class="menu-preference-button"
+            id="avoidGenreSetting"
+        >
+            🚫 苦手なジャンル
+        </button>
+
+    </section>
+
+
+    <!-- =====================================================
+         通知
+         ===================================================== -->
+
+    <section class="menu-section">
+
+        <div class="menu-setting menu-setting-row">
+
+            <span>
+                🔔 新しいおすすめ通知
+            </span>
+
+
+            <label class="toggle-switch">
+
+                <input
+                    type="checkbox"
+                    id="notificationToggle"
+                >
+
+                <span class="toggle-slider"></span>
+
+            </label>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         通常設定ページ
+         ===================================================== -->
+
+    <section class="menu-section">
+
+        <button
+            class="menu-link"
+            data-page="settingsPage"
+        >
+            ⚙️ その他の設定
+        </button>
+
+    </section>
 
 </nav>
 
@@ -139,6 +627,7 @@
                 🎵 Spotifyにログイン
             </a>
 
+
             <div
                 id="spotifyStatus"
                 class="spotify-status"
@@ -156,6 +645,7 @@
             <h2>
                 🎤 アーティスト
             </h2>
+
 
             <p>
                 好きなアーティストを選べます
@@ -204,25 +694,31 @@
                     ジャンルを選択
                 </option>
 
+
                 <option value="j-pop">
                     J-Pop
                 </option>
+
 
                 <option value="rock">
                     Rock
                 </option>
 
+
                 <option value="pop">
                     Pop
                 </option>
+
 
                 <option value="hip-hop">
                     Hip-Hop
                 </option>
 
+
                 <option value="electronic">
                     Electronic
                 </option>
+
 
                 <option value="anime">
                     Anime
@@ -300,7 +796,6 @@
     </section>
 
 
-
     <!-- =====================================================
          検索
          ===================================================== -->
@@ -315,6 +810,7 @@
             <h1>
                 🔎 曲を検索
             </h1>
+
 
             <p>
                 Spotifyから曲を探します
@@ -352,7 +848,6 @@
     </section>
 
 
-
     <!-- =====================================================
          お気に入り
          ===================================================== -->
@@ -367,6 +862,7 @@
             <h1>
                 ❤️ お気に入り
             </h1>
+
 
             <p>
                 お気に入りに追加した曲
@@ -387,7 +883,6 @@
     </section>
 
 
-
     <!-- =====================================================
          履歴
          ===================================================== -->
@@ -402,6 +897,7 @@
             <h1>
                 📜 履歴
             </h1>
+
 
             <p>
                 最近作ったプレイリスト
@@ -420,7 +916,6 @@
         </section>
 
     </section>
-
 
 
     <!-- =====================================================
@@ -463,18 +958,30 @@
     </section>
 
 </main>
+
+
 <!-- =========================================================
      下部ナビゲーション
      ========================================================= -->
 
-<nav class="bottom-nav" id="bottomNav">
+<nav
+    class="bottom-nav"
+    id="bottomNav"
+>
 
     <button
         class="bottom-nav-link active"
         data-page="homePage"
     >
-        <span class="bottom-nav-icon">⌂</span>
-        <span>ホーム</span>
+
+        <span class="bottom-nav-icon">
+            ⌂
+        </span>
+
+        <span>
+            ホーム
+        </span>
+
     </button>
 
 
@@ -482,8 +989,13 @@
         class="bottom-nav-link"
         data-page="searchPage"
     >
+
         <span class="bottom-nav-icon search-icon"></span>
-        <span>検索</span>
+
+        <span>
+            検索
+        </span>
+
     </button>
 
 
@@ -491,8 +1003,15 @@
         class="bottom-nav-link"
         data-page="favoritesPage"
     >
-        <span class="bottom-nav-icon">♡</span>
-        <span>お気に入り</span>
+
+        <span class="bottom-nav-icon">
+            ♡
+        </span>
+
+        <span>
+            お気に入り
+        </span>
+
     </button>
 
 
@@ -500,8 +1019,15 @@
         class="bottom-nav-link"
         data-page="historyPage"
     >
-        <span class="bottom-nav-icon">▤</span>
-        <span>履歴</span>
+
+        <span class="bottom-nav-icon">
+            ▤
+        </span>
+
+        <span>
+            履歴
+        </span>
+
     </button>
 
 </nav>
@@ -553,6 +1079,7 @@
             <button
                 id="previousButton"
                 class="player-button"
+                aria-label="前の曲"
             >
                 ⏮
             </button>
@@ -561,6 +1088,7 @@
             <button
                 id="playPauseButton"
                 class="player-button play-button"
+                aria-label="再生・一時停止"
             >
                 ▶
             </button>
@@ -569,6 +1097,7 @@
             <button
                 id="nextButton"
                 class="player-button"
+                aria-label="次の曲"
             >
                 ⏭
             </button>
@@ -582,6 +1111,7 @@
                 🔊
             </span>
 
+
             <input
                 type="range"
                 id="volumeBar"
@@ -589,6 +1119,7 @@
                 max="100"
                 value="50"
             >
+
 
             <span id="volumeValue">
                 50%
@@ -622,7 +1153,6 @@
     </div>
 
 </div>
-
 
 
 <!-- =========================================================
