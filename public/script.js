@@ -9181,3 +9181,12 @@ function showIPhoneDebug(state, track) {
         "📱 MediaSession\n" +
         mediaSessionInfo;
 }
+const ms = navigator.mediaSession;
+
+debug.textContent +=
+    "\n\n📱 MediaSession詳細\n" +
+    "metadata: " + (ms.metadata ? "あり" : "なし") + "\n" +
+    "title: " + (ms.metadata?.title || "なし") + "\n" +
+    "artist: " + (ms.metadata?.artist || "なし") + "\n" +
+    "setPositionState: " +
+    (typeof ms.setPositionState === "function" ? "あり" : "なし");
