@@ -2727,78 +2727,9 @@ window.onSpotifyWebPlaybackSDKReady =
 
 function setupSpotifyPlayer() {
 
-    fixSpotifyMediaSession();
-    // ========================================================
-// iPhone Media Session の再生時間補正
-// Spotify SDKのミリ秒値を秒に直す
-// ========================================================
-
-function fixSpotifyMediaSession() {
-
-    if (!("mediaSession" in navigator)) {
-        return;
-    }
-
-    const originalSetPositionState =
-        navigator.mediaSession.setPositionState.bind(
-            navigator.mediaSession
-        );
-
-    navigator.mediaSession.setPositionState =
-        function(details) {
-
-            if (!details) {
-                return;
-            }
-
-            let duration = Number(details.duration || 0);
-            let position = Number(details.position || 0);
-
-            // Spotify SDKからミリ秒で来た場合
-            // 例:
-            // 537700 → 537.7秒
-            if (duration > 3600) {
-
-                duration = duration / 1000;
-                position = position / 1000;
-
-                console.log(
-                    "📱 Media Session時間を補正:",
-                    duration,
-                    "秒"
-                );
-            }
-
-            // positionがdurationを超えないようにする
-            position = Math.max(
-                0,
-                Math.min(position, duration)
-            );
-
-            try {
-
-                originalSetPositionState({
-                    duration: duration,
-                    playbackRate:
-                        Number(details.playbackRate || 1),
-                    position: position
-                });
-
-            } catch (error) {
-
-                console.warn(
-                    "Media Session位置設定:",
-                    error
-                );
-
-            }
-        };
-}
-
     if (spotifyPlayer) {
         return;
     }
-
 
     if (!window.Spotify) {
 
@@ -2810,12 +2741,10 @@ function fixSpotifyMediaSession() {
 
     }
 
-
     spotifyToken =
         localStorage.getItem(
             "spotify_access_token"
         ) || "";
-
 
     if (!spotifyToken) {
 
@@ -2823,37 +2752,40 @@ function fixSpotifyMediaSession() {
             "Spotify tokenなし"
         );
 
-
         showSpotifyStatus(
             "Spotify未接続"
         );
-
 
         return;
 
     }
 
-
     spotifyPlayer = new Spotify.Player({
 
-    name: "Music Picker",
+        name: "Music Picker",
 
-    enableMediaSession: true,
+        enableMediaSession: true,
 
-    volume: getSavedVolume(),
+        volume: getSavedVolume(),
 
-    getOAuthToken: callback => {
+        getOAuthToken: callback => {
 
-        const token =
-            localStorage.getItem("spotify_access_token") || "";
+            const token =
+                localStorage.getItem(
+                    "spotify_access_token"
+                ) || "";
 
-        spotifyToken = token;
+            spotifyToken = token;
 
-        callback(token);
+            callback(token);
 
-    }
+        }
 
-});
+    });
+
+
+
+    
 
 
     // ========================================================
@@ -6970,52 +6902,19 @@ function shuffleArray(
 // 時間
 // ============================================================
 
-function formatTime(
-    milliseconds
-) {
+function formatTime(ms) {
 
-    if (
-        !Number.isFinite(
-            milliseconds
-        )
-    ) {
-
-        return "0:00";
-
-    }
-
-
-    const seconds =
-        Math.floor(
-            milliseconds /
-            1000
-        );
-
+    const totalSeconds =
+        Math.floor(ms / 1000);
 
     const minutes =
-        Math.floor(
-            seconds /
-            60
-        );
+        Math.floor(totalSeconds / 60);
 
+    const seconds =
+        totalSeconds % 60;
 
-    const remaining =
-        seconds %
-        60;
-
-
-    return (
-        `${minutes}:` +
-        String(
-            remaining
-        ).padStart(
-            2,
-            "0"
-        )
-    );
-
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
-
 
 // ============================================================
 // 待機
