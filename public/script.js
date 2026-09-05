@@ -1077,13 +1077,14 @@ function initArtistSearch() {
                             "";
 
 
-                        image.onerror =
-                            () => {
+                        image.onerror = () => {
+    console.warn(
+        "ジャケット画像の読み込み失敗:",
+        image.src
+    );
 
-                                image.style.display =
-                                    "none";
-
-                            };
+    image.removeAttribute("src");
+};
 
 
                         const name =
@@ -6700,10 +6701,14 @@ function normalizeTrack(
 
 
     const image =
-        track.image ||
-        track.album?.images?.[0]?.url ||
-        track.images?.[0]?.url ||
-        "";
+    track.image ||
+    track.album?.images?.[0]?.url ||
+    track.album?.images?.[1]?.url ||
+    track.album?.images?.[2]?.url ||
+    track.images?.[0]?.url ||
+    track.images?.[1]?.url ||
+    track.images?.[2]?.url ||
+    "";
 
 
     const title =
@@ -7295,9 +7300,10 @@ function updateMediaSession(track) {
         "";
 
     const image =
-        track.image ||
-        track.album?.images?.[0]?.url ||
-        "";
+    track.image ||
+    track.album?.images?.[0]?.url ||
+    track.images?.[0]?.url ||
+    "";
 
     console.log("📱 Media Session:", {
         title,
@@ -7313,9 +7319,9 @@ function updateMediaSession(track) {
     // 曲情報をiPhoneへ渡す
     try {
         navigator.mediaSession.metadata = new MediaMetadata({
-            title: title,
-            artist: artist,
-            album: "Music Picker",
+    title: title,
+    artist: artist,
+    album: track.album?.name || "Music Picker",
             artwork: image
                 ? [
                     {
