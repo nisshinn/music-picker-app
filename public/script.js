@@ -5165,68 +5165,122 @@ function attachSpotifyPlaylistToLibrary(
 // ============================================================
 // 📚 ライブラリ画面
 // ============================================================
+// ========================================
+// Spotifyプレイリストを取得
+// ========================================
+async function loadSpotifyPlaylists() {
 
+    const list = document.getElementById("playlistList");
+
+    if (!list) return;
+
+    list.innerHTML = `
+        <div class="library-loading">
+            🎵 Spotifyのプレイリストを読み込み中...
+        </div>
+    `;
+
+    const token = localStorage.getItem("spotifyAccessToken");
+
+    if (!token) {
+        list.innerHTML = `
+            <div class="library-empty">
+                <div>🎵</div>
+                <p>Spotifyにログインすると<br>プレイリストが表示されます。</p>
+            </div>
+        `;
+        return;
+    }
+
+    try {
+
+        const response = await fetch("/api/my-playlists");
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error || "プレイリスト取得に失敗しました"
+            );
+        }
+
+        const playlists = data.playlists || [];
+
+        list.innerHTML = "";
+
+        if (playlists.length === 0) {
+
+            list.innerHTML = `
+                <div class="library-empty">
+                    <div>🎵</div>
+                    <p>Spotifyにプレイリストがありません。</p>
+                </div>
+            `;
+
+            return;
+        }
+
+        playlists.forEach(playlist => {
+
+            const card = document.createElement("div");
+
+            card.className = "spotify-playlist-card";
+
+            card.innerHTML = `
+                <div class="spotify-playlist-image">
+                    ${
+                        playlist.image
+                        ? `<img src="${playlist.image}" alt="">`
+                        : `<div class="playlist-no-image">🎵</div>`
+                    }
+                </div>
+
+                <div class="spotify-playlist-info">
+                    <div class="spotify-playlist-name">
+                        ${escapeHtml(playlist.name)}
+                    </div>
+
+                    <div class="spotify-playlist-count">
+                        ${playlist.tracksTotal}曲
+                    </div>
+                </div>
+
+                <div class="spotify-playlist-arrow">
+                    ›
+                </div>
+            `;
+
+            card.addEventListener("click", () => {
+                openSpotifyPlaylist(playlist);
+            });
+
+            list.appendChild(card);
+        });
+
+    } catch (error) {
+
+        console.error("Spotifyプレイリスト取得エラー:", error);
+
+        list.innerHTML = `
+            <div class="library-error">
+                <div>⚠️</div>
+                <p>${escapeHtml(error.message)}</p>
+                <button type="button" id="reloadSpotifyPlaylists">
+                    🔄 再読み込み
+                </button>
+            </div>
+        `;
+
+        document
+            .getElementById("reloadSpotifyPlaylists")
+            ?.addEventListener("click", loadSpotifyPlaylists);
+    }
+}
 function updateLibraryPage() {
-
-    // --------------------------------------------
-    // お気に入り
-    // --------------------------------------------
 
     updateFavoritesPage();
 
-
-    // --------------------------------------------
-    // プレイリスト
-    // --------------------------------------------
-
-    const container =
-        document.getElementById(
-            "playlistList"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    const playlists =
-        getSavedPlaylists();
-
-
-    container.innerHTML =
-        "";
-
-
-    if (!playlists.length) {
-
-        container.innerHTML =
-            `
-            <div class="library-empty">
-                🎵<br>
-                プレイリストはまだありません。<br>
-                ホームでおすすめ5曲を作ると<br>
-                ここに自動保存されます。
-            </div>
-            `;
-
-        return;
-
-    }
-
-
-    playlists.forEach(
-        playlist => {
-
-            container.appendChild(
-                createLibraryPlaylistCard(
-                    playlist
-                )
-            );
-
-        }
-    );
-
+    loadSpotifyPlaylists();
 }
 
 
@@ -9611,5 +9665,185 @@ if (
     initFullPlayer();
 
 }
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+// ========================================
+// Spotifyプレイリストを開く
+// ========================================
+async function openSpotifyPlaylist(playlist) {
+
+    const list = document.getElementById("playlistList");
+
+    if (!list) return;
+
+    list.innerHTML = `
+        <div class="library-loading">
+            🎵 「${escapeHtml(playlist.name)}」を読み込み中...
+        </div>
+    `;
+
+    try {
+
+        const response = await fetch(
+            `/api/my-playlists/${encodeURIComponent(playlist.id)}/items`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error || "曲の取得に失敗しました"
+            );
+        }
+
+        const tracks = normalizeTracks(data.tracks || []);
+
+        list.innerHTML = "";
+
+        // 戻るボタン
+        const backButton = document.createElement("button");
+
+        backButton.type = "button";
+        backButton.className = "library-back-button";
+        backButton.textContent = "‹ プレイリスト一覧";
+
+        backButton.addEventListener("click", () => {
+            loadSpotifyPlaylists();
+        });
+
+        list.appendChild(backButton);
 
 
+        // ヘッダー
+        const header = document.createElement("div");
+
+        header.className = "spotify-playlist-detail";
+
+        header.innerHTML = `
+            <div class="spotify-playlist-detail-image">
+                ${
+                    playlist.image
+                    ? `<img src="${playlist.image}" alt="">`
+                    : `<div class="playlist-no-image">🎵</div>`
+                }
+            </div>
+
+            <div class="spotify-playlist-detail-info">
+                <h2>${escapeHtml(playlist.name)}</h2>
+                <p>${tracks.length}曲</p>
+
+                ${
+                    playlist.spotifyUrl
+                    ? `
+                    <a
+                        href="${playlist.spotifyUrl}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="spotify-open-button"
+                    >
+                        Spotifyで開く
+                    </a>
+                    `
+                    : ""
+                }
+            </div>
+        `;
+
+        list.appendChild(header);
+
+
+        if (tracks.length === 0) {
+
+            const empty = document.createElement("div");
+
+            empty.className = "library-empty";
+
+            empty.innerHTML = `
+                <div>🎵</div>
+                <p>このプレイリストには再生できる曲がありません。</p>
+            `;
+
+            list.appendChild(empty);
+
+            return;
+        }
+
+
+        // まとめて再生
+        const playAll = document.createElement("button");
+
+        playAll.type = "button";
+        playAll.className = "library-play-all";
+
+        playAll.textContent = "▶ まとめて再生";
+
+        playAll.addEventListener("click", async () => {
+
+            currentPlaylist = normalizeTracks(tracks);
+
+            currentTrackIndex = 0;
+
+            isPlaylistMode = true;
+
+            await playTrack(
+                currentPlaylist[0],
+                0,
+                true
+            );
+        });
+
+        list.appendChild(playAll);
+
+
+        // 曲一覧
+        tracks.forEach((track, index) => {
+
+            const item = createLibraryTrackItem(
+                track,
+                index,
+                {
+                    id: playlist.id,
+                    name: playlist.name,
+                    tracks: tracks,
+                    spotifyUrl: playlist.spotifyUrl
+                }
+            );
+
+            list.appendChild(item);
+        });
+
+
+    } catch (error) {
+
+        console.error("Spotifyプレイリスト曲取得エラー:", error);
+
+        list.innerHTML = `
+            <div class="library-error">
+                <div>⚠️</div>
+                <p>${escapeHtml(error.message)}</p>
+
+                <button
+                    type="button"
+                    id="reloadSpotifyPlaylist"
+                >
+                    🔄 再読み込み
+                </button>
+            </div>
+        `;
+
+        document
+            .getElementById("reloadSpotifyPlaylist")
+            ?.addEventListener("click", () => {
+                openSpotifyPlaylist(playlist);
+            });
+    }
+}
+if (pageId === "favoritesPage") {
+    updateLibraryPage();
+}
