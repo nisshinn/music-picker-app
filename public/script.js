@@ -5847,7 +5847,346 @@ function updateHistoryPage() {
 
 }
 
+// ============================================================
+// 曲検索
+// ============================================================
 
+function initSearch() {
+
+    const input =
+        document.getElementById("songSearchInput");
+
+    const button =
+        document.getElementById("songSearchButton");
+
+    const results =
+        document.getElementById("searchResults");
+
+
+    if (!input || !button || !results) {
+        console.warn("検索UIが見つかりません");
+        return;
+    }
+
+
+    async function searchSongs() {
+
+        const keyword =
+            input.value.trim();
+
+
+        if (!keyword) {
+
+            results.innerHTML = `
+                <div class="no-results">
+                    曲名やアーティスト名を入力してください
+                </div>
+            `;
+
+            return;
+        }
+
+
+        results.innerHTML = `
+            <div class="loading">
+                🔎 検索中...
+            </div>
+        `;
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `/api/search?q=${encodeURIComponent(keyword)}`
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    `HTTP ${response.status}`
+                );
+
+            }
+
+
+            const tracks =
+                await response.json();
+
+
+            results.innerHTML = "";
+
+
+            if (
+                !Array.isArray(tracks) ||
+                tracks.length === 0
+            ) {
+
+                results.innerHTML = `
+                    <div class="no-results">
+                        曲が見つかりませんでした
+                    </div>
+                `;
+
+                return;
+
+            }
+
+
+            tracks.forEach(
+                (track, index) => {
+
+                    results.appendChild(
+                        createSearchTrackCard(
+                            track,
+                            index
+                        )
+                    );
+
+                }
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "曲検索エラー:",
+                error
+            );
+
+
+            results.innerHTML = `
+                <div class="error-message">
+                    ${escapeHtml(error.message)}
+                </div>
+            `;
+
+        }
+
+    }
+
+
+    button.addEventListener(
+        "click",
+        searchSongs
+    );
+
+
+    input.addEventListener(
+        "keydown",
+        event => {
+
+            if (event.key === "Enter") {
+
+                searchSongs();
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// 検索結果カード
+// ============================================================
+
+function createSearchTrackCard(
+    track,
+    index
+) {
+
+    track =
+        normalizeTrack(track);
+
+
+    const card =
+        document.createElement("div");
+
+
+    card.className =
+        "track-card";
+
+
+    const image =
+        document.createElement("img");
+
+
+    image.className =
+        "track-image";
+
+
+    image.src =
+        track.image || "";
+
+
+    image.alt =
+        track.title || "";
+
+
+    image.onerror =
+        () => {
+
+            image.style.display =
+                "none";
+
+        };
+
+
+    const info =
+        document.createElement("div");
+
+
+    info.className =
+        "track-info";
+
+
+    const title =
+        document.createElement("div");
+
+
+    title.className =
+        "track-title";
+
+
+    title.textContent =
+        track.title || "曲名なし";
+
+
+    const artist =
+        document.createElement("div");
+
+
+    artist.className =
+        "track-artist";
+
+
+    artist.textContent =
+        getArtistText(track);
+
+
+    info.appendChild(title);
+    info.appendChild(artist);
+
+
+    const actions =
+        document.createElement("div");
+
+
+    actions.className =
+        "track-actions";
+
+
+    const play =
+        document.createElement("button");
+
+
+    play.className =
+        "track-play-button";
+
+
+    play.textContent =
+        "▶";
+
+
+    play.addEventListener(
+        "click",
+        async event => {
+
+            event.stopPropagation();
+
+
+            currentPlaylist =
+                [track];
+
+            currentTrackIndex =
+                0;
+
+            isPlaylistMode =
+                false;
+
+
+            await playTrack(
+                track,
+                0,
+                false
+            );
+
+        }
+    );
+
+
+    const favorite =
+        document.createElement("button");
+
+
+    favorite.className =
+        "favorite-button";
+
+
+    updateFavoriteButton(
+        favorite,
+        track
+    );
+
+
+    favorite.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+
+            toggleFavorite(track);
+
+
+            updateFavoriteButton(
+                favorite,
+                track
+            );
+
+        }
+    );
+
+
+    actions.appendChild(play);
+    actions.appendChild(favorite);
+
+
+    card.appendChild(image);
+    card.appendChild(info);
+    card.appendChild(actions);
+
+
+    card.addEventListener(
+        "click",
+        async () => {
+
+            currentPlaylist =
+                [track];
+
+            currentTrackIndex =
+                0;
+
+            isPlaylistMode =
+                false;
+
+
+            await playTrack(
+                track,
+                0,
+                false
+            );
+
+        }
+    );
+
+
+    return card;
+
+}
 // ============================================================
 // 設定ページ
 // ============================================================

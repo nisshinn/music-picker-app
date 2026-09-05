@@ -55,8 +55,6 @@
     class="side-menu"
 >
 
-    <!-- メニューヘッダー -->
-
     <div class="side-menu-header">
 
         <div class="menu-title">
@@ -122,12 +120,14 @@
                 </span>
 
 
+                <!-- ★ 再生バー -->
                 <input
                     type="range"
                     id="menuProgressBar"
                     min="0"
-                    max="100"
+                    max="0"
                     value="0"
+                    step="100"
                 >
 
 
@@ -229,8 +229,6 @@
         </h3>
 
 
-        <!-- テーマ -->
-
         <div class="menu-setting">
 
             <div class="menu-setting-label">
@@ -289,8 +287,6 @@
         </div>
 
 
-        <!-- 背景 -->
-
         <div class="menu-setting">
 
             <div class="menu-setting-label">
@@ -331,8 +327,6 @@
         </div>
 
 
-        <!-- アニメーション -->
-
         <div class="menu-setting menu-setting-row">
 
             <span>
@@ -367,8 +361,6 @@
         </h3>
 
 
-        <!-- 音量 -->
-
         <div class="menu-setting">
 
             <div class="menu-setting-label">
@@ -396,8 +388,6 @@
         </div>
 
 
-        <!-- 自動再生 -->
-
         <div class="menu-setting menu-setting-row">
 
             <span>
@@ -420,8 +410,6 @@
         </div>
 
 
-        <!-- シャッフル -->
-
         <div class="menu-setting menu-setting-row">
 
             <span>
@@ -442,8 +430,6 @@
 
         </div>
 
-
-        <!-- リピート -->
 
         <div class="menu-setting">
 
@@ -473,8 +459,6 @@
 
         </div>
 
-
-        <!-- プレイヤー常時表示 -->
 
         <div class="menu-setting menu-setting-row">
 
@@ -848,36 +832,100 @@
     </section>
 
 
-<section id="favoritesPage" class="page">
-  <div class="page-header">
-    <h1>📚 ライブラリ</h1>
-    <p>お気に入りやプレイリストを管理</p>
-  </div>
+    <!-- =====================================================
+         ライブラリ
+         ===================================================== -->
 
-  <!-- お気に入り -->
-  <section class="library-section">
-    <button class="library-section-header" type="button" data-target="favoritesContent">
-      <span>❤️ お気に入り</span>
-      <span class="library-arrow">▼</span>
-    </button>
+    <section
+        id="favoritesPage"
+        class="page"
+    >
 
-    <div id="favoritesContent" class="library-section-content">
-      <div id="favoritesList" class="track-list"></div>
-    </div>
-  </section>
+        <div class="page-header">
 
-  <!-- プレイリスト -->
-  <section class="library-section">
-    <button class="library-section-header" type="button" data-target="playlistsContent">
-      <span>🎵 プレイリスト</span>
-      <span class="library-arrow">▼</span>
-    </button>
+            <h1>
+                📚 ライブラリ
+            </h1>
 
-    <div id="playlistsContent" class="library-section-content">
-      <div id="playlistList" class="track-list"></div>
-    </div>
-  </section>
-</section>
+            <p>
+                お気に入りやプレイリストを管理
+            </p>
+
+        </div>
+
+
+        <!-- お気に入り -->
+
+        <section class="library-section">
+
+            <button
+                class="library-section-header"
+                type="button"
+                data-target="favoritesContent"
+            >
+
+                <span>
+                    ❤️ お気に入り
+                </span>
+
+                <span class="library-arrow">
+                    ▼
+                </span>
+
+            </button>
+
+
+            <div
+                id="favoritesContent"
+                class="library-section-content"
+            >
+
+                <div
+                    id="favoritesList"
+                    class="track-list"
+                ></div>
+
+            </div>
+
+        </section>
+
+
+        <!-- プレイリスト -->
+
+        <section class="library-section">
+
+            <button
+                class="library-section-header"
+                type="button"
+                data-target="playlistsContent"
+            >
+
+                <span>
+                    🎵 プレイリスト
+                </span>
+
+                <span class="library-arrow">
+                    ▼
+                </span>
+
+            </button>
+
+
+            <div
+                id="playlistsContent"
+                class="library-section-content"
+            >
+
+                <div
+                    id="playlistList"
+                    class="track-list"
+                ></div>
+
+            </div>
+
+        </section>
+
+    </section>
 
 
     <!-- =====================================================
@@ -949,9 +997,14 @@
             >
                 📜 履歴を全部削除
             </button>
-            <button id="logoutButton" class="logout-button">
-    🚪 ログアウト
-</button>
+
+
+            <button
+                id="logoutButton"
+                class="logout-button"
+            >
+                🚪 ログアウト
+            </button>
 
         </section>
 
@@ -999,18 +1052,20 @@
     </button>
 
 
-   <button
-    class="bottom-nav-link"
-    data-page="favoritesPage"
->
-    <span class="bottom-nav-icon">
-        ♡
-    </span>
+    <button
+        class="bottom-nav-link"
+        data-page="favoritesPage"
+    >
 
-    <span>
-        ライブラリ
-    </span>
-</button>
+        <span class="bottom-nav-icon">
+            ♡
+        </span>
+
+        <span>
+            ライブラリ
+        </span>
+
+    </button>
 
 
     <button
@@ -1128,6 +1183,10 @@
     </div>
 
 
+    <!-- =====================================================
+         メイン再生バー
+         ===================================================== -->
+
     <div class="progress-container">
 
         <span id="currentTime">
@@ -1139,8 +1198,9 @@
             type="range"
             id="progressBar"
             min="0"
-            max="100"
+            max="0"
             value="0"
+            step="100"
         >
 
 

@@ -2664,3 +2664,370 @@ body[data-theme="night"] .artist-result:hover {
         min-height: 100vh;
     }
 }
+/* ============================================================
+   🎵 フルスクリーン NOW PLAYING
+   ============================================================ */
+
+/* 最初は完全に非表示 */
+.full-player-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(12px);
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition:
+        opacity 0.25s ease,
+        visibility 0.25s ease;
+}
+
+/* openFullPlayer()したときだけ表示 */
+.full-player-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* フルプレイヤー本体 */
+.full-player-main {
+    width: min(500px, calc(100% - 30px));
+    max-height: calc(100vh - 30px);
+    overflow-y: auto;
+
+    padding: 22px;
+    border-radius: 28px;
+
+    background: var(--card-bg);
+    color: var(--text-color);
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* 上部 */
+.full-player-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.full-player-top-title {
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.full-player-close,
+.full-player-queue-button {
+    width: 42px;
+    height: 42px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: rgba(127, 127, 127, 0.12);
+    color: var(--text-color);
+
+    font-size: 22px;
+    cursor: pointer;
+}
+
+/* ジャケット */
+.full-player-art-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.full-player-art {
+    width: min(380px, 80vw);
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+
+    border-radius: 20px;
+
+    background: #ddd;
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.18);
+}
+
+/* 曲情報 */
+.full-player-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 18px;
+}
+
+.full-player-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.full-player-title {
+    font-size: 22px;
+    font-weight: bold;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.full-player-artist {
+    margin-top: 6px;
+    color: var(--sub-text);
+    font-size: 14px;
+}
+
+.full-player-favorite {
+    width: 45px;
+    height: 45px;
+
+    border: none;
+    background: transparent;
+
+    font-size: 30px;
+    color: #ff3764;
+    cursor: pointer;
+}
+
+/* プログレス */
+.full-player-progress-area {
+    margin-top: 10px;
+}
+
+.full-player-progress {
+    width: 100%;
+}
+
+.full-player-times {
+    display: flex;
+    justify-content: space-between;
+
+    margin-top: 5px;
+
+    font-size: 11px;
+    color: var(--sub-text);
+}
+
+/* 再生ボタン */
+.full-player-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 25px;
+    margin: 22px 0;
+}
+
+.full-player-control {
+    width: 48px;
+    height: 48px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: rgba(127, 127, 127, 0.12);
+    color: var(--text-color);
+
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.full-player-play {
+    width: 64px;
+    height: 64px;
+
+    background: var(--main-color);
+    color: white;
+
+    font-size: 23px;
+}
+
+/* 音量 */
+.full-player-volume {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0 20px;
+}
+
+.full-player-volume input {
+    flex: 1;
+}
+
+/* シャッフル・リピート */
+.full-player-extra {
+    display: flex;
+    gap: 10px;
+}
+
+.full-player-extra button {
+    flex: 1;
+
+    padding: 11px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: rgba(127, 127, 127, 0.10);
+    color: var(--text-color);
+
+    cursor: pointer;
+}
+
+.full-player-extra button.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+/* ============================================================
+   再生リスト画面
+   ============================================================ */
+
+.full-player-queue-screen {
+    width: min(500px, calc(100% - 30px));
+    max-height: calc(100vh - 30px);
+
+    padding: 22px;
+
+    border-radius: 28px;
+
+    background: var(--card-bg);
+    color: var(--text-color);
+
+    overflow-y: auto;
+}
+
+.queue-screen-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    margin-bottom: 20px;
+}
+
+.queue-screen-back {
+    width: 42px;
+    height: 42px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: rgba(127, 127, 127, 0.12);
+    color: var(--text-color);
+
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.queue-screen-title {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/* キュー */
+.full-player-queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.full-player-queue-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 9px;
+
+    border-radius: 12px;
+
+    cursor: pointer;
+}
+
+.full-player-queue-item:hover {
+    background: rgba(127, 127, 127, 0.10);
+}
+
+.full-player-queue-item.is-current {
+    background: rgba(99, 84, 232, 0.12);
+}
+
+.full-player-queue-item img {
+    width: 50px;
+    height: 50px;
+
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.full-player-queue-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.full-player-queue-name {
+    font-weight: bold;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.full-player-queue-artist {
+    margin-top: 3px;
+
+    font-size: 12px;
+    color: var(--sub-text);
+}
+
+.full-player-queue-play {
+    font-size: 18px;
+}
+
+.queue-empty {
+    padding: 30px;
+    text-align: center;
+    color: var(--sub-text);
+}
+
+/* ============================================================
+   スマホ
+   ============================================================ */
+
+@media (max-width: 700px) {
+
+    .full-player-main,
+    .full-player-queue-screen {
+        width: calc(100% - 20px);
+        max-height: calc(100vh - 20px);
+
+        padding: 17px;
+        border-radius: 22px;
+    }
+
+    .full-player-art {
+        width: min(330px, 82vw);
+    }
+
+    .full-player-title {
+        font-size: 18px;
+    }
+
+    .full-player-controls {
+        gap: 18px;
+    }
+
+}
