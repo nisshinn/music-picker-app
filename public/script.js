@@ -2772,7 +2772,7 @@ console.log(
 
     name: "Music Picker",
 
-    enableMediaSession: false,
+    enableMediaSession: true,
 
     volume: getSavedVolume(),
 
