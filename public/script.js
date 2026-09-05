@@ -2816,7 +2816,9 @@ function setupSpotifyPlayer() {
             updatePlayerState(
                 state
             );
-
+ updateMediaSessionPosition(
+            state
+        );
 
             const current =
                 state.track_window
@@ -2861,7 +2863,9 @@ function setupSpotifyPlayer() {
             updatePlayerInfo(
                 currentTrack
             );
-
+updateMediaSession(
+    currentTrack
+);
 
             // ------------------------------------------------
 // 曲終了判定
@@ -3019,129 +3023,126 @@ if (
 // 曲終了タイマー
 // ============================================================
 
-function scheduleTrackEnded(
-    track,
-    state
-) {
+// ============================================================
+// 曲終了タイマー
+// ============================================================
+
+function scheduleTrackEnded(track, state) {
 
     clearTrackEndTimer();
 
+    const uri = track?.uri || "";
 
-    const uri =
-        track?.uri || "";
+    if (!uri) {
+        return;
+    }
 
+    const duration = Number(state?.duration || 0);
+    const position = Number(state?.position || 0);
 
-    trackEndTimer =
-        setTimeout(
-            async () => {
+    if (duration <= 0) {
+        return;
+    }
 
-                try {
+    // 曲の残り時間
+    const remaining = Math.max(
+        300,
+        duration - position
+    );
 
-                    if (
-                        !spotifyPlayer
-                    ) {
+    // 終了直前にチェック
+    trackEndTimer = setTimeout(
+        async () => {
 
-                        return;
+            try {
 
-                    }
-
-
-                    const currentState =
-                        await spotifyPlayer.getCurrentState();
-
-
-                    if (
-                        !currentState
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    const current =
-                        currentState.track_window
-                            ?.current_track;
-
-
-                    const currentUri =
-                        current?.uri || "";
-
-
-                    if (
-                        currentUri !==
-                        uri
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    
-
-
-                    if (
-                        currentState.duration <=
-                        0
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    if (
-                        currentState.position <
-                        currentState.duration -
-                        1500
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    const now =
-                        Date.now();
-
-
-                    if (
-                        lastHandledEndedUri ===
-                            uri &&
-                        now -
-                            lastHandledEndedTime <
-                            2500
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    lastHandledEndedUri =
-                        uri;
-
-
-                    lastHandledEndedTime =
-                        now;
-
-
-                    await handleTrackEnded();
-
-                } catch (error) {
-
-                    console.warn(
-                        "曲終了処理:",
-                        error
-                    );
-
+                if (!spotifyPlayer) {
+                    return;
                 }
 
-            },
-            500
-        );
+                const currentState =
+                    await spotifyPlayer.getCurrentState();
 
+                if (!currentState) {
+                    return;
+                }
+
+                const current =
+                    currentState.track_window?.current_track;
+
+                const currentUri =
+                    current?.uri || "";
+
+                // すでに別の曲になっていたら何もしない
+                if (currentUri !== uri) {
+                    return;
+                }
+
+                const currentDuration =
+                    Number(currentState.duration || 0);
+
+                const currentPosition =
+                    Number(currentState.position || 0);
+
+                if (currentDuration <= 0) {
+                    return;
+                }
+
+                // まだ曲が終わっていない場合
+                if (
+                    currentPosition <
+                    currentDuration - 1000
+                ) {
+
+                    // 残り時間を再計算してもう一度監視
+                    scheduleTrackEnded(
+                        current,
+                        currentState
+                    );
+
+                    return;
+                }
+
+                const now = Date.now();
+
+                // 二重実行防止
+                if (
+                    lastHandledEndedUri === uri &&
+                    now - lastHandledEndedTime < 2500
+                ) {
+                    return;
+                }
+
+                lastHandledEndedUri =
+                    uri;
+
+                lastHandledEndedTime =
+                    now;
+
+                console.log(
+                    "🎵 曲終了:",
+                    current?.name || track?.title
+                );
+
+                await handleTrackEnded();
+
+            } catch (error) {
+
+                console.warn(
+                    "曲終了処理:",
+                    error
+                );
+
+            }
+
+        },
+
+        // 曲終了予定時刻の少し前にチェック
+        Math.max(
+            300,
+            remaining - 300
+        )
+    );
 }
 
 
@@ -3159,6 +3160,7 @@ function clearTrackEndTimer() {
     }
 
 }
+
 
 
 // ============================================================
@@ -6220,4 +6222,88 @@ function initLogout() {
         // ログイン画面へ
         window.location.href = "/login";
     });
+}
+function updateMediaSession(track) {
+
+    if (!("mediaSession" in navigator) || !track) {
+        return;
+    }
+
+    const image =
+        track.image ||
+        track.album?.images?.[0]?.url ||
+        "";
+
+    navigator.mediaSession.metadata =
+        new MediaMetadata({
+            title: track.title || track.name || "Unknown",
+            artist: track.artist || "",
+            album: "Music Picker",
+            artwork: image
+                ? [
+                    {
+                        src: image,
+                        sizes: "300x300",
+                        type: "image/jpeg"
+                    }
+                ]
+                : []
+        });
+
+    navigator.mediaSession.setActionHandler(
+        "play",
+        () => togglePlayback()
+    );
+
+    navigator.mediaSession.setActionHandler(
+        "pause",
+        () => togglePlayback()
+    );
+
+    navigator.mediaSession.setActionHandler(
+        "nexttrack",
+        () => playNext()
+    );
+
+    navigator.mediaSession.setActionHandler(
+        "previoustrack",
+        () => playPrevious()
+    );
+}
+function updateMediaSessionPosition(state) {
+
+    if (
+        !("mediaSession" in navigator) ||
+        !("setPositionState" in navigator.mediaSession)
+    ) {
+        return;
+    }
+
+    if (
+        !state ||
+        !state.duration ||
+        state.duration <= 0
+    ) {
+        return;
+    }
+
+    try {
+
+        navigator.mediaSession.setPositionState({
+            duration: state.duration / 1000,
+            playbackRate: state.playbackSpeed || 1,
+            position: Math.min(
+                state.position / 1000,
+                state.duration / 1000
+            )
+        });
+
+    } catch (error) {
+
+        console.warn(
+            "Media Session position:",
+            error
+        );
+
+    }
 }
