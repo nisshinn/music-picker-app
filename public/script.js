@@ -9186,7 +9186,26 @@ function showIPhoneDebug(state, track) {
         mediaSessionInfo;
 }
 const ms = navigator.mediaSession;
+try {
+    const duration = Number(state.duration) / 1000;
+    const position = Number(state.position) / 1000;
 
+    navigator.mediaSession.setPositionState({
+        duration: duration,
+        position: Math.min(position, duration),
+        playbackRate: 1
+    });
+
+    debug.textContent +=
+        "\n\n🕐 setPositionState送信\n" +
+        "duration: " + duration.toFixed(3) + " 秒\n" +
+        "position: " + position.toFixed(3) + " 秒";
+
+} catch (error) {
+    debug.textContent +=
+        "\n\n❌ setPositionStateエラー\n" +
+        error.message;
+}
 
  
     
