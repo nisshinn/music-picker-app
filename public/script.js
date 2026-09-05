@@ -2871,6 +2871,13 @@ function setupSpotifyPlayer() {
     if (!("setPositionState" in navigator.mediaSession)) return;
 
     const duration = Number(state.duration || 0);
+    console.log(
+    "🎵 Spotify再生時間:",
+    duration,
+    "ms =",
+    duration / 1000,
+    "秒"
+);
     const position = Number(state.position || 0);
     const playbackRate = Number(state.playbackSpeed || 1);
 
