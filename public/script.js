@@ -7331,6 +7331,25 @@ function updateMediaSessionPosition(state) {
         );
     }
 }
+try {
+    const duration = Number(track.duration_ms || 0) / 1000;
+
+    if (
+        duration > 0 &&
+        "mediaSession" in navigator &&
+        typeof navigator.mediaSession.setPositionState === "function"
+    ) {
+        navigator.mediaSession.setPositionState({
+            duration: duration,
+            playbackRate: 1,
+            position: 0
+        });
+
+        console.log("🕐 MediaSession時間を設定:", duration);
+    }
+} catch (error) {
+    console.log("MediaSession時間設定失敗:", error);
+}
 // ============================================================
 // Spotifyプレイリスト保存
 // ============================================================
