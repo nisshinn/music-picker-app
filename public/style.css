@@ -1414,6 +1414,10 @@ body[data-theme="night"] .menu-player-button:hover {
 
     border: 1px solid #ddd;
 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
     border-radius: 22px;
 
     background: white;

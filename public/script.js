@@ -8102,6 +8102,11 @@ async function savePlaylistToSpotify(
     const name =
         nameInput?.value.trim() ||
         "Music Picker";
+        // アプリ内ライブラリにも保存
+saveGeneratedPlaylistToLibrary({
+    name: name,
+    tracks: tracks
+});
 
     const publicRadio =
         document.querySelector(
