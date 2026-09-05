@@ -2762,27 +2762,23 @@ function setupSpotifyPlayer() {
 
     spotifyPlayer = new Spotify.Player({
 
-        name: "Music Picker",
+    name: "Music Picker",
 
-        enableMediaSession: true,
+    enableMediaSession: false,
 
-        volume: getSavedVolume(),
+    volume: getSavedVolume(),
 
-        getOAuthToken: callback => {
+    getOAuthToken: callback => {
 
-            const token =
-                localStorage.getItem(
-                    "spotify_access_token"
-                ) || "";
+        const token =
+            localStorage.getItem("spotify_access_token") || "";
 
-            spotifyToken = token;
+        spotifyToken = token;
 
-            callback(token);
+        callback(token);
+    }
 
-        }
-
-    });
-
+});
 
 
     
