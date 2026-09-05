@@ -286,6 +286,8 @@ app.get("/auth/login", (req, res) => {
             show_dialog: "true",
 
             scope: [
+                "playlist-modify-private",
+                "playlist-modify-public",
                 "streaming",
                 "user-read-email",
                 "user-read-private",
@@ -1355,7 +1357,334 @@ app.get(
         }
     }
 );
+// ========================================
+// Spotifyプレイリスト作成・5曲追加
+// ========================================
 
+app.post(
+    "/api/create-playlist",
+    async (req, res) => {
+
+        try {
+
+            // --------------------------------
+            // Spotifyログイン確認
+            // --------------------------------
+
+            if (!spotifyAccessToken) {
+
+                return res
+                    .status(401)
+                    .json({
+                        error:
+                            "Spotifyにログインしてください"
+                    });
+
+            }
+
+
+            // --------------------------------
+            // リクエスト
+            // --------------------------------
+
+            const {
+                name,
+                public: isPublic,
+                tracks
+            } = req.body;
+
+
+            // --------------------------------
+            // プレイリスト名
+            // --------------------------------
+
+            const playlistName =
+                String(
+                    name || "Music Picker"
+                ).trim();
+
+
+            if (!playlistName) {
+
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "プレイリスト名を入力してください"
+                    });
+
+            }
+
+
+            // --------------------------------
+            // 曲確認
+            // --------------------------------
+
+            if (
+                !Array.isArray(tracks) ||
+                tracks.length === 0
+            ) {
+
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "追加する曲がありません"
+                    });
+
+            }
+
+
+            // 最大100曲
+            const uris =
+                tracks
+                    .map(track => {
+
+                        if (
+                            typeof track ===
+                            "string"
+                        ) {
+                            return track;
+                        }
+
+                        return track?.uri || "";
+
+                    })
+                    .filter(uri =>
+                        uri.startsWith(
+                            "spotify:track:"
+                        )
+                    );
+
+
+            // 重複削除
+            const uniqueUris =
+                [
+                    ...new Set(uris)
+                ].slice(0, 100);
+
+
+            if (!uniqueUris.length) {
+
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "有効なSpotify曲がありません"
+                    });
+
+            }
+
+
+            console.log(
+                "Spotifyプレイリスト作成:",
+                playlistName
+            );
+
+            console.log(
+                "追加曲数:",
+                uniqueUris.length
+            );
+
+
+            // --------------------------------
+            // ① プレイリスト作成
+            // --------------------------------
+
+            const playlistResponse =
+                await fetch(
+                    "https://api.spotify.com/v1/me/playlists",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            Authorization:
+                                `Bearer ${spotifyAccessToken}`,
+
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                name:
+                                    playlistName,
+
+                                public:
+                                    Boolean(
+                                        isPublic
+                                    ),
+
+                                collaborative:
+                                    false,
+
+                                description:
+                                    "Music Pickerで作成しました"
+                            })
+                    }
+                );
+
+
+            const playlistData =
+                await playlistResponse.json();
+
+
+            if (
+                !playlistResponse.ok
+            ) {
+
+                console.error(
+                    "プレイリスト作成エラー:",
+                    playlistResponse.status,
+                    playlistData
+                );
+
+
+                if (
+                    playlistResponse.status ===
+                    401
+                ) {
+
+                    spotifyAccessToken =
+                        "";
+
+                    return res
+                        .status(401)
+                        .json({
+                            error:
+                                "Spotifyのログイン期限が切れています。再ログインしてください。"
+                        });
+
+                }
+
+
+                return res
+                    .status(
+                        playlistResponse.status
+                    )
+                    .json({
+                        error:
+                            playlistData?.error?.message ||
+                            "プレイリストの作成に失敗しました"
+                    });
+
+            }
+
+
+            // --------------------------------
+            // ② 5曲を追加
+            // --------------------------------
+
+            const addResponse =
+                await fetch(
+                    `https://api.spotify.com/v1/playlists/${encodeURIComponent(
+                        playlistData.id
+                    )}/items`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            Authorization:
+                                `Bearer ${spotifyAccessToken}`,
+
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                uris:
+                                    uniqueUris
+                            })
+                    }
+                );
+
+
+            const addData =
+                await addResponse.json();
+
+
+            if (
+                !addResponse.ok
+            ) {
+
+                console.error(
+                    "曲追加エラー:",
+                    addResponse.status,
+                    addData
+                );
+
+
+                return res
+                    .status(
+                        addResponse.status
+                    )
+                    .json({
+                        error:
+                            addData?.error?.message ||
+                            "プレイリストへの曲追加に失敗しました",
+
+                        playlistId:
+                            playlistData.id
+                    });
+
+            }
+
+
+            // --------------------------------
+            // 完了
+            // --------------------------------
+
+            const spotifyUrl =
+                playlistData
+                    .external_urls
+                    ?.spotify || "";
+
+
+            console.log(
+                "Spotifyプレイリスト作成完了:",
+                spotifyUrl
+            );
+
+
+            res.json({
+                success:
+                    true,
+
+                playlistId:
+                    playlistData.id,
+
+                playlistName:
+                    playlistData.name,
+
+                spotifyUrl:
+                    spotifyUrl,
+
+                addedTracks:
+                    uniqueUris.length
+            });
+
+
+        } catch (error) {
+
+            console.error(
+                "Create Playlist Error:",
+                error
+            );
+
+
+            res
+                .status(500)
+                .json({
+                    error:
+                        error.message ||
+                        "Spotifyプレイリストの作成に失敗しました"
+                });
+
+        }
+
+    }
+);
 // ========================================
 // TOP TRACKS
 // ========================================

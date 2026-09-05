@@ -2216,3 +2216,304 @@ body[data-theme="night"] .menu-player-button:hover {
     background: #ffd2d2;
     transform: translateY(-1px);
 }
+/* =========================================================
+   Spotify保存
+========================================================= */
+
+.spotify-save-button {
+    width: 100%;
+    margin: 10px 0 18px;
+    padding: 13px 18px;
+    border: none;
+    border-radius: 14px;
+    background: #1ed760;
+    color: #000;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.spotify-save-button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.spotify-save-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+}
+
+.spotify-save-box {
+    position: relative;
+    width: min(100%, 430px);
+    padding: 28px;
+    border-radius: 24px;
+    background: #1e1e1e;
+    color: white;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.spotify-save-box h2 {
+    margin: 0 0 10px;
+}
+
+.spotify-save-box p {
+    color: #b3b3b3;
+    line-height: 1.6;
+}
+
+.spotify-save-box label {
+    display: block;
+    margin-top: 18px;
+    margin-bottom: 7px;
+    font-weight: bold;
+}
+
+#spotifyPlaylistName {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #444;
+    border-radius: 12px;
+    background: #2a2a2a;
+    color: white;
+    font-size: 15px;
+    outline: none;
+}
+
+.spotify-public-options {
+    display: flex;
+    gap: 18px;
+}
+
+.spotify-public-options label {
+    margin: 0;
+    font-weight: normal;
+}
+
+.spotify-save-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 35px;
+    height: 35px;
+    border: none;
+    border-radius: 50%;
+    background: #333;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.spotify-save-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.spotify-save-actions button {
+    flex: 1;
+    padding: 13px;
+    border: none;
+    border-radius: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.spotify-cancel-button {
+    background: #333;
+    color: white;
+}
+
+.spotify-confirm-button {
+    background: #1ed760;
+    color: #000;
+}
+
+.spotify-confirm-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.spotify-save-status {
+    margin-top: 15px;
+    text-align: center;
+    color: #b3b3b3;
+}
+
+.spotify-success {
+    text-align: center;
+}
+
+.spotify-success-icon {
+    font-size: 55px;
+    margin-bottom: 10px;
+}
+/* =========================================================
+   📚 ライブラリ
+========================================================= */
+
+#favoritesPage .content-box {
+    margin-bottom: 25px;
+}
+
+#favoritesPage .content-box h2 {
+    margin-top: 0;
+    margin-bottom: 18px;
+}
+
+.library-playlist-card {
+    background: rgba(127, 127, 127, 0.07);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 14px;
+}
+
+.library-playlist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.library-playlist-info {
+    min-width: 0;
+}
+
+.library-playlist-name {
+    font-size: 17px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.library-playlist-meta {
+    font-size: 12px;
+    color: var(--sub-text);
+}
+
+.library-playlist-actions {
+    display: flex;
+    gap: 7px;
+    flex-shrink: 0;
+}
+
+.library-play-button,
+.library-delete-button {
+    border: none;
+    border-radius: 12px;
+    padding: 9px 13px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.library-play-button {
+    background: var(--main-color);
+    color: white;
+}
+
+.library-delete-button {
+    background: #ffe5e5;
+    color: #d93636;
+}
+
+.library-play-button:hover,
+.library-delete-button:hover {
+    transform: translateY(-1px);
+}
+
+.library-track-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.library-track-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 9px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.library-track-item img {
+    width: 38px;
+    height: 38px;
+    object-fit: cover;
+    border-radius: 7px;
+    flex-shrink: 0;
+}
+
+.library-track-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.library-track-title {
+    font-size: 13px;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.library-track-artist {
+    font-size: 11px;
+    color: var(--sub-text);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.library-empty {
+    padding: 25px 15px;
+    text-align: center;
+    color: var(--sub-text);
+    line-height: 1.7;
+}
+
+/* ダークテーマ */
+body[data-theme="night"] .library-playlist-card {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+body[data-theme="night"] .library-track-item {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body[data-theme="night"] .library-delete-button {
+    background: #3a2529;
+    color: #ff8a9e;
+}
+
+/* スマホ */
+@media (max-width: 700px) {
+
+    .library-playlist-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .library-playlist-actions {
+        width: 100%;
+    }
+
+    .library-play-button,
+    .library-delete-button {
+        flex: 1;
+    }
+
+    .library-playlist-card {
+        padding: 14px;
+    }
+}

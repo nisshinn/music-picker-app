@@ -1,7 +1,12 @@
 // ============================================================
 // Music Picker
 // ============================================================
+// ============================================================
+// 📚 ライブラリ用プレイリスト
+// ============================================================
 
+const LIBRARY_PLAYLISTS_KEY =
+    "music_picker_playlists";
 
 // ============================================================
 // 基本変数
@@ -249,12 +254,11 @@ document.addEventListener(
 
         initSpotify();
 
-        updateFavoritesPage();
+        updateLibraryPage();
 
-        updateHistoryPage();
+updateHistoryPage();
 
-        updateMenuPlayerEmptyState();
-
+updateMenuPlayerEmptyState();
     }
 );
 
@@ -758,13 +762,13 @@ function showPage(
 
 
     if (
-        pageId ===
-        "favoritesPage"
-    ) {
+    pageId ===
+    "favoritesPage"
+) {
 
-        updateFavoritesPage();
+    updateLibraryPage();
 
-    }
+}
 
 
     if (
@@ -1694,9 +1698,10 @@ async function makePlaylist() {
         // 表示
         // ====================================================
 
-        displayPlaylist(
-            playlist
-        );
+       displayPlaylist(playlist);
+
+// 📚 ライブラリにも保存
+saveGeneratedPlaylistToLibrary(playlist);
 
 
         if (
@@ -1956,7 +1961,33 @@ function displayPlaylist(
         header
     );
 
+// ====================================================
+// Spotifyに保存ボタン
+// ====================================================
 
+const saveSpotifyButton =
+    document.createElement("button");
+
+saveSpotifyButton.className =
+    "spotify-save-button";
+
+saveSpotifyButton.textContent =
+    "🎵 Spotifyに保存";
+
+saveSpotifyButton.addEventListener(
+    "click",
+    () => {
+
+        openSpotifySaveModal(
+            playlist
+        );
+
+    }
+);
+
+container.appendChild(
+    saveSpotifyButton
+);
     // ========================================================
     // 曲カード
     // ========================================================
@@ -4794,7 +4825,923 @@ function updateFavoritesPage() {
     );
 
 }
+// ============================================================
+// 📚 ライブラリ：プレイリスト取得
+// ============================================================
 
+function getSavedPlaylists() {
+
+    try {
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    LIBRARY_PLAYLISTS_KEY
+                ) || "[]"
+            );
+
+        return Array.isArray(data)
+            ? data
+            : [];
+
+    } catch (error) {
+
+        console.warn(
+            "プレイリスト読み込みエラー:",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+// ============================================================
+// 📚 ライブラリ：プレイリスト保存
+// ============================================================
+
+function saveSavedPlaylists(playlists) {
+
+    try {
+
+        localStorage.setItem(
+            LIBRARY_PLAYLISTS_KEY,
+            JSON.stringify(
+                playlists
+            )
+        );
+
+    } catch (error) {
+
+        console.error(
+            "プレイリスト保存エラー:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// 📚 おすすめプレイリストをライブラリへ保存
+// ============================================================
+
+function saveGeneratedPlaylistToLibrary(
+    playlist
+) {
+
+    const tracks =
+        normalizeTracks(
+            playlist
+        )
+        .filter(
+            track =>
+                track &&
+                track.uri
+        )
+        .slice(
+            0,
+            100
+        );
+
+    if (!tracks.length) {
+        return;
+    }
+
+
+    const playlists =
+        getSavedPlaylists();
+
+
+    const item = {
+
+        id:
+            `local-${Date.now()}-${Math.random()
+                .toString(36)
+                .slice(2, 8)}`,
+
+        name:
+            selectedMood
+                ? `${selectedMood}のおすすめ`
+                : "おすすめプレイリスト",
+
+        mood:
+            selectedMood || "",
+
+        artistName:
+            selectedArtistName || "",
+
+        genre:
+            selectedGenre !== "all"
+                ? selectedGenre
+                : "",
+
+        createdAt:
+            new Date().toISOString(),
+
+        tracks:
+            tracks
+
+    };
+
+
+    playlists.unshift(
+        item
+    );
+
+
+    // 最大50プレイリスト
+    saveSavedPlaylists(
+        playlists.slice(
+            0,
+            50
+        )
+    );
+
+
+    updateLibraryPage();
+
+
+    showToast(
+        "📚 プレイリストをライブラリに保存しました"
+    );
+
+}
+
+
+// ============================================================
+// 📚 プレイリスト削除
+// ============================================================
+
+function deleteSavedPlaylist(
+    playlistId
+) {
+
+    const playlists =
+        getSavedPlaylists();
+
+
+    const target =
+        playlists.find(
+            playlist =>
+                playlist.id ===
+                playlistId
+        );
+
+
+    if (!target) {
+        return;
+    }
+
+
+    if (
+        !confirm(
+            `「${target.name}」を削除しますか？`
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const newPlaylists =
+        playlists.filter(
+            playlist =>
+                playlist.id !==
+                playlistId
+        );
+
+
+    saveSavedPlaylists(
+        newPlaylists
+    );
+
+
+    updateLibraryPage();
+
+
+    showToast(
+        "🗑️ プレイリストを削除しました"
+    );
+
+}
+
+
+// ============================================================
+// 📚 プレイリスト再生
+// ============================================================
+
+async function playSavedPlaylist(
+    playlist
+) {
+
+    if (
+        !playlist ||
+        !Array.isArray(
+            playlist.tracks
+        ) ||
+        !playlist.tracks.length
+    ) {
+
+        alert(
+            "このプレイリストには曲がありません。"
+        );
+
+        return;
+
+    }
+
+
+    let tracks =
+        normalizeTracks(
+            playlist.tracks
+        )
+        .filter(
+            track =>
+                track &&
+                track.uri
+        );
+
+
+    if (!tracks.length) {
+
+        alert(
+            "再生できる曲がありません。"
+        );
+
+        return;
+
+    }
+
+
+    // シャッフルON
+    if (
+        appSettings.shuffle
+    ) {
+
+        tracks =
+            shuffleArray(
+                [...tracks]
+            );
+
+    }
+
+
+    currentPlaylist =
+        tracks;
+
+
+    currentTrackIndex =
+        0;
+
+
+    isPlaylistMode =
+        true;
+
+
+    await playTrack(
+        currentPlaylist[0],
+        0,
+        true
+    );
+
+}
+
+
+// ============================================================
+// 📚 プレイリストのSpotify保存情報を更新
+// ============================================================
+
+function attachSpotifyPlaylistToLibrary(
+    tracks,
+    spotifyData,
+    playlistName
+) {
+
+    if (
+        !spotifyData ||
+        !spotifyData.playlistId
+    ) {
+
+        return;
+
+    }
+
+
+    const saved =
+        getSavedPlaylists();
+
+
+    const normalized =
+        normalizeTracks(
+            tracks
+        );
+
+
+    const target =
+        saved.find(
+            playlist => {
+
+                const a =
+                    playlist.tracks
+                        ?.map(
+                            track =>
+                                track.uri
+                        )
+                        .filter(Boolean)
+                        .join("|");
+
+                const b =
+                    normalized
+                        .map(
+                            track =>
+                                track.uri
+                        )
+                        .filter(Boolean)
+                        .join("|");
+
+                return (
+                    a === b
+                );
+
+            }
+        );
+
+
+    if (!target) {
+        return;
+    }
+
+
+    target.spotifyPlaylistId =
+        spotifyData.playlistId;
+
+
+    target.spotifyUrl =
+        spotifyData.spotifyUrl || "";
+
+
+    if (
+        playlistName
+    ) {
+
+        target.spotifyName =
+            playlistName;
+
+    }
+
+
+    saveSavedPlaylists(
+        saved
+    );
+
+
+    updateLibraryPage();
+
+}
+
+
+// ============================================================
+// 📚 ライブラリ画面
+// ============================================================
+
+function updateLibraryPage() {
+
+    // --------------------------------------------
+    // お気に入り
+    // --------------------------------------------
+
+    updateFavoritesPage();
+
+
+    // --------------------------------------------
+    // プレイリスト
+    // --------------------------------------------
+
+    const container =
+        document.getElementById(
+            "playlistList"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    const playlists =
+        getSavedPlaylists();
+
+
+    container.innerHTML =
+        "";
+
+
+    if (!playlists.length) {
+
+        container.innerHTML =
+            `
+            <div class="library-empty">
+                🎵<br>
+                プレイリストはまだありません。<br>
+                ホームでおすすめ5曲を作ると<br>
+                ここに自動保存されます。
+            </div>
+            `;
+
+        return;
+
+    }
+
+
+    playlists.forEach(
+        playlist => {
+
+            container.appendChild(
+                createLibraryPlaylistCard(
+                    playlist
+                )
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// 📚 プレイリストカード
+// ============================================================
+
+function createLibraryPlaylistCard(
+    playlist
+) {
+
+    const card =
+        document.createElement(
+            "div"
+        );
+
+
+    card.className =
+        "library-playlist-card";
+
+
+    const header =
+        document.createElement(
+            "div"
+        );
+
+
+    header.className =
+        "library-playlist-header";
+
+
+    const info =
+        document.createElement(
+            "div"
+        );
+
+
+    info.className =
+        "library-playlist-info";
+
+
+    const name =
+        document.createElement(
+            "div"
+        );
+
+
+    name.className =
+        "library-playlist-name";
+
+
+    name.textContent =
+        playlist.name ||
+        "プレイリスト";
+
+
+    const meta =
+        document.createElement(
+            "div"
+        );
+
+
+    meta.className =
+        "library-playlist-meta";
+
+
+    const metaParts = [];
+
+
+    if (
+        playlist.mood
+    ) {
+
+        metaParts.push(
+            `気分: ${playlist.mood}`
+        );
+
+    }
+
+
+    if (
+        playlist.artistName
+    ) {
+
+        metaParts.push(
+            `🎤 ${playlist.artistName}`
+        );
+
+    }
+
+
+    if (
+        playlist.genre
+    ) {
+
+        metaParts.push(
+            `🎼 ${playlist.genre}`
+        );
+
+    }
+
+
+    metaParts.push(
+        `${playlist.tracks?.length || 0}曲`
+    );
+
+
+    meta.textContent =
+        metaParts.join(
+            " ・ "
+        );
+
+
+    info.appendChild(
+        name
+    );
+
+    info.appendChild(
+        meta
+    );
+
+
+    // --------------------------------------------
+    // ボタン
+    // --------------------------------------------
+
+    const actions =
+        document.createElement(
+            "div"
+        );
+
+
+    actions.className =
+        "library-playlist-actions";
+
+
+    const playButton =
+        document.createElement(
+            "button"
+        );
+
+
+    playButton.className =
+        "library-play-button";
+
+
+    playButton.type =
+        "button";
+
+
+    playButton.textContent =
+        "▶ 再生";
+
+
+    playButton.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            playSavedPlaylist(
+                playlist
+            );
+
+        }
+    );
+
+
+    const deleteButton =
+        document.createElement(
+            "button"
+        );
+
+
+    deleteButton.className =
+        "library-delete-button";
+
+
+    deleteButton.type =
+        "button";
+
+
+    deleteButton.textContent =
+        "🗑️";
+
+
+    deleteButton.title =
+        "削除";
+
+
+    deleteButton.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            deleteSavedPlaylist(
+                playlist.id
+            );
+
+        }
+    );
+
+
+    actions.appendChild(
+        playButton
+    );
+
+
+    actions.appendChild(
+        deleteButton
+    );
+
+
+    header.appendChild(
+        info
+    );
+
+
+    header.appendChild(
+        actions
+    );
+
+
+    card.appendChild(
+        header
+    );
+
+
+    // --------------------------------------------
+    // 曲一覧
+    // --------------------------------------------
+
+    const trackList =
+        document.createElement(
+            "div"
+        );
+
+
+    trackList.className =
+        "library-track-list";
+
+
+    const tracks =
+        normalizeTracks(
+            playlist.tracks || []
+        );
+
+
+    tracks.forEach(
+        (track, index) => {
+
+            const item =
+    createLibraryTrackItem(
+        track,
+        index,
+        playlist
+    );
+
+
+            trackList.appendChild(
+                item
+            );
+
+        }
+    );
+
+
+    card.appendChild(
+        trackList
+    );
+
+
+    // --------------------------------------------
+    // Spotify保存済み表示
+    // --------------------------------------------
+
+    if (
+        playlist.spotifyUrl
+    ) {
+
+        const spotifyLink =
+            document.createElement(
+                "a"
+            );
+
+
+        spotifyLink.href =
+            playlist.spotifyUrl;
+
+
+        spotifyLink.target =
+            "_blank";
+
+
+        spotifyLink.rel =
+            "noopener noreferrer";
+
+
+        spotifyLink.textContent =
+            "🎵 Spotifyで開く";
+
+
+        spotifyLink.style.display =
+            "inline-block";
+
+
+        spotifyLink.style.marginTop =
+            "10px";
+
+
+        spotifyLink.style.fontSize =
+            "12px";
+
+
+        card.appendChild(
+            spotifyLink
+        );
+
+    }
+
+
+    return card;
+
+}
+
+// ============================================================
+// 📚 ライブラリ内の曲
+// ============================================================
+
+function createLibraryTrackItem(
+    track,
+    index,
+    playlist
+) {
+
+    const item =
+        document.createElement("div");
+
+    item.className =
+        "library-track-item";
+
+
+    // 曲画像
+    const image =
+        document.createElement("img");
+
+    image.src =
+        track.image || "";
+
+    image.alt =
+        track.title || "";
+
+
+    // 曲情報
+    const info =
+        document.createElement("div");
+
+    info.className =
+        "library-track-info";
+
+
+    const title =
+        document.createElement("div");
+
+    title.className =
+        "library-track-title";
+
+    title.textContent =
+        track.title || "曲名なし";
+
+
+    const artist =
+        document.createElement("div");
+
+    artist.className =
+        "library-track-artist";
+
+    artist.textContent =
+        getArtistText(track);
+
+
+    info.appendChild(title);
+    info.appendChild(artist);
+
+
+    // 再生ボタン
+    const play =
+        document.createElement("button");
+
+    play.type =
+        "button";
+
+    play.textContent =
+        "▶";
+
+    play.style.border =
+        "none";
+
+    play.style.background =
+        "transparent";
+
+    play.style.cursor =
+        "pointer";
+
+
+    play.addEventListener(
+        "click",
+        async (event) => {
+
+            event.stopPropagation();
+
+
+            // このプレイリストの曲を再生対象にする
+            currentPlaylist =
+                normalizeTracks(
+                    playlist.tracks
+                );
+
+
+            // 押した曲の位置を探す
+            currentTrackIndex =
+                currentPlaylist.findIndex(
+                    savedTrack =>
+                        savedTrack.uri ===
+                        track.uri
+                );
+
+
+            // 見つからなかった場合
+            if (
+                currentTrackIndex < 0
+            ) {
+
+                currentTrackIndex =
+                    index;
+
+            }
+
+
+            // プレイリスト再生モード
+            isPlaylistMode =
+                true;
+
+
+            // 押した曲から再生
+            await playTrack(
+                track,
+                currentTrackIndex,
+                true
+            );
+
+        }
+    );
+
+
+    item.appendChild(
+        image
+    );
+
+    item.appendChild(
+        info
+    );
+
+    item.appendChild(
+        play
+    );
+
+
+    return item;
+
+}
 
 // ============================================================
 // 履歴
@@ -6469,4 +7416,504 @@ function updateMediaSessionPosition(state) {
     } catch (error) {
         console.warn("Media Session position:", error);
     }
+}
+// ============================================================
+// Spotifyプレイリスト保存
+// ============================================================
+
+function openSpotifySaveModal(playlist) {
+
+    if (!playlist || !playlist.length) {
+
+        alert(
+            "保存する曲がありません。"
+        );
+
+        return;
+
+    }
+
+    // すでに開いていたら削除
+    const oldModal =
+        document.getElementById(
+            "spotifySaveModal"
+        );
+
+    if (oldModal) {
+        oldModal.remove();
+    }
+
+    const modal =
+        document.createElement("div");
+
+    modal.id =
+        "spotifySaveModal";
+
+    modal.className =
+        "spotify-save-modal";
+
+    modal.innerHTML = `
+        <div class="spotify-save-box">
+
+            <button
+                class="spotify-save-close"
+                id="spotifySaveClose"
+                type="button"
+            >
+                ×
+            </button>
+
+            <h2>
+                🎵 Spotifyに保存
+            </h2>
+
+            <p>
+                今のおすすめ曲を
+                Spotifyのプレイリストに保存します。
+            </p>
+
+            <label>
+                プレイリスト名
+            </label>
+
+            <input
+                id="spotifyPlaylistName"
+                type="text"
+                maxlength="100"
+                value="${escapeHtml(
+                    selectedMood
+                        ? `${selectedMood}のおすすめ5曲`
+                        : "Music Picker"
+                )}"
+            >
+
+            <label>
+                公開設定
+            </label>
+
+            <div class="spotify-public-options">
+
+                <label>
+                    <input
+                        type="radio"
+                        name="spotifyPlaylistPublic"
+                        value="false"
+                        checked
+                    >
+                    🔒 非公開
+                </label>
+
+                <label>
+                    <input
+                        type="radio"
+                        name="spotifyPlaylistPublic"
+                        value="true"
+                    >
+                    🌎 公開
+                </label>
+
+            </div>
+
+            <div class="spotify-save-actions">
+
+                <button
+                    id="spotifySaveCancel"
+                    type="button"
+                    class="spotify-cancel-button"
+                >
+                    キャンセル
+                </button>
+
+                <button
+                    id="spotifySaveConfirm"
+                    type="button"
+                    class="spotify-confirm-button"
+                >
+                    🎵 Spotifyに保存
+                </button>
+
+            </div>
+
+            <div
+                id="spotifySaveStatus"
+                class="spotify-save-status"
+            ></div>
+
+        </div>
+    `;
+
+    document.body.appendChild(
+        modal
+    );
+
+    const closeButton =
+        document.getElementById(
+            "spotifySaveClose"
+        );
+
+    const cancelButton =
+        document.getElementById(
+            "spotifySaveCancel"
+        );
+
+    const confirmButton =
+        document.getElementById(
+            "spotifySaveConfirm"
+        );
+
+    if (closeButton) {
+
+        closeButton.addEventListener(
+            "click",
+            () => modal.remove()
+        );
+
+    }
+
+    if (cancelButton) {
+
+        cancelButton.addEventListener(
+            "click",
+            () => modal.remove()
+        );
+
+    }
+
+    if (confirmButton) {
+
+        confirmButton.addEventListener(
+            "click",
+            () => savePlaylistToSpotify(
+                playlist
+            )
+        );
+
+    }
+
+    modal.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target === modal
+            ) {
+
+                modal.remove();
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// Spotifyへプレイリストを保存
+// ============================================================
+
+async function savePlaylistToSpotify(
+    playlist
+) {
+
+    const token =
+        localStorage.getItem(
+            "spotify_access_token"
+        ) || "";
+
+    if (!token) {
+
+        alert(
+            "Spotifyにログインしてください。"
+        );
+
+        location.href =
+            "/auth/login";
+
+        return;
+
+    }
+
+    const nameInput =
+        document.getElementById(
+            "spotifyPlaylistName"
+        );
+
+    const confirmButton =
+        document.getElementById(
+            "spotifySaveConfirm"
+        );
+
+    const status =
+        document.getElementById(
+            "spotifySaveStatus"
+        );
+
+    const name =
+        nameInput?.value.trim() ||
+        "Music Picker";
+
+    const publicRadio =
+        document.querySelector(
+            'input[name="spotifyPlaylistPublic"]:checked'
+        );
+
+    const isPublic =
+        publicRadio?.value === "true";
+
+    if (!playlist || !playlist.length) {
+
+        return;
+
+    }
+
+    const tracks =
+        playlist
+            .map(
+                track =>
+                    normalizeTrack(track)
+            )
+            .filter(
+                track =>
+                    track &&
+                    track.uri &&
+                    track.uri.startsWith(
+                        "spotify:track:"
+                    )
+            );
+
+    if (!tracks.length) {
+
+        alert(
+            "Spotifyに保存できる曲がありません。"
+        );
+
+        return;
+
+    }
+
+    if (confirmButton) {
+
+        confirmButton.disabled =
+            true;
+
+        confirmButton.textContent =
+            "⏳ 保存しています...";
+
+    }
+
+    if (status) {
+
+        status.textContent =
+            "Spotifyにプレイリストを作成しています...";
+
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/create-playlist",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            name:
+                                name,
+
+                            public:
+                                isPublic,
+
+                            tracks:
+                                tracks.map(
+                                    track =>
+                                        track.uri
+                                )
+
+                        })
+                }
+            );
+
+        const data =
+            await response.json()
+                .catch(
+                    () => ({})
+                );
+
+        if (!response.ok) {
+
+            if (
+                response.status === 401
+            ) {
+
+                localStorage.removeItem(
+                    "spotify_access_token"
+                );
+
+                alert(
+                    "Spotifyのログイン期限が切れています。再ログインしてください。"
+                );
+
+                location.href =
+                    "/auth/login";
+
+                return;
+
+            }
+
+            throw new Error(
+                data.error ||
+                "Spotifyへの保存に失敗しました。"
+            );
+
+        }
+
+        attachSpotifyPlaylistToLibrary(
+    playlist,
+    data,
+    name
+);
+
+        const modal =
+            document.getElementById(
+                "spotifySaveModal"
+            );
+
+        if (!modal) {
+            return;
+        }
+
+        modal.innerHTML = `
+            <div class="spotify-save-box spotify-save-success">
+
+                <div class="spotify-success-icon">
+                    ✅
+                </div>
+
+                <h2>
+                    Spotifyに保存しました！
+                </h2>
+
+                <p>
+                    「${escapeHtml(
+                        data.playlistName ||
+                        name
+                    )}」
+                </p>
+
+                <p>
+                    ${Number(
+                        data.addedTracks ||
+                        tracks.length
+                    )}曲を追加しました。
+                </p>
+
+                <div class="spotify-save-actions">
+
+                    ${
+                        data.spotifyUrl
+                            ? `
+                                <button
+                                    type="button"
+                                    class="spotify-confirm-button"
+                                    id="openSpotifyPlaylist"
+                                >
+                                    🎵 Spotifyで開く
+                                </button>
+                            `
+                            : ""
+                    }
+
+                    <button
+                        type="button"
+                        class="spotify-cancel-button"
+                        id="closeSpotifySuccess"
+                    >
+                        閉じる
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+        const openButton =
+            document.getElementById(
+                "openSpotifyPlaylist"
+            );
+
+        if (openButton) {
+
+            openButton.addEventListener(
+                "click",
+                () => {
+
+                    if (
+                        data.spotifyUrl
+                    ) {
+
+                        window.open(
+                            data.spotifyUrl,
+                            "_blank"
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
+        const closeButton =
+            document.getElementById(
+                "closeSpotifySuccess"
+            );
+
+        if (closeButton) {
+
+            closeButton.addEventListener(
+                "click",
+                () => modal.remove()
+            );
+
+        }
+
+        showToast(
+            "🎵 Spotifyにプレイリストを保存しました！"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Spotifyプレイリスト保存エラー:",
+            error
+        );
+
+        if (status) {
+
+            status.textContent =
+                error.message ||
+                "保存に失敗しました。";
+
+        }
+
+        if (confirmButton) {
+
+            confirmButton.disabled =
+                false;
+
+            confirmButton.textContent =
+                "🎵 Spotifyに保存";
+
+        }
+
+    }
+
 }
