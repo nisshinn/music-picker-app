@@ -2875,10 +2875,13 @@ console.log(
             return;
         }
 
-        const currentTrack =
-            normalizeTrack(current);
+       const currentTrack = normalizeTrack(current);
+currentTrackData = currentTrack;
 
-        currentTrackData = currentTrack;
+updateMediaSession(currentTrack);
+
+// 📱 iPhone用デバッグ
+showIPhoneDebug(state, currentTrack);
 
        // 🔒 iPhoneロック画面
 updateMediaSession(currentTrack);
@@ -9092,4 +9095,89 @@ if (
 
     initFullPlayer();
 
+}
+// ==========================================
+// 📱 iPhone用 MediaSession デバッグ表示
+// ==========================================
+
+function showIPhoneDebug(state, track) {
+    let debug = document.getElementById("iphoneDebug");
+
+    if (!debug) {
+        debug = document.createElement("div");
+        debug.id = "iphoneDebug";
+
+        debug.style.position = "fixed";
+        debug.style.left = "10px";
+        debug.style.right = "10px";
+        debug.style.bottom = "140px";
+        debug.style.zIndex = "99999";
+        debug.style.background = "rgba(0,0,0,0.9)";
+        debug.style.color = "#00ff88";
+        debug.style.padding = "12px";
+        debug.style.borderRadius = "10px";
+        debug.style.fontSize = "12px";
+        debug.style.fontFamily = "monospace";
+        debug.style.whiteSpace = "pre-wrap";
+        debug.style.maxHeight = "250px";
+        debug.style.overflow = "auto";
+
+        document.body.appendChild(debug);
+    }
+
+    const durationMs = Number(state?.duration || 0);
+    const positionMs = Number(state?.position || 0);
+
+    let mediaSessionInfo = "MediaSessionなし";
+
+    if ("mediaSession" in navigator) {
+        const metadata = navigator.mediaSession.metadata;
+
+        mediaSessionInfo =
+            "MediaSession: あり\n" +
+            "playbackState: " +
+            navigator.mediaSession.playbackState + "\n" +
+            "metadata.title: " +
+            (metadata?.title || "なし") + "\n" +
+            "metadata.artist: " +
+            (metadata?.artist || "なし");
+
+        // setPositionState の現在値を取得できるか確認
+        try {
+            if (navigator.mediaSession.setPositionState) {
+                mediaSessionInfo +=
+                    "\nsetPositionState: 使用可能";
+            } else {
+                mediaSessionInfo +=
+                    "\nsetPositionState: なし";
+            }
+        } catch (e) {
+            mediaSessionInfo +=
+                "\nsetPositionState: エラー";
+        }
+    }
+
+    debug.textContent =
+        "📱 iPhone MediaSession DEBUG\n" +
+        "------------------------------\n" +
+        "曲名: " +
+        (track?.title || "なし") +
+        "\n\n" +
+
+        "🎵 Spotify\n" +
+        "duration(ms): " +
+        durationMs +
+        "\n" +
+        "duration(秒): " +
+        (durationMs / 1000).toFixed(3) +
+        "\n" +
+        "position(ms): " +
+        positionMs +
+        "\n" +
+        "position(秒): " +
+        (positionMs / 1000).toFixed(3) +
+        "\n\n" +
+
+        "📱 MediaSession\n" +
+        mediaSessionInfo;
 }
