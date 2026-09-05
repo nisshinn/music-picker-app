@@ -2883,6 +2883,18 @@ console.log(
        // 🔒 iPhoneロック画面
 updateMediaSession(currentTrack);
 updateMediaSessionPosition(state);
+console.log("===== Spotify状態 =====");
+console.log("曲名:", currentTrack?.title);
+console.log("duration(ms):", state.duration);
+console.log("position(ms):", state.position);
+console.log("duration(秒):", state.duration / 1000);
+console.log("position(秒):", state.position / 1000);
+
+if ("mediaSession" in navigator) {
+    console.log("===== MediaSession状態 =====");
+    console.log("metadata:", navigator.mediaSession.metadata);
+    console.log("playbackState:", navigator.mediaSession.playbackState);
+}
     
 updatePlayerInfo(currentTrack);
 
