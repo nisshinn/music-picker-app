@@ -1703,8 +1703,7 @@ async function makePlaylist() {
 
        displayPlaylist(playlist);
 
-// 📚 ライブラリにも保存
-saveGeneratedPlaylistToLibrary(playlist);
+
 
 
         if (
