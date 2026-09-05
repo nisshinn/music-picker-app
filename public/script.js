@@ -2853,97 +2853,53 @@ enableMediaSession: true,
     // ========================================================
 
     spotifyPlayer.addListener(
-        "player_state_changed",
-        state => {
+    "player_state_changed",
+    state => {
 
-            if (!state) {
-                return;
-            }
+        if (!state) {
+            return;
+        }
 
+        updatePlayerState(state);
 
-            updatePlayerState(
+        if (state.paused) {
+            stopProgressTimer();
+        } else {
+            startProgressTimer();
+        }
+
+        const current =
+            state.track_window?.current_track;
+
+        if (!current) {
+            return;
+        }
+
+        const currentTrack =
+            normalizeTrack(current);
+
+        currentTrackData = currentTrack;
+
+        // 🔒 iPhoneロック画面
+        updateMediaSession(currentTrack);
+        updateMediaSessionPosition(state);
+
+        updatePlayerInfo(currentTrack);
+
+        // 曲終了判定
+        if (
+            state.duration > 0 &&
+            !state.paused
+        ) {
+            scheduleTrackEnded(
+                currentTrack,
                 state
             );
-            if (state.paused) {
-    stopProgressTimer();
-} else {
-    startProgressTimer();
-}
-
-
-
-    
-
-
-            const current =
-                state.track_window
-                    ?.current_track;
-
-
-            if (!current) {
-                return;
-            }
-
-
-            const currentTrack =
-                normalizeTrack(
-                    current
-                );
-
-
-            currentTrackData = currentTrack;
-
-const uri = currentTrack.uri;
-
-// 🔒 iPhoneロック画面用
-updateMediaSession(currentTrack);
-updateMediaSessionPosition(state);
-console.log("===== Spotify STATE =====");
-
-console.log("曲名:", currentTrack.name || currentTrack.title);
-console.log("duration:", state.duration);
-console.log("position:", state.position);
-
-console.log(
-    "duration秒:",
-    state.duration / 1000
-);
-
-console.log("========================");
-
-if (!isChangingTrack) {
-
-    // Spotifyの状態から勝手にcurrentTrackIndexを変更しない
-
-}
-
-updatePlayerInfo(
-    currentTrack
-);
-
-            // ------------------------------------------------
-// 曲終了判定
-// ------------------------------------------------
-
-if (
-    state.duration > 0 &&
-    !state.paused
-) {
-
-    scheduleTrackEnded(
-        currentTrack,
-        state
-    );
-
-} else {
-
-    clearTrackEndTimer();
-
-}
+        } else {
+            clearTrackEndTimer();
         }
-    );
-
-
+    }
+);
     // ========================================================
     // Autoplay failed
     // ========================================================
@@ -7349,15 +7305,21 @@ function updateMediaSessionPosition(state) {
     if (!state) return;
     if (!("mediaSession" in navigator)) return;
 
-    const duration = Number(state.duration || 0) / 1000;
-    const position = Number(state.position || 0) / 1000;
+    const duration =
+        Number(state.duration || 0) / 1000;
 
-    if (!Number.isFinite(duration) || duration <= 0) return;
+    const position =
+        Number(state.position || 0) / 1000;
 
-    const safePosition = Math.max(
-        0,
-        Math.min(position, duration)
-    );
+    if (!Number.isFinite(duration) || duration <= 0) {
+        return;
+    }
+
+    const safePosition =
+        Math.max(
+            0,
+            Math.min(position, duration)
+        );
 
     try {
         navigator.mediaSession.setPositionState({
@@ -7367,10 +7329,8 @@ function updateMediaSessionPosition(state) {
         });
 
         console.log(
-            "📱 MediaSession時間設定:",
+            "📱 MediaSession時間:",
             duration,
-            "秒 /",
-            safePosition,
             "秒"
         );
 
