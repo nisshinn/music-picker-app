@@ -9683,67 +9683,64 @@ function escapeHtml(value) {
 // Spotifyプレイリストを開く
 // ========================================
 async function openSpotifyPlaylist(playlist) {
-
-    const list = document.getElementById("playlistList");
-
-    if (!list) return;
-
-    list.innerHTML = `
-        <div class="library-loading">
-            🎵 「${escapeHtml(playlist.name)}」を読み込み中...
-        </div>
-    `;
-
     try {
-
         const token = localStorage.getItem("spotifyAccessToken");
 
-const response = await fetch(
-    `/api/my-playlists/${encodeURIComponent(playlist.id)}/items`,
-    {
-        headers: {
-            Authorization: `Bearer ${token}`
+        if (!token) {
+            alert("Spotifyにログインしてください");
+            return;
         }
-    }
-);
+
+        console.log("プレイリストを開く:", playlist);
+
+        const response = await fetch(
+            `/api/my-playlists/${encodeURIComponent(playlist.id)}/items`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
 
         const data = await response.json();
 
+        console.log("プレイリスト曲取得結果:", data);
+
         if (!response.ok) {
             throw new Error(
-                data.error || "曲の取得に失敗しました"
+                data.error || "プレイリストの曲を取得できませんでした"
             );
         }
 
         const tracks = normalizeTracks(data.tracks || []);
 
+        console.log("再生可能曲:", tracks);
+
+        if (!tracks.length) {
+            alert("このプレイリストには再生できる曲がありません");
+            return;
+        }
+
+        currentPlaylist = tracks;
+        currentTrackIndex = 0;
+        isPlaylistMode = true;
+
+        // プレイリスト詳細表示
+        const list = document.getElementById("playlistList");
+
+        if (!list) return;
+
         list.innerHTML = "";
 
-        // 戻るボタン
-        const backButton = document.createElement("button");
+        const detail = document.createElement("div");
+        detail.className = "spotify-playlist-detail";
 
-        backButton.type = "button";
-        backButton.className = "library-back-button";
-        backButton.textContent = "‹ プレイリスト一覧";
-
-        backButton.addEventListener("click", () => {
-            loadSpotifyPlaylists();
-        });
-
-        list.appendChild(backButton);
-
-
-        // ヘッダー
-        const header = document.createElement("div");
-
-        header.className = "spotify-playlist-detail";
-
-        header.innerHTML = `
+        detail.innerHTML = `
             <div class="spotify-playlist-detail-image">
                 ${
                     playlist.image
-                    ? `<img src="${playlist.image}" alt="">`
-                    : `<div class="playlist-no-image">🎵</div>`
+                        ? `<img src="${escapeHtml(playlist.image)}" alt="">`
+                        : `<div class="playlist-no-image">🎵</div>`
                 }
             </div>
 
@@ -9753,55 +9750,29 @@ const response = await fetch(
 
                 ${
                     playlist.spotifyUrl
-                    ? `
-                    <a
-                        href="${playlist.spotifyUrl}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="spotify-open-button"
-                    >
-                        Spotifyで開く
-                    </a>
-                    `
-                    : ""
+                        ? `<a
+                            class="spotify-open-button"
+                            href="${escapeHtml(playlist.spotifyUrl)}"
+                            target="_blank"
+                            rel="noopener"
+                          >
+                            Spotifyで開く
+                          </a>`
+                        : ""
                 }
             </div>
         `;
 
-        list.appendChild(header);
+        list.appendChild(detail);
 
-
-        if (tracks.length === 0) {
-
-            const empty = document.createElement("div");
-
-            empty.className = "library-empty";
-
-            empty.innerHTML = `
-                <div>🎵</div>
-                <p>このプレイリストには再生できる曲がありません。</p>
-            `;
-
-            list.appendChild(empty);
-
-            return;
-        }
-
-
-        // まとめて再生
         const playAll = document.createElement("button");
-
         playAll.type = "button";
         playAll.className = "library-play-all";
-
         playAll.textContent = "▶ まとめて再生";
 
         playAll.addEventListener("click", async () => {
-
-            currentPlaylist = normalizeTracks(tracks);
-
+            currentPlaylist = tracks;
             currentTrackIndex = 0;
-
             isPlaylistMode = true;
 
             await playTrack(
@@ -9813,50 +9784,27 @@ const response = await fetch(
 
         list.appendChild(playAll);
 
-
-        // 曲一覧
         tracks.forEach((track, index) => {
-
-            const item = createLibraryTrackItem(
-                track,
-                index,
-                {
-                    id: playlist.id,
-                    name: playlist.name,
-                    tracks: tracks,
-                    spotifyUrl: playlist.spotifyUrl
-                }
+            list.appendChild(
+                createLibraryTrackItem(
+                    track,
+                    index,
+                    {
+                        tracks: tracks
+                    }
+                )
             );
-
-            list.appendChild(item);
         });
 
-
     } catch (error) {
+        console.error(
+            "Spotifyプレイリスト再生エラー:",
+            error
+        );
 
-        console.error("Spotifyプレイリスト曲取得エラー:", error);
-
-        list.innerHTML = `
-            <div class="library-error">
-                <div>⚠️</div>
-                <p>${escapeHtml(error.message)}</p>
-
-                <button
-                    type="button"
-                    id="reloadSpotifyPlaylist"
-                >
-                    🔄 再読み込み
-                </button>
-            </div>
-        `;
-
-        document
-            .getElementById("reloadSpotifyPlaylist")
-            ?.addEventListener("click", () => {
-                openSpotifyPlaylist(playlist);
-            });
+        alert(
+            "プレイリストを開けませんでした\n" +
+            error.message
+        );
     }
-}
-if (pageId === "favoritesPage") {
-    updateLibraryPage();
 }
