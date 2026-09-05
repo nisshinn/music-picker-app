@@ -4549,18 +4549,17 @@ async function searchSongs(
 
 
         tracks.forEach(
-            (track, index) => {
+    (track, index) => {
 
-                results.appendChild(
-                    createTrackCard(
-                        track,
-                        index
-                    )
-                );
-
-            }
+        results.appendChild(
+            createSearchTrackCard(
+                track,
+                index
+            )
         );
 
+    }
+);
 
     } catch (error) {
 
@@ -5851,127 +5850,47 @@ function updateHistoryPage() {
 // 曲検索
 // ============================================================
 
+// ============================================================
+// 🔎 検索初期化
+// ============================================================
+
 function initSearch() {
 
     const input =
-        document.getElementById("songSearchInput");
+        document.getElementById(
+            "songSearchInput"
+        );
 
     const button =
-        document.getElementById("songSearchButton");
+        document.getElementById(
+            "songSearchButton"
+        );
 
-    const results =
-        document.getElementById("searchResults");
-
-
-    if (!input || !button || !results) {
-        console.warn("検索UIが見つかりません");
+    if (!input || !button) {
         return;
     }
 
 
-    async function searchSongs() {
-
-        const keyword =
-            input.value.trim();
-
-
-        if (!keyword) {
-
-            results.innerHTML = `
-                <div class="no-results">
-                    曲名やアーティスト名を入力してください
-                </div>
-            `;
-
-            return;
-        }
-
-
-        results.innerHTML = `
-            <div class="loading">
-                🔎 検索中...
-            </div>
-        `;
-
-
-        try {
-
-            const response =
-                await fetch(
-                    `/api/search?q=${encodeURIComponent(keyword)}`
-                );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    `HTTP ${response.status}`
-                );
-
-            }
-
-
-            const tracks =
-                await response.json();
-
-
-            results.innerHTML = "";
-
-
-            if (
-                !Array.isArray(tracks) ||
-                tracks.length === 0
-            ) {
-
-                results.innerHTML = `
-                    <div class="no-results">
-                        曲が見つかりませんでした
-                    </div>
-                `;
-
-                return;
-
-            }
-
-
-            tracks.forEach(
-                (track, index) => {
-
-                    results.appendChild(
-                        createSearchTrackCard(
-                            track,
-                            index
-                        )
-                    );
-
-                }
-            );
-
-
-        } catch (error) {
-
-            console.error(
-                "曲検索エラー:",
-                error
-            );
-
-
-            results.innerHTML = `
-                <div class="error-message">
-                    ${escapeHtml(error.message)}
-                </div>
-            `;
-
-        }
-
-    }
-
+    // --------------------------------------------------------
+    // 検索ボタン
+    // --------------------------------------------------------
 
     button.addEventListener(
         "click",
-        searchSongs
+        () => {
+
+            const query =
+                input.value.trim();
+
+            searchSongs(query);
+
+        }
     );
 
+
+    // --------------------------------------------------------
+    // Enterキー
+    // --------------------------------------------------------
 
     input.addEventListener(
         "keydown",
@@ -5979,7 +5898,12 @@ function initSearch() {
 
             if (event.key === "Enter") {
 
-                searchSongs();
+                event.preventDefault();
+
+                const query =
+                    input.value.trim();
+
+                searchSongs(query);
 
             }
 
@@ -5988,6 +5912,238 @@ function initSearch() {
 
 }
 
+
+// ============================================================
+// 🔎 曲検索
+// ============================================================
+
+async function searchSongs(query) {
+
+    const results =
+        document.getElementById(
+            "searchResults"
+        );
+
+    if (!results) {
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // 検索ID
+    //
+    // 古い検索結果が後から表示されるのを防ぐ
+    // --------------------------------------------------------
+
+    const requestId =
+        ++searchRequestId;
+
+
+    // --------------------------------------------------------
+    // 空検索
+    // --------------------------------------------------------
+
+    if (!query) {
+
+        results.innerHTML = `
+            <div class="no-results">
+                曲名やアーティスト名を入力してください
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // ローディング
+    // --------------------------------------------------------
+
+    results.innerHTML = `
+        <div class="loading">
+            🔎 「${escapeHtml(query)}」を検索中...
+        </div>
+    `;
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/search?q=${encodeURIComponent(query)}`
+            );
+
+
+        // ----------------------------------------------------
+        // 古い検索なら無視
+        // ----------------------------------------------------
+
+        if (
+            requestId !==
+            searchRequestId
+        ) {
+            return;
+        }
+
+
+        if (!response.ok) {
+
+            const message =
+                await readResponseError(
+                    response
+                );
+
+            throw new Error(
+                message
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        // ----------------------------------------------------
+        // Spotifyレスポンス
+        // ----------------------------------------------------
+
+        let tracks =
+            Array.isArray(data)
+                ? data
+                : data.tracks || [];
+
+
+        // ----------------------------------------------------
+        // 正規化
+        // ----------------------------------------------------
+
+        tracks =
+            normalizeTracks(
+                tracks
+            )
+            .filter(
+                track =>
+                    track &&
+                    track.uri
+            );
+
+
+        // ----------------------------------------------------
+        // 重複削除
+        // ----------------------------------------------------
+
+        const seen =
+            new Set();
+
+        tracks =
+            tracks.filter(
+                track => {
+
+                    if (
+                        seen.has(
+                            track.uri
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    seen.add(
+                        track.uri
+                    );
+
+                    return true;
+
+                }
+            );
+
+
+        // ----------------------------------------------------
+        // もう古い検索なら表示しない
+        // ----------------------------------------------------
+
+        if (
+            requestId !==
+            searchRequestId
+        ) {
+            return;
+        }
+
+
+        // ----------------------------------------------------
+        // 表示をクリア
+        // ----------------------------------------------------
+
+        results.innerHTML =
+            "";
+
+
+        // ----------------------------------------------------
+        // 結果なし
+        // ----------------------------------------------------
+
+        if (!tracks.length) {
+
+            results.innerHTML = `
+                <div class="no-results">
+                    「${escapeHtml(query)}」の曲が見つかりませんでした
+                </div>
+            `;
+
+            return;
+        }
+
+
+        // ----------------------------------------------------
+        // 検索結果表示
+        // ----------------------------------------------------
+
+        tracks.forEach(
+            (track, index) => {
+
+                results.appendChild(
+                    createTrackCard(
+                        track,
+                        index
+                    )
+                );
+
+            }
+        );
+
+
+    } catch (error) {
+
+        // ----------------------------------------------------
+        // 古い検索なら無視
+        // ----------------------------------------------------
+
+        if (
+            requestId !==
+            searchRequestId
+        ) {
+            return;
+        }
+
+
+        console.error(
+            "曲検索エラー:",
+            error
+        );
+
+
+        results.innerHTML = `
+            <div class="error-message">
+                ${escapeHtml(
+                    error.message ||
+                    "検索中にエラーが発生しました"
+                )}
+            </div>
+        `;
+
+    }
+
+}
 
 // ============================================================
 // 検索結果カード
@@ -7710,25 +7866,7 @@ function updateMediaSessionPosition(state) {
     }
 }
 
-try {
-    const duration = Number(track.duration_ms || 0) / 1000;
 
-    if (
-        duration > 0 &&
-        "mediaSession" in navigator &&
-        typeof navigator.mediaSession.setPositionState === "function"
-    ) {
-        navigator.mediaSession.setPositionState({
-            duration: duration,
-            playbackRate: 1,
-            position: 0
-        });
-
-        console.log("🕐 MediaSession時間を設定:", duration);
-    }
-} catch (error) {
-    console.log("MediaSession時間設定失敗:", error);
-}
 // ============================================================
 // Spotifyプレイリスト保存
 // ============================================================
