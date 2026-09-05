@@ -2768,7 +2768,7 @@ console.log(
 
     name: "Music Picker",
 
-    enableMediaSession: true,
+    enableMediaSession: false,
     volume: getSavedVolume(),
 
     getOAuthToken: callback => {
@@ -7913,9 +7913,9 @@ let fullPlayerOverlay = null;
 let fullPlayerTimer = null;
 
 
-// ------------------------------------------------------------
+// ============================================================
 // フルプレイヤーを作る
-// ------------------------------------------------------------
+// ============================================================
 
 function createFullPlayer() {
 
@@ -7929,10 +7929,6 @@ function createFullPlayer() {
     overlay.className = "full-player-overlay";
 
     overlay.innerHTML = `
-
-        <!-- =========================================
-             NOW PLAYING メイン画面
-             ========================================= -->
 
         <div
             id="fullPlayerMain"
@@ -8108,7 +8104,7 @@ function createFullPlayer() {
 
 
         <!-- =========================================
-             📋 再生リスト画面
+             📋 再生リスト
              ========================================= -->
 
         <div
@@ -8138,8 +8134,7 @@ function createFullPlayer() {
             <div
                 id="fullPlayerQueue"
                 class="full-player-queue-list"
-            >
-            </div>
+            ></div>
 
         </div>
 
@@ -8150,9 +8145,9 @@ function createFullPlayer() {
     fullPlayerOverlay = overlay;
 
 
-    // =========================================
+    // ============================================================
     // 閉じる
-    // =========================================
+    // ============================================================
 
     document
         .getElementById("fullPlayerClose")
@@ -8162,9 +8157,9 @@ function createFullPlayer() {
         );
 
 
-    // =========================================
-    // 📋 再生リストを開く
-    // =========================================
+    // ============================================================
+    // 再生リスト
+    // ============================================================
 
     document
         .getElementById("fullPlayerQueueButton")
@@ -8174,9 +8169,9 @@ function createFullPlayer() {
         );
 
 
-    // =========================================
-    // ← NOW PLAYINGに戻る
-    // =========================================
+    // ============================================================
+    // NOW PLAYINGへ戻る
+    // ============================================================
 
     document
         .getElementById("fullPlayerQueueBack")
@@ -8186,9 +8181,9 @@ function createFullPlayer() {
         );
 
 
-    // =========================================
+    // ============================================================
     // 再生 / 一時停止
-    // =========================================
+    // ============================================================
 
     document
         .getElementById("fullPlayerPlay")
@@ -8198,9 +8193,9 @@ function createFullPlayer() {
         );
 
 
-    // =========================================
+    // ============================================================
     // 前の曲
-    // =========================================
+    // ============================================================
 
     document
         .getElementById("fullPlayerPrevious")
@@ -8210,9 +8205,9 @@ function createFullPlayer() {
         );
 
 
-    // =========================================
+    // ============================================================
     // 次の曲
-    // =========================================
+    // ============================================================
 
     document
         .getElementById("fullPlayerNext")
@@ -8222,9 +8217,9 @@ function createFullPlayer() {
         );
 
 
-    // =========================================
+    // ============================================================
     // シーク
-    // =========================================
+    // ============================================================
 
     const progress =
         document.getElementById(
@@ -8238,7 +8233,7 @@ function createFullPlayer() {
             () => {
 
                 seekPlayback(
-                    progress.value
+                    Number(progress.value)
                 );
 
             }
@@ -8247,9 +8242,9 @@ function createFullPlayer() {
     }
 
 
-    // =========================================
+    // ============================================================
     // 音量
-    // =========================================
+    // ============================================================
 
     const volume =
         document.getElementById(
@@ -8263,7 +8258,7 @@ function createFullPlayer() {
             () => {
 
                 changeVolume(
-                    volume.value
+                    Number(volume.value)
                 );
 
             }
@@ -8272,9 +8267,9 @@ function createFullPlayer() {
     }
 
 
-    // =========================================
+    // ============================================================
     // シャッフル
-    // =========================================
+    // ============================================================
 
     document
         .getElementById("fullPlayerShuffle")
@@ -8302,9 +8297,9 @@ function createFullPlayer() {
         );
 
 
-    // =========================================
+    // ============================================================
     // リピート
-    // =========================================
+    // ============================================================
 
     document
         .getElementById("fullPlayerRepeat")
@@ -8314,9 +8309,9 @@ function createFullPlayer() {
         );
 
 
-    // =========================================
+    // ============================================================
     // お気に入り
-    // =========================================
+    // ============================================================
 
     document
         .getElementById("fullPlayerFavorite")
@@ -8338,20 +8333,16 @@ function createFullPlayer() {
         );
 
 
-    // =========================================
-    // 背景クリックで閉じる
-    // =========================================
+    // ============================================================
+    // 背景クリック
+    // ============================================================
 
     overlay.addEventListener(
         "click",
         event => {
 
-            if (
-                event.target === overlay
-            ) {
-
+            if (event.target === overlay) {
                 closeFullPlayer();
-
             }
 
         }
@@ -8361,7 +8352,7 @@ function createFullPlayer() {
 
 
 // ============================================================
-// 📋 再生リスト画面を表示
+// 📋 再生リストを表示
 // ============================================================
 
 function showFullPlayerQueue() {
@@ -8380,16 +8371,12 @@ function showFullPlayerQueue() {
         return;
     }
 
-    main.style.display =
-        "none";
-
-    queue.style.display =
-        "block";
+    main.style.display = "none";
+    queue.style.display = "block";
 
     updateFullPlayerQueue();
 
 }
-
 
 
 // ============================================================
@@ -8412,18 +8399,15 @@ function showFullPlayerMain() {
         return;
     }
 
-    queue.style.display =
-        "none";
-
-    main.style.display =
-        "block";
+    queue.style.display = "none";
+    main.style.display = "block";
 
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // フルプレイヤーを開く
-// ------------------------------------------------------------
+// ============================================================
 
 function openFullPlayer() {
 
@@ -8433,24 +8417,24 @@ function openFullPlayer() {
 
     createFullPlayer();
 
-showFullPlayerMain();
+    showFullPlayerMain();
 
-updateFullPlayer();
+    updateFullPlayer();
 
-fullPlayerOverlay.classList.add(
-    "is-open"
-);
+    fullPlayerOverlay.classList.add(
+        "is-open"
+    );
 
-    document.body.style.overflow =
-        "hidden";
+    document.body.style.overflow = "hidden";
 
     startFullPlayerUpdater();
+
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // フルプレイヤーを閉じる
-// ------------------------------------------------------------
+// ============================================================
 
 function closeFullPlayer() {
 
@@ -8462,16 +8446,16 @@ function closeFullPlayer() {
         "is-open"
     );
 
-    document.body.style.overflow =
-        "";
+    document.body.style.overflow = "";
 
     stopFullPlayerUpdater();
+
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // 曲情報を更新
-// ------------------------------------------------------------
+// ============================================================
 
 function updateFullPlayer() {
 
@@ -8482,7 +8466,6 @@ function updateFullPlayer() {
     if (!currentTrackData) {
         return;
     }
-
 
     const track =
         normalizeTrack(
@@ -8533,11 +8516,13 @@ function updateFullPlayer() {
     }
 
 
-    // 再生ボタン
     updateFullPlayerPlayButton();
 
 
+    // ========================================================
     // 音量
+    // ========================================================
+
     const volume =
         document.getElementById(
             "fullPlayerVolume"
@@ -8553,7 +8538,10 @@ function updateFullPlayer() {
     }
 
 
+    // ========================================================
     // シャッフル
+    // ========================================================
+
     const shuffle =
         document.getElementById(
             "fullPlayerShuffle"
@@ -8569,7 +8557,10 @@ function updateFullPlayer() {
     }
 
 
+    // ========================================================
     // リピート
+    // ========================================================
+
     const repeat =
         document.getElementById(
             "fullPlayerRepeat"
@@ -8580,9 +8571,7 @@ function updateFullPlayer() {
         const labels = {
 
             off: "🔁 OFF",
-
             one: "🔂 1曲",
-
             all: "🔁 全曲"
 
         };
@@ -8600,7 +8589,10 @@ function updateFullPlayer() {
     }
 
 
+    // ========================================================
     // お気に入り
+    // ========================================================
+
     const favorite =
         document.getElementById(
             "fullPlayerFavorite"
@@ -8626,12 +8618,13 @@ function updateFullPlayer() {
 
 
     updateFullPlayerQueue();
+
 }
 
 
-// ------------------------------------------------------------
-// 再生ボタン
-// ------------------------------------------------------------
+// ============================================================
+// 再生ボタン表示
+// ============================================================
 
 async function updateFullPlayerPlayButton() {
 
@@ -8663,9 +8656,9 @@ async function updateFullPlayerPlayButton() {
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // リピート切り替え
-// ------------------------------------------------------------
+// ============================================================
 
 function cycleFullPlayerRepeat() {
 
@@ -8700,12 +8693,9 @@ function cycleFullPlayerRepeat() {
                 ? "🔂 1曲リピート"
                 : "🔁 全曲リピート"
     );
+
 }
 
-
-// ------------------------------------------------------------
-// 次に再生する曲
-// ------------------------------------------------------------
 
 // ============================================================
 // 📋 再生リスト
@@ -8725,7 +8715,10 @@ function updateFullPlayerQueue() {
     container.innerHTML = "";
 
 
+    // ========================================================
     // プレイリストがない場合
+    // ========================================================
+
     if (
         !currentPlaylist ||
         !currentPlaylist.length
@@ -8779,7 +8772,10 @@ function updateFullPlayerQueue() {
                 "full-player-queue-item";
 
 
+            // ==================================================
             // 現在再生中
+            // ==================================================
+
             if (
                 index === currentTrackIndex &&
                 currentTrackData?.uri === track.uri
@@ -8792,7 +8788,10 @@ function updateFullPlayerQueue() {
             }
 
 
+            // ==================================================
             // ジャケット
+            // ==================================================
+
             const image =
                 document.createElement(
                     "img"
@@ -8808,7 +8807,10 @@ function updateFullPlayerQueue() {
                 "";
 
 
+            // ==================================================
             // 曲情報
+            // ==================================================
+
             const info =
                 document.createElement(
                     "div"
@@ -8840,21 +8842,17 @@ function updateFullPlayerQueue() {
                 "full-player-queue-artist";
 
             artist.textContent =
-                getArtistText(
-                    track
-                );
+                getArtistText(track);
 
 
-            info.appendChild(
-                name
-            );
-
-            info.appendChild(
-                artist
-            );
+            info.appendChild(name);
+            info.appendChild(artist);
 
 
+            // ==================================================
             // 再生アイコン
+            // ==================================================
+
             const play =
                 document.createElement(
                     "div"
@@ -8869,20 +8867,15 @@ function updateFullPlayerQueue() {
                     : "▷";
 
 
-            item.appendChild(
-                image
-            );
-
-            item.appendChild(
-                info
-            );
-
-            item.appendChild(
-                play
-            );
+            item.appendChild(image);
+            item.appendChild(info);
+            item.appendChild(play);
 
 
-            // 曲をタップ
+            // ==================================================
+            // 曲を選択
+            // ==================================================
+
             item.addEventListener(
                 "click",
                 async () => {
@@ -8896,13 +8889,11 @@ function updateFullPlayerQueue() {
                     isPlaylistMode =
                         true;
 
-
                     await playTrack(
                         track,
                         index,
                         true
                     );
-
 
                     showFullPlayerMain();
 
@@ -8914,18 +8905,17 @@ function updateFullPlayerQueue() {
             );
 
 
-            container.appendChild(
-                item
-            );
+            container.appendChild(item);
 
         }
     );
 
 }
 
-// ------------------------------------------------------------
+
+// ============================================================
 // 再生位置を更新
-// ------------------------------------------------------------
+// ============================================================
 
 async function updateFullPlayerProgress() {
 
@@ -8969,6 +8959,10 @@ async function updateFullPlayerProgress() {
             );
 
 
+        // ========================================================
+        // プログレスバー
+        // ========================================================
+
         if (progress) {
 
             progress.max =
@@ -8983,6 +8977,10 @@ async function updateFullPlayerProgress() {
         }
 
 
+        // ========================================================
+        // 現在時間
+        // ========================================================
+
         if (currentTime) {
 
             currentTime.textContent =
@@ -8993,6 +8991,10 @@ async function updateFullPlayerProgress() {
         }
 
 
+        // ========================================================
+        // 曲の長さ
+        // ========================================================
+
         if (duration) {
 
             duration.textContent =
@@ -9002,6 +9004,10 @@ async function updateFullPlayerProgress() {
 
         }
 
+
+        // ========================================================
+        // 再生ボタン
+        // ========================================================
 
         const play =
             document.getElementById(
@@ -9018,12 +9024,13 @@ async function updateFullPlayerProgress() {
         }
 
     } catch (_) {}
+
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // 定期更新
-// ------------------------------------------------------------
+// ============================================================
 
 function startFullPlayerUpdater() {
 
@@ -9035,7 +9042,15 @@ function startFullPlayerUpdater() {
 
                 updateFullPlayerProgress();
 
-                updateFullPlayer();
+                // 曲情報などの更新
+                if (
+                    fullPlayerOverlay &&
+                    fullPlayerOverlay.classList.contains(
+                        "is-open"
+                    )
+                ) {
+                    updateFullPlayer();
+                }
 
             },
             1000
@@ -9059,9 +9074,9 @@ function stopFullPlayerUpdater() {
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // 下の再生バーをタップしたら開く
-// ------------------------------------------------------------
+// ============================================================
 
 function initFullPlayer() {
 
@@ -9077,16 +9092,14 @@ function initFullPlayer() {
     }
 
 
-    panel.style.cursor =
-        "pointer";
+    panel.style.cursor = "pointer";
 
 
     panel.addEventListener(
         "click",
         event => {
 
-            // ボタン・スライダーを押した場合は
-            // フル画面を開かない
+            // ボタン・スライダー・リンクは除外
             if (
                 event.target.closest(
                     "button, input, a"
@@ -9103,9 +9116,9 @@ function initFullPlayer() {
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // 初期化
-// ------------------------------------------------------------
+// ============================================================
 
 if (
     document.readyState === "loading"
@@ -9121,3 +9134,5 @@ if (
     initFullPlayer();
 
 }
+
+
