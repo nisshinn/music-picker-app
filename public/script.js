@@ -2951,7 +2951,20 @@ if ("mediaSession" in navigator) {
 const uri = currentTrack.uri;
 
 // 🔒 iPhoneロック画面用
-//updateMediaSession(currentTrack);
+updateMediaSession(currentTrack);
+
+console.log("===== Spotify STATE =====");
+
+console.log("曲名:", currentTrack.name || currentTrack.title);
+console.log("duration:", state.duration);
+console.log("position:", state.position);
+
+console.log(
+    "duration秒:",
+    state.duration / 1000
+);
+
+console.log("========================");
 
 if (!isChangingTrack) {
 
