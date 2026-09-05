@@ -854,27 +854,37 @@ body {
    プレイヤー
    ============================================================ */
 
+/* ============================================================
+   プレイヤー
+   ============================================================ */
+
 .player-panel {
+
     position: fixed;
 
-    bottom: 0;
+    /* ナビゲーションの上に配置 */
+    bottom: 88px;
 
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
 
-    width: 100%;
+    width: min(1100px, calc(100% - 40px));
 
     background: white;
+
+    border-radius: 22px;
 
     box-shadow:
         0 -5px 25px rgba(0,0,0,0.12);
 
-    z-index: 1200;
+    z-index: 5000;
 
     padding: 12px 20px;
 }
 
 
 .player-main {
+
     display: flex;
 
     align-items: center;
@@ -888,6 +898,7 @@ body {
 
 
 .player-image {
+
     width: 58px;
     height: 58px;
 
@@ -900,6 +911,7 @@ body {
 
 
 .player-info {
+
     min-width: 150px;
 
     flex: 1;
@@ -907,6 +919,7 @@ body {
 
 
 .player-title {
+
     font-weight: bold;
 
     white-space: nowrap;
@@ -918,6 +931,7 @@ body {
 
 
 .player-artist {
+
     color: #777;
 
     font-size: 13px;
@@ -927,6 +941,7 @@ body {
 
 
 .player-controls {
+
     display: flex;
 
     align-items: center;
@@ -936,6 +951,7 @@ body {
 
 
 .player-button {
+
     width: 42px;
     height: 42px;
 
@@ -952,11 +968,13 @@ body {
 
 
 .player-button:hover {
+
     background: #ddd;
 }
 
 
 .play-button {
+
     background: #19b957;
 
     color: white;
@@ -964,6 +982,7 @@ body {
 
 
 .volume-container {
+
     display: flex;
 
     align-items: center;
@@ -975,11 +994,13 @@ body {
 
 
 #volumeBar {
+
     width: 110px;
 }
 
 
 #volumeValue {
+
     width: 40px;
 
     font-size: 12px;
@@ -989,6 +1010,7 @@ body {
 
 
 .progress-container {
+
     display: flex;
 
     align-items: center;
@@ -1006,8 +1028,10 @@ body {
 
 
 #progressBar {
+
     flex: 1;
 }
+
 
 
 /* ============================================================
@@ -1164,57 +1188,75 @@ body {
    ========================================================= */
 
 .bottom-nav {
+
     position: fixed;
+
     left: 50%;
+
     bottom: 12px;
+
     transform: translateX(-50%);
 
-    width: min(850px, calc(100% - 30px));
-    height: 92px;
+    /* 今までより小さく */
+    width: min(700px, calc(100% - 40px));
+
+    height: 70px;
 
     display: flex;
+
     align-items: center;
+
     justify-content: space-around;
 
-    padding: 8px 10px;
+    padding: 5px 8px;
 
-    background: rgba(25, 25, 25, 0.96);
+    background: rgba(25, 25, 25, 0.97);
 
     border: 1px solid #333;
-    border-radius: 48px;
+
+    border-radius: 38px;
 
     box-shadow:
         0 8px 30px rgba(0, 0, 0, 0.45);
 
-    z-index: 9999;
+    z-index: 6000;
 
     backdrop-filter: blur(12px);
 }
 
 
-/* ボタン */
+/* =========================================================
+   ナビボタン
+   ========================================================= */
 
 .bottom-nav-link {
+
     position: relative;
 
-    width: 180px;
-    height: 76px;
+    width: 25%;
+
+    height: 60px;
 
     border: none;
+
     background: transparent;
 
     color: #f5f5f5;
 
-    border-radius: 40px;
+    border-radius: 32px;
 
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
+
     justify-content: center;
 
-    gap: 4px;
+    gap: 1px;
 
-    font-size: 15px;
+    font-size: 13px;
+
     font-weight: 600;
 
     cursor: pointer;
@@ -1227,75 +1269,89 @@ body {
 
 
 .bottom-nav-link:hover {
+
     background: rgba(255, 255, 255, 0.08);
 }
 
 
 .bottom-nav-link:active {
+
     transform: scale(0.96);
 }
 
 
-/* 選択中 */
+/* =========================================================
+   選択中
+   ========================================================= */
 
 .bottom-nav-link.active {
+
     background: #333;
+
     color: #ff3b6b;
 }
 
 
-/* アイコン */
+/* =========================================================
+   アイコン
+   ========================================================= */
 
 .bottom-nav-icon {
-    font-size: 42px;
-    line-height: 38px;
+
+    font-size: 30px;
+
+    line-height: 28px;
+
     font-weight: 700;
 }
 
 
 /* ホーム */
 
-.bottom-nav-link[data-page="homePage"] .bottom-nav-icon {
-    font-size: 43px;
+.bottom-nav-link[data-page="homePage"]
+.bottom-nav-icon {
+
+    font-size: 32px;
 }
 
 
-/* ラジオ */
-
-.radio-icon {
-    font-size: 38px;
-}
-
-
-/* 検索 */
+/* =========================================================
+   検索アイコン
+   ========================================================= */
 
 .search-icon {
-    width: 38px;
-    height: 38px;
 
-    border: 5px solid #f5f5f5;
+    width: 28px;
+
+    height: 28px;
+
+    border: 4px solid #f5f5f5;
+
     border-radius: 50%;
 
     position: relative;
 
-    margin-bottom: 2px;
+    margin-bottom: 1px;
 }
 
 
 .search-icon::after {
+
     content: "";
 
     position: absolute;
 
-    width: 18px;
-    height: 5px;
+    width: 14px;
+
+    height: 4px;
 
     background: #f5f5f5;
 
     border-radius: 5px;
 
-    right: -14px;
-    bottom: -7px;
+    right: -11px;
+
+    bottom: -6px;
 
     transform: rotate(48deg);
 }
@@ -1307,50 +1363,169 @@ body {
 
 @media (max-width: 700px) {
 
+    #app {
+
+        padding:
+            90px 14px 180px;
+    }
+
+
     .bottom-nav {
+
         bottom: 8px;
 
-        width: calc(100% - 12px);
+        width: calc(100% - 20px);
 
-        height: 78px;
+        height: 64px;
 
-        padding: 5px;
+        padding: 4px;
+
+        border-radius: 34px;
     }
 
 
     .bottom-nav-link {
+
         width: 25%;
-        height: 66px;
+
+        height: 54px;
+
+        font-size: 10px;
+
+        border-radius: 28px;
+    }
+
+
+    .bottom-nav-icon {
+
+        font-size: 25px;
+
+        line-height: 24px;
+    }
+
+
+    .bottom-nav-link[data-page="homePage"]
+    .bottom-nav-icon {
+
+        font-size: 27px;
+    }
+
+
+    .search-icon {
+
+        width: 24px;
+
+        height: 24px;
+
+        border-width: 3px;
+    }
+
+
+    .search-icon::after {
+
+        width: 12px;
+
+        height: 3px;
+
+        right: -9px;
+
+        bottom: -5px;
+    }
+
+
+    /* -----------------------------
+       スマホのプレイヤー
+       ----------------------------- */
+
+    .player-panel {
+
+        bottom: 78px;
+
+        width: calc(100% - 20px);
+
+        padding: 9px 12px;
+
+        border-radius: 18px;
+    }
+
+
+    .player-main {
+
+        gap: 7px;
+    }
+
+
+    .player-image {
+
+        width: 42px;
+
+        height: 42px;
+    }
+
+
+    .player-info {
+
+        min-width: 70px;
+    }
+
+
+    .player-title {
+
+        font-size: 13px;
+    }
+
+
+    .player-artist {
 
         font-size: 11px;
     }
 
 
-    .bottom-nav-icon {
-        font-size: 30px;
-        line-height: 29px;
+    .player-controls {
+
+        gap: 3px;
     }
 
 
-    .radio-icon {
-        font-size: 28px;
+    .player-button {
+
+        width: 34px;
+
+        height: 34px;
+
+        font-size: 13px;
     }
 
 
-    .search-icon {
-        width: 28px;
-        height: 28px;
+    .volume-container {
 
-        border-width: 4px;
+        min-width: 65px;
+
+        gap: 4px;
     }
 
 
-    .search-icon::after {
-        width: 14px;
-        height: 4px;
+    #volumeBar {
 
-        right: -11px;
-        bottom: -6px;
+        width: 45px;
+    }
+
+
+    #volumeValue {
+
+        width: 32px;
+
+        font-size: 10px;
+    }
+
+
+    .progress-container {
+
+        margin-top: 5px;
+
+        gap: 5px;
+
+        font-size: 9px;
     }
 
 }
