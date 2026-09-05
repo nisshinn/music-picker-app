@@ -2797,7 +2797,6 @@ if ("mediaSession" in navigator) {
 
             return originalSetPositionState(details);
         };
-
 }
     spotifyPlayer = new Spotify.Player({
 
