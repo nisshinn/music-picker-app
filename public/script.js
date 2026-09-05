@@ -2865,9 +2865,50 @@ function setupSpotifyPlayer() {
 } else {
     startProgressTimer();
 }
- updateMediaSessionPosition(
-            state
+ function updateMediaSessionPosition(state) {
+    if (!state) return;
+    if (!("mediaSession" in navigator)) return;
+    if (!("setPositionState" in navigator.mediaSession)) return;
+
+    const duration = Number(state.duration || 0);
+    const position = Number(state.position || 0);
+    const playbackRate = Number(state.playbackSpeed || 1);
+
+    // 異常な値はMedia Sessionに送らない
+    if (!Number.isFinite(duration) || duration <= 0) return;
+
+    if (!Number.isFinite(position) || position < 0) return;
+
+    // Spotify SDKのdurationはミリ秒
+    const durationSec = duration / 1000;
+    const positionSec = Math.min(
+        position / 1000,
+        durationSec
+    );
+
+    // 明らかに異常に長い曲は無視
+    if (durationSec > 60 * 60) {
+        console.warn(
+            "⚠️ 異常な再生時間を検出:",
+            durationSec,
+            "秒"
         );
+        return;
+    }
+
+    try {
+        navigator.mediaSession.setPositionState({
+            duration: durationSec,
+            playbackRate: playbackRate > 0 ? playbackRate : 1,
+            position: positionSec
+        });
+    } catch (error) {
+        console.warn(
+            "Media Session position:",
+            error
+        );
+    }
+}
 
             const current =
                 state.track_window
@@ -2889,17 +2930,8 @@ function setupSpotifyPlayer() {
 
 const uri = currentTrack.uri;
 
-// 🔒 iPhoneロック画面用の情報を設定
+// 🔒 iPhoneロック画面用
 updateMediaSession(currentTrack);
-
-// Spotify側に上書きされる場合があるので再設定
-setTimeout(() => {
-    updateMediaSession(currentTrack);
-}, 300);
-
-setTimeout(() => {
-    updateMediaSession(currentTrack);
-}, 1000);
 
 if (!isChangingTrack) {
 
@@ -2907,10 +2939,7 @@ if (!isChangingTrack) {
 
 }
 
-            updatePlayerInfo(
-                currentTrack
-            );
-updateMediaSession(
+updatePlayerInfo(
     currentTrack
 );
 
