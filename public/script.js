@@ -2483,22 +2483,7 @@ async function playTrack(
                 }
             );
 
-await fetch(
-    `https://api.spotify.com/v1/me/player/play?device_id=${spotifyDeviceId}`,
-    {
-        method: "PUT",
-        headers: {
-            Authorization: `Bearer ${spotifyToken}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            uris: [track.uri],
-            position_ms: 0
-        })
-    }
-);
 
-updateMediaSession(track);
         if (
             !transferResponse.ok &&
             transferResponse.status !== 204
@@ -2613,7 +2598,7 @@ updateMediaSession(track);
 
         }
 
-
+updateMediaSession(track);
         // ----------------------------------------------------
         // 情報更新
         // ----------------------------------------------------
@@ -2831,6 +2816,11 @@ function setupSpotifyPlayer() {
             updatePlayerState(
                 state
             );
+            if (state.paused) {
+    stopProgressTimer();
+} else {
+    startProgressTimer();
+}
  updateMediaSessionPosition(
             state
         );
@@ -3032,7 +3022,50 @@ if (
         );
 
 }
+let progressTimer = null;
 
+function startProgressTimer() {
+    if (progressTimer) return;
+
+    progressTimer = setInterval(async () => {
+        if (!spotifyPlayer) return;
+
+        try {
+            const state = await spotifyPlayer.getCurrentState();
+
+            if (!state) return;
+
+            const progress = document.getElementById("progressBar");
+
+            if (progress && state.duration > 0) {
+                progress.max = state.duration;
+                progress.value = Math.min(
+                    state.position,
+                    state.duration
+                );
+            }
+
+            // 時間表示
+            const currentTime = document.getElementById("currentTime");
+
+            if (currentTime) {
+                currentTime.textContent =
+                    formatTime(state.position);
+            }
+
+        } catch (error) {
+            console.warn("再生位置更新:", error);
+        }
+
+    }, 500);
+}
+
+function stopProgressTimer() {
+    if (progressTimer) {
+        clearInterval(progressTimer);
+        progressTimer = null;
+    }
+}
 
 function scheduleTrackEnded(track, state) {
 
@@ -3575,26 +3608,21 @@ function updatePlayerState(
     }
 
 
-    // --------------------------------------------------------
-    // 下プログレス
-    // --------------------------------------------------------
+ // --------------------------------------------------------
+// 下プログレス
+// --------------------------------------------------------
 
-    const progress =
-        document.getElementById(
-            "progressBar"
-        );
+const progress = document.getElementById("progressBar");
 
+if (progress) {
+    const duration = Number(state.duration || 0);
+    const position = Number(state.position || 0);
 
-    if (progress) {
-
-        progress.max =
-            state.duration || 0;
-
-
-        progress.value =
-            state.position || 0;
-
+    if (duration > 0) {
+        progress.max = duration;
+        progress.value = Math.min(position, duration);
     }
+}
 
 
     // --------------------------------------------------------
@@ -6372,5 +6400,29 @@ function updateMediaSession(track) {
         );
     } catch (error) {
         console.warn("previoustrack設定:", error);
+    }
+}
+function updateMediaSessionPosition(state) {
+    if (!state) return;
+    if (!("mediaSession" in navigator)) return;
+    if (!("setPositionState" in navigator.mediaSession)) return;
+
+    const duration = Number(state.duration || 0);
+    const position = Number(state.position || 0);
+    const playbackRate = Number(state.playbackSpeed || 1);
+
+    if (duration <= 0) return;
+
+    try {
+        navigator.mediaSession.setPositionState({
+            duration: duration / 1000,
+            playbackRate: playbackRate,
+            position: Math.min(
+                position / 1000,
+                duration / 1000
+            )
+        });
+    } catch (error) {
+        console.warn("Media Session position:", error);
     }
 }
