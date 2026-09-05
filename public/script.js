@@ -246,18 +246,49 @@ function initHomePage() {
 
 
                         // 選択表示
-                        if (selectedArtist) {
+                       if (selectedArtist) {
 
-                            selectedArtist.innerHTML = `
-                                <div class="selected-artist-card">
-                                    <span>🎤</span>
-                                    <strong>${escapeHtml(selectedArtistName)}</strong>
-                                    <span class="selected-check">✓ 選択中</span>
-                                </div>
-                            `;
+    const artistImage =
+        artist.image ||
+        artist.images?.[0]?.url ||
+        "";
 
-                            selectedArtist.style.display = "block";
-                        }
+    selectedArtist.innerHTML = `
+        <div class="selected-artist-card">
+
+            <img
+                class="selected-artist-image"
+                src="${escapeHtml(artistImage)}"
+                alt="${escapeHtml(selectedArtistName)}"
+            >
+
+            <div class="selected-artist-info">
+                <strong>${escapeHtml(selectedArtistName)}</strong>
+                <span class="selected-check">✓ 選択中</span>
+            </div>
+
+        </div>
+    `;
+
+    selectedArtist.style.display = "block";
+
+
+    // 画像がない場合
+    const selectedImage =
+        selectedArtist.querySelector(
+            ".selected-artist-image"
+        );
+
+    if (selectedImage) {
+
+        selectedImage.onerror = () => {
+
+            selectedImage.style.display = "none";
+
+        };
+
+    }
+}
 
 
                         // 検索結果を消す
@@ -3269,3 +3300,82 @@ async function readSpotifyError(
     }
 
 }
+// ============================================================
+// ハンバーガーメニュー
+// ============================================================
+
+function initHamburgerMenu() {
+
+    const menuButton =
+        document.getElementById("menuButton");
+
+    const sideMenu =
+        document.getElementById("sideMenu");
+
+    const overlay =
+        document.getElementById("menuOverlay");
+
+
+    if (!menuButton || !sideMenu) {
+
+        console.log(
+            "ハンバーガーメニューの要素が見つかりません"
+        );
+
+        return;
+    }
+
+
+    // メニューを開く
+    menuButton.addEventListener("click", () => {
+
+        sideMenu.classList.toggle("open");
+
+        if (overlay) {
+            overlay.classList.toggle("open");
+        }
+
+    });
+
+
+    // オーバーレイをクリックしたら閉じる
+    if (overlay) {
+
+        overlay.addEventListener("click", () => {
+
+            sideMenu.classList.remove("open");
+
+            overlay.classList.remove("open");
+
+        });
+
+    }
+
+
+    // メニュー内のリンクを押したら閉じる
+    sideMenu.addEventListener("click", event => {
+
+        const link =
+            event.target.closest("a, button");
+
+        if (!link) {
+            return;
+        }
+
+
+        sideMenu.classList.remove("open");
+
+        if (overlay) {
+            overlay.classList.remove("open");
+        }
+
+    });
+
+}
+
+
+// ページ読み込み時に実行
+document.addEventListener(
+    "DOMContentLoaded",
+    initHamburgerMenu
+);
