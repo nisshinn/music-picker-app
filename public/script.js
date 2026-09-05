@@ -2773,7 +2773,7 @@ console.log(
 
     name: "Music Picker",
 
-enableMediaSession: true,
+    enableMediaSession: false,
     volume: getSavedVolume(),
 
     getOAuthToken: callback => {
@@ -2880,13 +2880,9 @@ enableMediaSession: true,
 
         currentTrackData = currentTrack;
 
-        // 🔒 iPhoneロック画面
-        updateMediaSession(currentTrack);
-
-// Spotify SDKのMedia Session設定が終わった後に
-setTimeout(() => {
-    updateMediaSessionPosition(state);
-}, 100);
+       // 🔒 iPhoneロック画面
+updateMediaSession(currentTrack);
+updateMediaSessionPosition(state);
     
 updatePlayerInfo(currentTrack);
 
@@ -7310,8 +7306,8 @@ function updateMediaSessionPosition(state) {
     if (!state) return;
     if (!("mediaSession" in navigator)) return;
 
-    const duration = Number(state.duration) / 1000;
-    const position = Number(state.position) / 1000;
+    const duration = Number(state.duration || 0) / 1000;
+    const position = Number(state.position || 0) / 1000;
 
     if (!Number.isFinite(duration) || duration <= 0) {
         return;
@@ -7328,16 +7324,9 @@ function updateMediaSessionPosition(state) {
             position: safePosition,
             playbackRate: Number(state.playbackRate || 1)
         });
-
-        console.log(
-            "✅ 正しい時間をMedia Sessionへ設定:",
-            duration,
-            "秒"
-        );
-
     } catch (error) {
-        console.error(
-            "❌ setPositionState:",
+        console.warn(
+            "Media Session位置設定:",
             error
         );
     }
