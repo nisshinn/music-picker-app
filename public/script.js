@@ -2655,6 +2655,17 @@ lastEndedTrackUri = "";
 
 updateMediaSession(track);
 
+updateMediaSession(track);
+
+try {
+    updateMediaSession(track);
+} catch (error) {
+    console.warn("MediaSession更新失敗:", error);
+}
+
+// MediaSessionが失敗しても必ず終了判定を開始
+startTrackEndTimer(track);
+
 clearTrackEndTimer();
 
 currentTrackData =
