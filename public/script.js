@@ -7248,9 +7248,17 @@ function updateMediaSession(track) {
     if (!track) return;
     if (!("mediaSession" in navigator)) return;
 
-    const title = track.title || track.name || "Music Picker";
-    const artist = track.artist || getArtistText(track) || "";
-    const album = track.album?.name || "Music Picker";
+    const title =
+        track.title || track.name || "Music Picker";
+
+    const artist =
+        track.artist ||
+        getArtistText(track) ||
+        "";
+
+    const album =
+        track.album?.name ||
+        "Music Picker";
 
     const image =
         track.image ||
@@ -7258,55 +7266,61 @@ function updateMediaSession(track) {
         track.images?.[0]?.url ||
         "";
 
-    console.log("📱 ロック画面設定:", {
-        title,
-        artist,
-        album,
-        image
-    });
-
     try {
-        const artwork = image ? [
-            {
-                src: image,
-                sizes: "96x96",
-                type: "image/jpeg"
-            },
-            {
-                src: image,
-                sizes: "128x128",
-                type: "image/jpeg"
-            },
-            {
-                src: image,
-                sizes: "192x192",
-                type: "image/jpeg"
-            },
-            {
-                src: image,
-                sizes: "256x256",
-                type: "image/jpeg"
-            },
-            {
-                src: image,
-                sizes: "512x512",
-                type: "image/jpeg"
-            }
-        ] : [];
 
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: title,
-            artist: artist,
-            album: album,
-            artwork: artwork
-        });
+        navigator.mediaSession.metadata =
+            new MediaMetadata({
+                title: title,
+                artist: artist,
+                album: album,
+                artwork: image
+                    ? [
+                        {
+                            src: image,
+                            sizes: "96x96",
+                            type: "image/jpeg"
+                        },
+                        {
+                            src: image,
+                            sizes: "128x128",
+                            type: "image/jpeg"
+                        },
+                        {
+                            src: image,
+                            sizes: "192x192",
+                            type: "image/jpeg"
+                        },
+                        {
+                            src: image,
+                            sizes: "256x256",
+                            type: "image/jpeg"
+                        },
+                        {
+                            src: image,
+                            sizes: "512x512",
+                            type: "image/jpeg"
+                        }
+                    ]
+                    : []
+            });
 
-        navigator.mediaSession.playbackState = "playing";
+        navigator.mediaSession.playbackState =
+            "playing";
 
-        console.log("✅ Media Session設定完了");
+        console.log(
+            "📱 手動Media Session設定:",
+            title,
+            artist,
+            album
+        );
 
     } catch (error) {
-        console.error("❌ Media Session設定エラー:", error);
+
+        console.error(
+            "Media Session設定エラー:",
+            error
+        );
+
     }
 }
 // ============================================================
