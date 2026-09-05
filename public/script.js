@@ -6,6 +6,8 @@
 // ============================================================
 // 基本変数
 // ============================================================
+
+let lastEndedTrackUri = "";
 let isChangingTrack = false;
 let selectedMood = "";
 let selectedGenre = "all";
@@ -2599,23 +2601,24 @@ async function playTrack(
         }
 
 updateMediaSession(track);
-        // ----------------------------------------------------
-        // 情報更新
-        // ----------------------------------------------------
+ // ----------------------------------------------------
+// 再生成功
+// ----------------------------------------------------
 
-        currentTrackData =
-            track;
+lastEndedTrackUri = "";
 
+updateMediaSession(track);
 
-        showPlayerPanel();
+currentTrackData =
+    track;
 
+showPlayerPanel();
 
-        updatePlayerInfo(
-            track
-        );
+updatePlayerInfo(
+    track
+);
 
-
-        clearTrackEndTimer();
+clearTrackEndTimer();
 
 
     } catch (error) {
@@ -2849,20 +2852,19 @@ function setupSpotifyPlayer() {
                 currentTrack.uri;
 
 
-            const index =
-                currentPlaylist.findIndex(
-                    track =>
-                        track.uri ===
-                        uri
-                );
+            if (!isChangingTrack) {
 
+    const index =
+        currentPlaylist.findIndex(
+            track =>
+                track.uri === uri
+        );
 
-            if (index >= 0) {
+    if (index >= 0) {
+        currentTrackIndex = index;
+    }
 
-                currentTrackIndex =
-                    index;
-
-            }
+}
 
 
             updatePlayerInfo(
@@ -3238,9 +3240,8 @@ function clearTrackEndTimer() {
 
 async function handleTrackEnded() {
 
-    // 二重実行防止
     if (isChangingTrack) {
-        console.log("⏳ 曲変更中なので終了処理をスキップ");
+        console.log("⏳ 曲変更中なのでスキップ");
         return;
     }
 
@@ -3249,43 +3250,61 @@ async function handleTrackEnded() {
         return;
     }
 
-    // 自動再生OFF
     if (!appSettings.autoplay) {
         console.log("自動再生OFF");
         return;
     }
 
+    const currentIndex = currentTrackIndex;
+    const currentTrack = currentPlaylist[currentIndex];
+
+    if (!currentTrack) {
+        console.log("現在の曲が見つかりません");
+        return;
+    }
+
+    // 同じ曲の終了処理が短時間に2回呼ばれた場合を無視
+    if (
+        currentTrack.uri &&
+        lastEndedTrackUri === currentTrack.uri
+    ) {
+        console.log("🔒 同じ曲の終了処理を無視");
+        return;
+    }
+
+    lastEndedTrackUri = currentTrack.uri || "";
+
     isChangingTrack = true;
 
     try {
 
-        // --------------------------------------------
+        // ============================================
         // 1曲リピート
-        // --------------------------------------------
+        // ============================================
 
         if (appSettings.repeat === "one") {
 
             console.log("🔁 1曲リピート");
 
             await playTrack(
-                currentPlaylist[currentTrackIndex],
-                currentTrackIndex,
+                currentTrack,
+                currentIndex,
                 true
             );
 
             return;
         }
 
-        // --------------------------------------------
-        // シャッフル
-        // --------------------------------------------
+        // ============================================
+        // 次の曲
+        // ============================================
 
         let nextIndex;
 
         if (appSettings.shuffle) {
 
             if (currentPlaylist.length <= 1) {
-                nextIndex = currentTrackIndex;
+                nextIndex = currentIndex;
             } else {
 
                 do {
@@ -3296,19 +3315,19 @@ async function handleTrackEnded() {
                         );
 
                 } while (
-                    nextIndex === currentTrackIndex
+                    nextIndex === currentIndex
                 );
             }
 
         } else {
 
-            nextIndex =
-                currentTrackIndex + 1;
+            nextIndex = currentIndex + 1;
+
         }
 
-        // --------------------------------------------
-        // 次の曲
-        // --------------------------------------------
+        // ============================================
+        // 次の曲がある
+        // ============================================
 
         if (
             nextIndex >= 0 &&
@@ -3316,14 +3335,13 @@ async function handleTrackEnded() {
         ) {
 
             console.log(
-                "🎵 次の曲へ:",
+                "🎵 次の曲:",
                 nextIndex + 1,
                 "/",
                 currentPlaylist.length
             );
 
-            currentTrackIndex =
-                nextIndex;
+            currentTrackIndex = nextIndex;
 
             await playTrack(
                 currentPlaylist[nextIndex],
@@ -3334,14 +3352,14 @@ async function handleTrackEnded() {
             return;
         }
 
-        // --------------------------------------------
+        // ============================================
         // 全曲リピート
-        // --------------------------------------------
+        // ============================================
 
         if (appSettings.repeat === "all") {
 
             console.log(
-                "🔁 プレイリストを最初から"
+                "🔁 プレイリストを最初から再生"
             );
 
             currentTrackIndex = 0;
@@ -3355,22 +3373,18 @@ async function handleTrackEnded() {
             return;
         }
 
-        // --------------------------------------------
-        // プレイリスト終了
-        // --------------------------------------------
-
         console.log("🎵 プレイリスト終了");
 
     } finally {
 
-        // 少し待ってから解除
+        // 新しい曲の状態イベントが落ち着いてから解除
         setTimeout(() => {
-            isChangingTrack = false;
-        }, 1000);
 
+            isChangingTrack = false;
+
+        }, 1500);
     }
 }
-
 // ============================================================
 // Spotifyデバイス待機
 // ============================================================
