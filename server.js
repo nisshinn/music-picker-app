@@ -450,7 +450,10 @@ async function getSpotifyToken() {
 
     const data =
         await response.json();
-
+console.log(
+    "SpotifyプレイリストAPI:",
+    JSON.stringify(data, null, 2)
+);
     if (!response.ok) {
 
         console.error(
@@ -1926,14 +1929,10 @@ app.get(
             );
 
 
-            res.json({
-
-                success:
-                    true,
-
-                tracks:
-                    tracks
-            });
+           res.json({
+    success: true,
+    tracks
+});
 
 
         } catch (error) {

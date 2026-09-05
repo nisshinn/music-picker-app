@@ -9704,7 +9704,9 @@ async function openSpotifyPlaylist(playlist) {
 
         const data = await response.json();
 
-        console.log("プレイリスト曲取得結果:", data);
+console.log("プレイリスト曲取得結果:", data);
+console.log("data.tracks:", data.tracks);
+console.log("data.items:", data.items);
 
         if (!response.ok) {
             throw new Error(
@@ -9712,8 +9714,11 @@ async function openSpotifyPlaylist(playlist) {
             );
         }
 
-        const tracks = normalizeTracks(data.tracks || []);
+const rawTracks = data.tracks || data.items || [];
 
+console.log("rawTracks:", rawTracks);
+
+const tracks = normalizeTracks(rawTracks);
         console.log("再生可能曲:", tracks);
 
         if (!tracks.length) {
