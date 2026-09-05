@@ -640,7 +640,7 @@ async function makePlaylist() {
     if (button) {
         button.disabled = true;
         button.textContent =
-            "🎵 曲を選んでいます...";
+            "🎵 80曲から選んでいます...";
     }
 
     try {
@@ -712,8 +712,9 @@ async function makePlaylist() {
                 await response.json();
         }
 
+
         // ========================================
-        // 不正データ除外
+        // ① 不正データ除外
         // ========================================
 
         tracks =
@@ -725,8 +726,16 @@ async function makePlaylist() {
                 )
                 : [];
 
+
+        console.log(
+            "Spotifyから取得:",
+            tracks.length,
+            "曲"
+        );
+
+
         // ========================================
-        // 重複削除
+        // ② 重複削除
         // ========================================
 
         const uniqueMap =
@@ -742,16 +751,27 @@ async function makePlaylist() {
                     track.uri,
                     track
                 );
+
             }
+
         });
+
 
         tracks =
             Array.from(
                 uniqueMap.values()
             );
 
+
+        console.log(
+            "重複削除後:",
+            tracks.length,
+            "曲"
+        );
+
+
         // ========================================
-        // 気分ごとに並び順を変更
+        // ③ 気分ごとに並べ替え
         // ========================================
 
         tracks =
@@ -760,47 +780,59 @@ async function makePlaylist() {
                 selectedMood
             );
 
+
+        console.log(
+            "気分:",
+            selectedMood
+        );
+
+
         // ========================================
-        // 前回使った曲を避ける
+        // ④ 前回使った曲を除外
         // ========================================
+
+        const previousSet =
+            new Set(previousSongs);
+
 
         const newTracks =
             tracks.filter(
                 track =>
-                    !previousSongs.includes(
+                    !previousSet.has(
                         track.uri
                     )
             );
 
-        // ========================================
-        // 前回曲を除いた結果が少なすぎたら
-        // 元の候補も利用する
-        // ========================================
 
-        let candidates =
-            newTracks.length >= 5
-                ? newTracks
-                : tracks;
+        console.log(
+            "前回曲を除外後:",
+            newTracks.length,
+            "曲"
+        );
+
 
         // ========================================
-        // 5曲選択
+        // ⑤ 5曲決定
         // ========================================
 
         const playlist =
-            candidates.slice(0, 5);
+            newTracks.slice(0, 5);
+
 
         // ========================================
-        // 曲がない
+        // 5曲未満だった場合
         // ========================================
 
-        if (playlist.length === 0) {
+        if (playlist.length < 5) {
 
             alert(
-                "この条件では曲が見つかりませんでした。"
+                "新しい曲が5曲見つかりませんでした。\n" +
+                "もう一度試すか、別の条件を選択してください。"
             );
 
             return;
         }
+
 
         // ========================================
         // プレイリスト保存
@@ -811,15 +843,18 @@ async function makePlaylist() {
 
         currentTrackIndex = 0;
 
+
         // ========================================
         // 前回曲として保存
         // ========================================
 
         previousSongs.push(
             ...playlist.map(
-                track => track.uri
+                track =>
+                    track.uri
             )
         );
+
 
         // 最大20曲まで
         if (
@@ -828,7 +863,9 @@ async function makePlaylist() {
 
             previousSongs =
                 previousSongs.slice(-20);
+
         }
+
 
         localStorage.setItem(
             "previousSongs",
@@ -836,6 +873,7 @@ async function makePlaylist() {
                 previousSongs
             )
         );
+
 
         // ========================================
         // 履歴
@@ -849,7 +887,9 @@ async function makePlaylist() {
             saveToHistory(
                 playlist
             );
+
         }
+
 
         // ========================================
         // 表示
@@ -859,6 +899,13 @@ async function makePlaylist() {
             playlist
         );
 
+
+        console.log(
+            "🎵 決定した5曲:",
+            playlist
+        );
+
+
     } catch (error) {
 
         console.error(
@@ -866,10 +913,12 @@ async function makePlaylist() {
             error
         );
 
+
         alert(
             error.message ||
             "プレイリスト作成に失敗しました。"
         );
+
 
     } finally {
 
@@ -879,8 +928,11 @@ async function makePlaylist() {
 
             button.textContent =
                 "🎵 おすすめ5曲を作る";
+
         }
+
     }
+
 }
 
 // ============================================================
