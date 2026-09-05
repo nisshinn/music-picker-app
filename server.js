@@ -529,8 +529,7 @@ async function get80Tracks(token, query) {
 
     const all = [];
 
-    // Spotify Search APIは1回最大10曲
-    // 10曲 × 8回 = 最大80曲
+    // 10曲ずつ最大8ページ取得
     for (let offset = 0; offset < 80; offset += 10) {
         try {
             const data = await searchSpotifyTracks(
@@ -539,7 +538,10 @@ async function get80Tracks(token, query) {
                 10,
                 offset
             );
-
+    console.log(
+    "Spotify検索結果total:",
+    data.tracks?.total
+);
             const tracks = data.tracks?.items || [];
 
             console.log(
@@ -550,15 +552,17 @@ async function get80Tracks(token, query) {
 
             all.push(...tracks);
 
-            // これ以上結果がない場合は終了
-            if (tracks.length < 10) {
-                break;
-            }
-
-            // APIへの連続アクセスを少し間隔を空ける
+            // ★重要
+            // 5曲しか返ってこなくても、
+            // ここでは終了しない。
+            //
+            // Spotifyの検索結果が少ない場合でも
+            // 次のoffsetを試す。
+            
+            // APIへの連続アクセスを少し空ける
             if (offset < 70) {
                 await new Promise(resolve =>
-                    setTimeout(resolve, 200)
+                    setTimeout(resolve, 300)
                 );
             }
 
@@ -568,7 +572,6 @@ async function get80Tracks(token, query) {
                 error
             );
 
-            // 429ならそこで終了
             if (
                 error.status === 429 ||
                 error.reason === "QUOTA_EXCEEDED"
@@ -576,6 +579,7 @@ async function get80Tracks(token, query) {
                 throw error;
             }
 
+            // その他のエラーなら終了
             break;
         }
     }
@@ -594,6 +598,7 @@ async function get80Tracks(token, query) {
         unique.length,
         "曲"
     );
+
 
     return unique.slice(0, 80);
 }
