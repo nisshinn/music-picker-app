@@ -2517,3 +2517,58 @@ body[data-theme="night"] .library-delete-button {
         padding: 14px;
     }
 }
+/* ==========================================
+   ライブラリ折りたたみ
+========================================== */
+
+.library-section {
+    margin-bottom: 18px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.library-section-header {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: left;
+}
+
+.library-section-header:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.library-arrow {
+    transition: transform 0.25s ease;
+    font-size: 14px;
+}
+
+/* 閉じている状態 */
+.library-section-content {
+    max-height: 2000px;
+    overflow: hidden;
+    padding: 0 16px 16px;
+    transition:
+        max-height 0.3s ease,
+        padding 0.3s ease;
+}
+
+/* 閉じた状態 */
+.library-section-content.closed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.library-section-header.closed .library-arrow {
+    transform: rotate(-90deg);
+}

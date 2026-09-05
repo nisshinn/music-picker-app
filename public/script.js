@@ -256,6 +256,8 @@ document.addEventListener(
 
         updateLibraryPage();
 
+        initLibraryAccordion();
+
 updateHistoryPage();
 
 updateMenuPlayerEmptyState();
@@ -7916,4 +7918,19 @@ async function savePlaylistToSpotify(
 
     }
 
+}
+function initLibraryAccordion() {
+    const headers = document.querySelectorAll(".library-section-header");
+
+    headers.forEach(header => {
+        header.addEventListener("click", () => {
+            const targetId = header.dataset.target;
+            const content = document.getElementById(targetId);
+
+            if (!content) return;
+
+            content.classList.toggle("closed");
+            header.classList.toggle("closed");
+        });
+    });
 }

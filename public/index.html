@@ -848,59 +848,35 @@
     </section>
 
 
-    <!-- =====================================================
-         お気に入り
-         ===================================================== -->
+<section id="favoritesPage" class="page">
+  <div class="page-header">
+    <h1>📚 ライブラリ</h1>
+    <p>お気に入りやプレイリストを管理</p>
+  </div>
 
-    <section
-    id="favoritesPage"
-    class="page"
->
+  <!-- お気に入り -->
+  <section class="library-section">
+    <button class="library-section-header" type="button" data-target="favoritesContent">
+      <span>❤️ お気に入り</span>
+      <span class="library-arrow">▼</span>
+    </button>
 
-    <div class="page-header">
-
-        <h1>
-            📚 ライブラリ
-        </h1>
-
-        <p>
-            お気に入りやプレイリストを管理
-        </p>
-
+    <div id="favoritesContent" class="library-section-content">
+      <div id="favoritesList" class="track-list"></div>
     </div>
+  </section>
 
+  <!-- プレイリスト -->
+  <section class="library-section">
+    <button class="library-section-header" type="button" data-target="playlistsContent">
+      <span>🎵 プレイリスト</span>
+      <span class="library-arrow">▼</span>
+    </button>
 
-    <!-- お気に入り -->
-
-    <section class="content-box">
-
-        <h2>
-            ❤️ お気に入り
-        </h2>
-
-        <div
-            id="favoritesList"
-            class="track-list"
-        ></div>
-
-    </section>
-
-
-    <!-- プレイリスト -->
-
-    <section class="content-box">
-
-        <h2>
-            🎵 プレイリスト
-        </h2>
-
-        <div
-            id="playlistList"
-            class="track-list"
-        ></div>
-
-    </section>
-
+    <div id="playlistsContent" class="library-section-content">
+      <div id="playlistList" class="track-list"></div>
+    </div>
+  </section>
 </section>
 
 
