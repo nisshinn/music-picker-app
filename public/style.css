@@ -578,9 +578,11 @@ body {
     gap: 15px;
 
     margin-bottom: 18px;
+
+    padding-bottom: 12px;
+
+    border-bottom: 2px solid #e5e7eb;
 }
-
-
 .playlist-header h2 {
     margin: 0;
 
@@ -1154,6 +1156,201 @@ body {
 
     #volumeBar {
         width: 55px;
+    }
+
+}
+/* =========================================================
+   下部ナビゲーション
+   ========================================================= */
+
+.bottom-nav {
+    position: fixed;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+
+    width: min(850px, calc(100% - 30px));
+    height: 92px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+
+    padding: 8px 10px;
+
+    background: rgba(25, 25, 25, 0.96);
+
+    border: 1px solid #333;
+    border-radius: 48px;
+
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.45);
+
+    z-index: 9999;
+
+    backdrop-filter: blur(12px);
+}
+
+
+/* ボタン */
+
+.bottom-nav-link {
+    position: relative;
+
+    width: 150px;
+    height: 76px;
+
+    border: none;
+    background: transparent;
+
+    color: #f5f5f5;
+
+    border-radius: 40px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 4px;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        color 0.2s ease;
+}
+
+
+.bottom-nav-link:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+
+.bottom-nav-link:active {
+    transform: scale(0.96);
+}
+
+
+/* 選択中 */
+
+.bottom-nav-link.active {
+    background: #333;
+    color: #ff3b6b;
+}
+
+
+/* アイコン */
+
+.bottom-nav-icon {
+    font-size: 42px;
+    line-height: 38px;
+    font-weight: 700;
+}
+
+
+/* ホーム */
+
+.bottom-nav-link[data-page="homePage"] .bottom-nav-icon {
+    font-size: 43px;
+}
+
+
+/* ラジオ */
+
+.radio-icon {
+    font-size: 38px;
+}
+
+
+/* 検索 */
+
+.search-icon {
+    width: 38px;
+    height: 38px;
+
+    border: 5px solid #f5f5f5;
+    border-radius: 50%;
+
+    position: relative;
+
+    margin-bottom: 2px;
+}
+
+
+.search-icon::after {
+    content: "";
+
+    position: absolute;
+
+    width: 18px;
+    height: 5px;
+
+    background: #f5f5f5;
+
+    border-radius: 5px;
+
+    right: -14px;
+    bottom: -7px;
+
+    transform: rotate(48deg);
+}
+
+
+/* =========================================================
+   スマホ
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    .bottom-nav {
+        bottom: 8px;
+
+        width: calc(100% - 12px);
+
+        height: 78px;
+
+        padding: 5px;
+    }
+
+
+    .bottom-nav-link {
+        width: 20%;
+        height: 66px;
+
+        font-size: 11px;
+    }
+
+
+    .bottom-nav-icon {
+        font-size: 30px;
+        line-height: 29px;
+    }
+
+
+    .radio-icon {
+        font-size: 28px;
+    }
+
+
+    .search-icon {
+        width: 28px;
+        height: 28px;
+
+        border-width: 4px;
+    }
+
+
+    .search-icon::after {
+        width: 14px;
+        height: 4px;
+
+        right: -11px;
+        bottom: -6px;
     }
 
 }

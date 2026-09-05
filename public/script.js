@@ -34,6 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     initMenu();
 
+    initBottomNav();
+
     initHome();
 
     initSearch();
@@ -49,6 +51,49 @@ document.addEventListener("DOMContentLoaded", () => {
     updateHistoryPage();
 
 });
+// ============================================================
+// 下部ナビゲーション
+// ============================================================
+
+function initBottomNav() {
+
+    const links =
+        document.querySelectorAll(
+            ".bottom-nav-link"
+        );
+
+
+    links.forEach(link => {
+
+        link.addEventListener(
+            "click",
+            () => {
+
+                const pageId =
+                    link.dataset.page;
+
+
+                showPage(pageId);
+
+
+                links.forEach(
+                    item =>
+                        item.classList.remove(
+                            "active"
+                        )
+                );
+
+
+                link.classList.add(
+                    "active"
+                );
+
+            }
+        );
+
+    });
+
+}
 
 
 // ============================================================
@@ -1311,47 +1356,29 @@ async function playTrack(
         // 再生する曲
         // ----------------------------------------------------
 
-        let uris =
-            [track.uri];
+let uris = [track.uri];
 
+if (playlistMode && currentPlaylist.length > 0) {
 
-        if (
-            playlistMode &&
-            currentPlaylist.length
-        ) {
+    const playlistTracks =
+        currentPlaylist
+            .map(normalizeTrack)
+            .filter(track => track && track.uri);
 
-            uris =
-                currentPlaylist
-                    .slice(index)
-                    .map(
-                        normalizeTrack
-                    )
-                    .filter(
-                        item =>
-                            item &&
-                            item.uri
-                    )
-                    .map(
-                        item =>
-                            item.uri
-                    );
+    uris = playlistTracks.map(
+        track => track.uri
+    );
+}
 
+// 曲が1曲も取れなかった場合
+if (!uris.length && track.uri) {
+    uris = [track.uri];
+}
 
-            if (!uris.length) {
-
-                uris =
-                    [track.uri];
-            }
-
-        }
-
-
-        console.log(
-            "再生:",
-            uris
-        );
-
-
+console.log(
+    "再生:",
+    uris
+);
         // ブラウザ再生許可
         if (
             spotifyPlayer.activateElement
@@ -1371,147 +1398,118 @@ async function playTrack(
         // 再生先をWeb Playerへ移動
         // ----------------------------------------------------
 
-        const transfer =
-            await fetch(
-                "https://api.spotify.com/v1/me/player",
-                {
-                    method: "PUT",
+ const response =
+    await fetch(
+        `https://api.spotify.com/v1/me/player/play?device_id=${encodeURIComponent(spotifyDeviceId)}`,
+        {
+            method: "PUT",
 
-                    headers: {
-                        Authorization:
-                            `Bearer ${spotifyToken}`,
+            headers: {
+                Authorization:
+                    `Bearer ${spotifyToken}`,
 
-                        "Content-Type":
-                            "application/json"
-                    },
+                "Content-Type":
+                    "application/json"
+            },
 
-                    body: JSON.stringify({
-                        device_ids:
-                            [spotifyDeviceId],
-
-                        play: false
-                    })
-                }
-            );
-
-
-        if (
-            !transfer.ok &&
-            transfer.status !== 204
-        ) {
-
-            throw new Error(
-                await readSpotifyError(
-                    transfer
-                )
-            );
+            body: JSON.stringify({
+                uris: uris,
+                position_ms: 0
+            })
         }
+    );
 
 
-        await sleep(300);
+if (!response.ok) {
 
-
-        // ----------------------------------------------------
-        // 再生
-        // ----------------------------------------------------
-
-        const response =
-            await fetch(
-                `https://api.spotify.com/v1/me/player/play?device_id=${encodeURIComponent(spotifyDeviceId)}`,
-                {
-                    method: "PUT",
-
-                    headers: {
-                        Authorization:
-                            `Bearer ${spotifyToken}`,
-
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        uris: uris,
-
-                        position_ms: 0
-                    })
-                }
-            );
-
-
-        if (!response.ok) {
-
-            const error =
-                await readSpotifyError(
-                    response
-                );
-
-
-            if (
-                response.status === 401
-            ) {
-
-                throw new Error(
-                    "Spotifyのログイン期限が切れています。もう一度ログインしてください。"
-                );
-            }
-
-
-            if (
-                response.status === 403
-            ) {
-
-                throw new Error(
-                    "Spotifyの再生権限がありません。Premiumアカウントと権限を確認してください。"
-                );
-            }
-
-
-            throw new Error(
-                `Spotify再生エラー: ${error}`
-            );
-        }
-
-
-        currentPlaylist =
-            playlistMode
-                ? normalizeTracks(
-                    currentPlaylist
-                )
-                : [track];
-
-
-        currentTrackIndex =
-            playlistMode
-                ? index
-                : 0;
-
-
-        isPlaylistMode =
-            playlistMode;
-
-
-        showPlayerPanel();
-
-
-        updatePlayerInfo(
-            track
+    const error =
+        await readSpotifyError(
+            response
         );
 
 
-    } catch (error) {
+    if (
+        response.status === 401
+    ) {
 
-        console.error(
-            "再生エラー:",
-            error
+        throw new Error(
+            "Spotifyのログイン期限が切れています。もう一度ログインしてください。"
         );
-
-
-        alert(
-            "音楽を再生できませんでした。\n\n" +
-            error.message
-        );
-
     }
+
+
+    if (
+        response.status === 403
+    ) {
+
+        throw new Error(
+            "Spotifyの再生権限がありません。Premiumアカウントと権限を確認してください。"
+        );
+    }
+
+
+    throw new Error(
+        `Spotify再生エラー: ${error}`
+    );
+}
+
+
+// ----------------------------------------------------
+// 現在のプレイリストを保存
+// ----------------------------------------------------
+
+if (playlistMode) {
+
+    currentPlaylist =
+        normalizeTracks(
+            currentPlaylist
+        );
+
+    currentTrackIndex =
+        index;
+
+} else {
+
+    currentPlaylist =
+        [track];
+
+    currentTrackIndex =
+        0;
+}
+
+
+isPlaylistMode =
+    playlistMode;
+
+
+// ----------------------------------------------------
+// プレイヤー画面を表示
+// ----------------------------------------------------
+
+showPlayerPanel();
+
+
+updatePlayerInfo(
+    track
+);
+
+
+} catch (error) {
+
+    console.error(
+        "再生エラー:",
+        error
+    );
+
+
+    alert(
+        "音楽を再生できませんでした。\n\n" +
+        error.message
+    );
+
+    return;
+
+}
 
 }
 
@@ -1531,6 +1529,25 @@ function initSpotify() {
     }
 
 }
+
+
+// SDKが後から読み込まれた場合
+window.onSpotifyWebPlaybackSDKReady =
+    function () {
+
+        console.log(
+            "Spotify SDK Ready"
+        );
+
+
+        setupSpotifyPlayer();
+
+    };
+
+
+// ============================================================
+// Player作成
+// ============================================================
 
 
 // SDKが後から読み込まれた場合
