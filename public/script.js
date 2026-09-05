@@ -2759,7 +2759,15 @@ function setupSpotifyPlayer() {
         return;
 
     }
+console.log(
+    "mediaSession:",
+    "mediaSession" in navigator
+);
 
+console.log(
+    "metadata:",
+    navigator.mediaSession?.metadata
+);
     spotifyPlayer = new Spotify.Player({
 
     name: "Music Picker",
@@ -2888,7 +2896,7 @@ function setupSpotifyPlayer() {
 const uri = currentTrack.uri;
 
 // 🔒 iPhoneロック画面用
-updateMediaSession(currentTrack);
+//updateMediaSession(currentTrack);
 
 if (!isChangingTrack) {
 
@@ -7245,6 +7253,7 @@ window.location.href =
     });
 }
 function updateMediaSession(track) {
+    console.log("🔵 updateMediaSession 実行");
     if (!track) return;
     if (!("mediaSession" in navigator)) return;
 
