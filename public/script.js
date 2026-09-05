@@ -6,7 +6,9 @@
 // ============================================================
 // 基本変数
 // ============================================================
-
+let trackEndTimer = null;
+let trackChangeLock = false;
+let playbackGeneration = 0;
 let lastEndedTrackUri = "";
 let isChangingTrack = false;
 let selectedMood = "";
@@ -32,7 +34,6 @@ let spotifyToken = "";
 let searchRequestId = 0;
 let playbackRequestId = 0;
 
-let trackEndTimer = null;
 let lastHandledEndedUri = "";
 let lastHandledEndedTime = 0;
 
@@ -2311,6 +2312,10 @@ async function playTrack(
     const requestId =
         ++playbackRequestId;
 
+        playbackGeneration++;
+      
+        clearTrackEndTimer();
+
 
     track =
         normalizeTrack(
@@ -2609,6 +2614,8 @@ lastEndedTrackUri = "";
 
 updateMediaSession(track);
 
+clearTrackEndTimer();
+
 currentTrackData =
     track;
 
@@ -2618,8 +2625,9 @@ updatePlayerInfo(
     track
 );
 
-clearTrackEndTimer();
-
+updateMediaSession(
+    track
+);
 
     } catch (error) {
 
@@ -2854,15 +2862,7 @@ function setupSpotifyPlayer() {
 
             if (!isChangingTrack) {
 
-    const index =
-        currentPlaylist.findIndex(
-            track =>
-                track.uri === uri
-        );
-
-    if (index >= 0) {
-        currentTrackIndex = index;
-    }
+   // Spotifyの状態から勝手にcurrentTrackIndexを変更しない
 
 }
 
@@ -3073,12 +3073,9 @@ function scheduleTrackEnded(track, state) {
 
     clearTrackEndTimer();
 
-    const uri =
-        track?.uri || "";
+    const uri = track?.uri || "";
 
-    if (!uri) {
-        return;
-    }
+    if (!uri) return;
 
     const duration =
         Number(state?.duration || 0);
@@ -3086,9 +3083,10 @@ function scheduleTrackEnded(track, state) {
     const position =
         Number(state?.position || 0);
 
-    if (duration <= 0) {
-        return;
-    }
+    if (duration <= 0) return;
+
+    const generation =
+        playbackGeneration;
 
     const remaining =
         Math.max(
@@ -3096,126 +3094,96 @@ function scheduleTrackEnded(track, state) {
             duration - position
         );
 
-    console.log(
-        "🎧 曲終了監視:",
-        track?.title,
-        "残り",
-        Math.round(remaining / 1000),
-        "秒"
-    );
+    trackEndTimer = setTimeout(
+        async () => {
 
-    trackEndTimer =
-        setTimeout(
-            async () => {
+            // 古い曲のタイマーなら完全無視
+            if (
+                generation !==
+                playbackGeneration
+            ) {
+                return;
+            }
 
-                try {
+            if (trackChangeLock) {
+                return;
+            }
 
-                    if (!spotifyPlayer) {
-                        return;
-                    }
+            try {
 
-                    const currentState =
-                        await spotifyPlayer.getCurrentState();
+                const currentState =
+                    await spotifyPlayer?.getCurrentState();
 
-                    if (!currentState) {
-                        return;
-                    }
+                if (!currentState) return;
 
-                    const current =
-                        currentState
-                            .track_window
-                            ?.current_track;
+                const current =
+                    currentState
+                        .track_window
+                        ?.current_track;
 
-                    const currentUri =
-                        current?.uri || "";
+                if (!current) return;
 
-                    // 別の曲になっていた
-                    if (currentUri !== uri) {
-                        return;
-                    }
-
-                    // 一時停止中
-                    if (currentState.paused) {
-
-                        console.log(
-                            "⏸ 一時停止中"
-                        );
-
-                        return;
-                    }
-
-                    const currentDuration =
-                        Number(
-                            currentState.duration || 0
-                        );
-
-                    const currentPosition =
-                        Number(
-                            currentState.position || 0
-                        );
-
-                    if (currentDuration <= 0) {
-                        return;
-                    }
-
-                    // まだ終了していない
-                    if (
-                        currentPosition <
-                        currentDuration - 1000
-                    ) {
-
-                        scheduleTrackEnded(
-                            current,
-                            currentState
-                        );
-
-                        return;
-                    }
-
-                    // 二重実行防止
-                    const now =
-                        Date.now();
-
-                    if (
-                        lastHandledEndedUri === uri &&
-                        now - lastHandledEndedTime < 2500
-                    ) {
-
-                        return;
-                    }
-
-                    lastHandledEndedUri =
-                        uri;
-
-                    lastHandledEndedTime =
-                        now;
-
-                    console.log(
-                        "🎵 曲終了:",
-                        current?.name ||
-                        track?.title
-                    );
-
-                    await handleTrackEnded();
-
-                } catch (error) {
-
-                    console.warn(
-                        "曲終了処理:",
-                        error
-                    );
-
+                // 別の曲なら終了処理しない
+                if (
+                    current.uri !== uri
+                ) {
+                    return;
                 }
 
-            },
+                if (
+                    currentState.paused
+                ) {
+                    return;
+                }
 
-            Math.max(
-                500,
-                remaining - 300
-            )
-        );
+                const currentDuration =
+                    Number(
+                        currentState.duration || 0
+                    );
+
+                const currentPosition =
+                    Number(
+                        currentState.position || 0
+                    );
+
+                // まだ終わっていない
+                if (
+                    currentPosition <
+                    currentDuration - 1000
+                ) {
+
+                    scheduleTrackEnded(
+                        current,
+                        currentState
+                    );
+
+                    return;
+                }
+
+                console.log(
+                    "🎵 曲終了:",
+                    current.name
+                );
+
+                await handleTrackEnded();
+
+            } catch (error) {
+
+                console.warn(
+                    "曲終了処理:",
+                    error
+                );
+
+            }
+
+        },
+
+        Math.max(
+            500,
+            remaining - 300
+        )
+    );
 }
-
 
 function clearTrackEndTimer() {
 
@@ -3240,13 +3208,14 @@ function clearTrackEndTimer() {
 
 async function handleTrackEnded() {
 
-    if (isChangingTrack) {
-        console.log("⏳ 曲変更中なのでスキップ");
+    // 二重実行を完全に防ぐ
+    if (trackChangeLock) {
+        console.log("🔒 曲変更処理中");
         return;
     }
 
     if (!currentPlaylist.length) {
-        console.log("プレイリストがありません");
+        console.log("プレイリストなし");
         return;
     }
 
@@ -3255,26 +3224,10 @@ async function handleTrackEnded() {
         return;
     }
 
-    const currentIndex = currentTrackIndex;
-    const currentTrack = currentPlaylist[currentIndex];
+    trackChangeLock = true;
 
-    if (!currentTrack) {
-        console.log("現在の曲が見つかりません");
-        return;
-    }
-
-    // 同じ曲の終了処理が短時間に2回呼ばれた場合を無視
-    if (
-        currentTrack.uri &&
-        lastEndedTrackUri === currentTrack.uri
-    ) {
-        console.log("🔒 同じ曲の終了処理を無視");
-        return;
-    }
-
-    lastEndedTrackUri = currentTrack.uri || "";
-
-    isChangingTrack = true;
+    // 現在の曲を確定
+    const oldIndex = currentTrackIndex;
 
     try {
 
@@ -3286,9 +3239,11 @@ async function handleTrackEnded() {
 
             console.log("🔁 1曲リピート");
 
+            currentTrackIndex = oldIndex;
+
             await playTrack(
-                currentTrack,
-                currentIndex,
+                currentPlaylist[oldIndex],
+                oldIndex,
                 true
             );
 
@@ -3304,10 +3259,13 @@ async function handleTrackEnded() {
         if (appSettings.shuffle) {
 
             if (currentPlaylist.length <= 1) {
-                nextIndex = currentIndex;
+
+                nextIndex = oldIndex;
+
             } else {
 
                 do {
+
                     nextIndex =
                         Math.floor(
                             Math.random() *
@@ -3315,18 +3273,19 @@ async function handleTrackEnded() {
                         );
 
                 } while (
-                    nextIndex === currentIndex
+                    nextIndex === oldIndex
                 );
+
             }
 
         } else {
 
-            nextIndex = currentIndex + 1;
+            nextIndex = oldIndex + 1;
 
         }
 
         // ============================================
-        // 次の曲がある
+        // 次の曲が存在
         // ============================================
 
         if (
@@ -3335,12 +3294,13 @@ async function handleTrackEnded() {
         ) {
 
             console.log(
-                "🎵 次の曲:",
+                "➡️ 次の曲:",
                 nextIndex + 1,
                 "/",
                 currentPlaylist.length
             );
 
+            // ★先にインデックスを確定
             currentTrackIndex = nextIndex;
 
             await playTrack(
@@ -3359,7 +3319,7 @@ async function handleTrackEnded() {
         if (appSettings.repeat === "all") {
 
             console.log(
-                "🔁 プレイリストを最初から再生"
+                "🔁 最初の曲へ"
             );
 
             currentTrackIndex = 0;
@@ -3373,16 +3333,19 @@ async function handleTrackEnded() {
             return;
         }
 
-        console.log("🎵 プレイリスト終了");
+        console.log(
+            "⏹ プレイリスト終了"
+        );
 
     } finally {
 
-        // 新しい曲の状態イベントが落ち着いてから解除
+        // 少し長めにロック
         setTimeout(() => {
 
-            isChangingTrack = false;
+            trackChangeLock = false;
 
-        }, 1500);
+        }, 2000);
+
     }
 }
 // ============================================================
