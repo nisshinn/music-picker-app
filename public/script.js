@@ -6,7 +6,7 @@
 // ============================================================
 // 基本変数
 // ============================================================
-
+let isChangingTrack = false;
 let selectedMood = "";
 let selectedGenre = "all";
 
@@ -3238,6 +3238,12 @@ function clearTrackEndTimer() {
 
 async function handleTrackEnded() {
 
+    // 二重実行防止
+    if (isChangingTrack) {
+        console.log("⏳ 曲変更中なので終了処理をスキップ");
+        return;
+    }
+
     if (!currentPlaylist.length) {
         console.log("プレイリストがありません");
         return;
@@ -3249,73 +3255,120 @@ async function handleTrackEnded() {
         return;
     }
 
-    // ==============================
-    // 1曲リピート
-    // ==============================
+    isChangingTrack = true;
 
-    if (appSettings.repeat === "one") {
+    try {
 
-        console.log("1曲リピート");
+        // --------------------------------------------
+        // 1曲リピート
+        // --------------------------------------------
 
-        await playTrack(
-            currentPlaylist[currentTrackIndex],
-            currentTrackIndex,
-            true
-        );
+        if (appSettings.repeat === "one") {
 
-        return;
+            console.log("🔁 1曲リピート");
+
+            await playTrack(
+                currentPlaylist[currentTrackIndex],
+                currentTrackIndex,
+                true
+            );
+
+            return;
+        }
+
+        // --------------------------------------------
+        // シャッフル
+        // --------------------------------------------
+
+        let nextIndex;
+
+        if (appSettings.shuffle) {
+
+            if (currentPlaylist.length <= 1) {
+                nextIndex = currentTrackIndex;
+            } else {
+
+                do {
+                    nextIndex =
+                        Math.floor(
+                            Math.random() *
+                            currentPlaylist.length
+                        );
+
+                } while (
+                    nextIndex === currentTrackIndex
+                );
+            }
+
+        } else {
+
+            nextIndex =
+                currentTrackIndex + 1;
+        }
+
+        // --------------------------------------------
+        // 次の曲
+        // --------------------------------------------
+
+        if (
+            nextIndex >= 0 &&
+            nextIndex < currentPlaylist.length
+        ) {
+
+            console.log(
+                "🎵 次の曲へ:",
+                nextIndex + 1,
+                "/",
+                currentPlaylist.length
+            );
+
+            currentTrackIndex =
+                nextIndex;
+
+            await playTrack(
+                currentPlaylist[nextIndex],
+                nextIndex,
+                true
+            );
+
+            return;
+        }
+
+        // --------------------------------------------
+        // 全曲リピート
+        // --------------------------------------------
+
+        if (appSettings.repeat === "all") {
+
+            console.log(
+                "🔁 プレイリストを最初から"
+            );
+
+            currentTrackIndex = 0;
+
+            await playTrack(
+                currentPlaylist[0],
+                0,
+                true
+            );
+
+            return;
+        }
+
+        // --------------------------------------------
+        // プレイリスト終了
+        // --------------------------------------------
+
+        console.log("🎵 プレイリスト終了");
+
+    } finally {
+
+        // 少し待ってから解除
+        setTimeout(() => {
+            isChangingTrack = false;
+        }, 1000);
+
     }
-
-    // ==============================
-    // 次の曲
-    // ==============================
-
-    let nextIndex = currentTrackIndex + 1;
-
-    if (nextIndex < currentPlaylist.length) {
-
-        console.log(
-            "次の曲へ:",
-            nextIndex + 1,
-            "/",
-            currentPlaylist.length
-        );
-
-        currentTrackIndex = nextIndex;
-
-        await playTrack(
-            currentPlaylist[nextIndex],
-            nextIndex,
-            true
-        );
-
-        return;
-    }
-
-    // ==============================
-    // 全曲リピート
-    // ==============================
-
-    if (appSettings.repeat === "all") {
-
-        console.log("プレイリストを最初から再生");
-
-        currentTrackIndex = 0;
-
-        await playTrack(
-            currentPlaylist[0],
-            0,
-            true
-        );
-
-        return;
-    }
-
-    // ==============================
-    // プレイリスト終了
-    // ==============================
-
-    console.log("プレイリスト終了");
 }
 
 // ============================================================
