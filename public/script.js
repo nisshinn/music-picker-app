@@ -2827,8 +2827,7 @@ if ("mediaSession" in navigator) {
 
     name: "Music Picker",
 
-    enableMediaSession: true,
-
+enableMediaSession: false,
     volume: getSavedVolume(),
 
     getOAuthToken: callback => {
@@ -2952,7 +2951,7 @@ const uri = currentTrack.uri;
 
 // 🔒 iPhoneロック画面用
 updateMediaSession(currentTrack);
-
+updateMediaSessionPosition(state);
 console.log("===== Spotify STATE =====");
 
 console.log("曲名:", currentTrack.name || currentTrack.title);
@@ -7398,6 +7397,42 @@ function updateMediaSession(track) {
             error
         );
 
+    }
+}
+function updateMediaSessionPosition(state) {
+    if (!state) return;
+    if (!("mediaSession" in navigator)) return;
+
+    const duration = Number(state.duration || 0) / 1000;
+    const position = Number(state.position || 0) / 1000;
+
+    if (!Number.isFinite(duration) || duration <= 0) return;
+
+    const safePosition = Math.max(
+        0,
+        Math.min(position, duration)
+    );
+
+    try {
+        navigator.mediaSession.setPositionState({
+            duration: duration,
+            playbackRate: Number(state.playbackRate || 1),
+            position: safePosition
+        });
+
+        console.log(
+            "📱 MediaSession時間設定:",
+            duration,
+            "秒 /",
+            safePosition,
+            "秒"
+        );
+
+    } catch (error) {
+        console.warn(
+            "MediaSession時間設定エラー:",
+            error
+        );
     }
 }
 // ============================================================
