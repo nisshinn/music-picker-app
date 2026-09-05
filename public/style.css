@@ -1813,8 +1813,7 @@ body[data-theme="night"] .menu-player-button:hover {
 
 /* ホームアイコン */
 
-.bottom-nav-link[data-page="homePage"]
-.bottom-nav-icon {
+.bottom-nav-link[data-page="homePage"] .bottom-nav-icon {
     font-size: 32px;
 }
 
@@ -2133,10 +2132,9 @@ body[data-theme="night"] .menu-player-button:hover {
         line-height: 24px;
     }
 
-    .bottom-nav-link[data-page="homePage"]
-    .bottom-nav-icon {
-        font-size: 27px;
-    }
+    .bottom-nav-link[data-page="homePage"] .bottom-nav-icon {
+    font-size: 27px;
+}
 
     .search-icon {
         width: 24px;
@@ -2571,4 +2569,98 @@ body[data-theme="night"] .library-delete-button {
 
 .library-section-header.closed .library-arrow {
     transform: rotate(-90deg);
+}
+/* ============================================================
+   スマホ背景・夜テーマの検索文字 修正版
+   ============================================================ */
+
+/* HTML全体にも背景を設定 */
+html {
+    min-height: 100%;
+    background: #eaf7ff;
+}
+
+/* 夜テーマ */
+html:has(body[data-theme="night"]) {
+    background: #11111b;
+}
+
+/* 夜テーマ + グラデーション */
+html:has(body[data-theme="night"][data-background="gradient"]) {
+    background: #11111b;
+}
+
+/* ------------------------------------------
+   アーティスト検索
+------------------------------------------ */
+
+body[data-theme="night"] .artist-search,
+body[data-theme="night"] .big-search {
+    background: #292938;
+    color: #ffffff;
+    border-color: #414154;
+}
+
+body[data-theme="night"] .artist-search::placeholder,
+body[data-theme="night"] .big-search::placeholder {
+    color: #a5a5b5;
+}
+
+body[data-theme="night"] .artist-search:focus,
+body[data-theme="night"] .big-search:focus {
+    color: #ffffff;
+    background: #292938;
+    border-color: var(--accent-color);
+}
+
+/* ------------------------------------------
+   アーティスト検索結果
+------------------------------------------ */
+
+body[data-theme="night"] .artist-result {
+    color: #ffffff;
+}
+
+body[data-theme="night"] .artist-result span {
+    color: #ffffff;
+}
+
+body[data-theme="night"] .artist-result:hover {
+    background: rgba(167, 139, 250, 0.12);
+}
+
+/* ------------------------------------------
+   スマホ
+------------------------------------------ */
+
+@media (max-width: 700px) {
+
+    html,
+    body {
+        min-height: 100vh;
+    }
+
+    body {
+        background-color: #eaf7ff;
+    }
+
+    body[data-theme="night"] {
+        background-color: #11111b;
+    }
+
+    body[data-theme="sunset"] {
+        background-color: #fff0e8;
+    }
+
+    body[data-theme="sakura"] {
+        background-color: #fff0f7;
+    }
+
+    body[data-theme="classic"] {
+        background-color: #f3f3f3;
+    }
+
+    #app {
+        min-height: 100vh;
+    }
 }
