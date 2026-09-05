@@ -7288,7 +7288,6 @@ window.location.href =
 function updateMediaSession(track) {
     if (!track) return;
 
-    // iPhone / Safari が認識しやすいように情報を整理
     const title =
         track.title ||
         track.name ||
@@ -7299,66 +7298,67 @@ function updateMediaSession(track) {
         getArtistText(track) ||
         "";
 
+    // ジャケット画像を取得
     const image =
-    track.image ||
-    track.album?.images?.[0]?.url ||
-    track.images?.[0]?.url ||
-    "";
+        track.image ||
+        track.album?.images?.[0]?.url ||
+        track.images?.[0]?.url ||
+        "";
 
-    console.log("📱 Media Session:", {
-        title,
-        artist,
-        image
+    console.log("📱 iPhone Media Session:", {
+        title: title,
+        artist: artist,
+        image: image
     });
 
+    // Media Sessionに対応しているか確認
     if (!("mediaSession" in navigator)) {
         console.warn("Media Session API が利用できません");
         return;
     }
 
-    // 曲情報をiPhoneへ渡す
+    // ==========================================
+    // 🎵 曲名・アーティスト・ジャケットをiPhoneへ渡す
+    // ==========================================
     try {
-        navigator.mediaSession.metadata = new MediaMetadata({
-    title: title,
-    artist: artist,
-    album: track.album?.name || "Music Picker",
-            artwork: image
-                ? [
+
+        if (image) {
+
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: title,
+                artist: artist,
+                album: track.album?.name || "Music Picker",
+
+                artwork: [
                     {
                         src: image,
-                        sizes: "96x96",
-                        type: "image/jpeg"
-                    },
-                    {
-                        src: image,
-                        sizes: "128x128",
-                        type: "image/jpeg"
-                    },
-                    {
-                        src: image,
-                        sizes: "192x192",
-                        type: "image/jpeg"
-                    },
-                    {
-                        src: image,
-                        sizes: "256x256",
-                        type: "image/jpeg"
-                    },
-                    {
-                        src: image,
-                        sizes: "512x512",
-                        type: "image/jpeg"
+                        sizes: "512x512"
                     }
                 ]
-                : []
-        });
+            });
 
-        console.log("✅ Media Session metadata設定完了");
+        } else {
+
+            // ジャケット画像が取得できなかった場合
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: title,
+                artist: artist,
+                album: track.album?.name || "Music Picker"
+            });
+
+            console.warn("⚠️ ジャケット画像がありません");
+        }
+
+        console.log("✅ iPhone用Media Session設定完了");
+
     } catch (error) {
-        console.warn("Media Session metadata:", error);
+        console.error("❌ Media Session設定エラー:", error);
     }
 
-    // ロック画面の再生・一時停止
+
+    // ==========================================
+    // ▶ 再生
+    // ==========================================
     try {
         navigator.mediaSession.setActionHandler(
             "play",
@@ -7366,7 +7366,15 @@ function updateMediaSession(track) {
                 togglePlayback();
             }
         );
+    } catch (error) {
+        console.warn("play設定:", error);
+    }
 
+
+    // ==========================================
+    // ⏸ 一時停止
+    // ==========================================
+    try {
         navigator.mediaSession.setActionHandler(
             "pause",
             () => {
@@ -7374,10 +7382,13 @@ function updateMediaSession(track) {
             }
         );
     } catch (error) {
-        console.warn("play/pause設定:", error);
+        console.warn("pause設定:", error);
     }
 
-    // 次の曲
+
+    // ==========================================
+    // ⏭ 次の曲
+    // ==========================================
     try {
         navigator.mediaSession.setActionHandler(
             "nexttrack",
@@ -7389,7 +7400,10 @@ function updateMediaSession(track) {
         console.warn("nexttrack設定:", error);
     }
 
-    // 前の曲
+
+    // ==========================================
+    // ⏮ 前の曲
+    // ==========================================
     try {
         navigator.mediaSession.setActionHandler(
             "previoustrack",
