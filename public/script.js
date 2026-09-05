@@ -2483,7 +2483,22 @@ async function playTrack(
                 }
             );
 
+await fetch(
+    `https://api.spotify.com/v1/me/player/play?device_id=${spotifyDeviceId}`,
+    {
+        method: "PUT",
+        headers: {
+            Authorization: `Bearer ${spotifyToken}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            uris: [track.uri],
+            position_ms: 0
+        })
+    }
+);
 
+updateMediaSession(track);
         if (
             !transferResponse.ok &&
             transferResponse.status !== 204
@@ -2873,7 +2888,7 @@ updateMediaSession(
 
 if (
     state.duration > 0 &&
-    state.position >= state.duration - 1200
+    !state.paused
 ) {
 
     scheduleTrackEnded(
@@ -3019,130 +3034,151 @@ if (
 }
 
 
-// ============================================================
-// 曲終了タイマー
-// ============================================================
-
-// ============================================================
-// 曲終了タイマー
-// ============================================================
-
 function scheduleTrackEnded(track, state) {
 
     clearTrackEndTimer();
 
-    const uri = track?.uri || "";
+    const uri =
+        track?.uri || "";
 
     if (!uri) {
         return;
     }
 
-    const duration = Number(state?.duration || 0);
-    const position = Number(state?.position || 0);
+    const duration =
+        Number(state?.duration || 0);
+
+    const position =
+        Number(state?.position || 0);
 
     if (duration <= 0) {
         return;
     }
 
-    // 曲の残り時間
-    const remaining = Math.max(
-        300,
-        duration - position
+    const remaining =
+        Math.max(
+            500,
+            duration - position
+        );
+
+    console.log(
+        "🎧 曲終了監視:",
+        track?.title,
+        "残り",
+        Math.round(remaining / 1000),
+        "秒"
     );
 
-    // 終了直前にチェック
-    trackEndTimer = setTimeout(
-        async () => {
+    trackEndTimer =
+        setTimeout(
+            async () => {
 
-            try {
+                try {
 
-                if (!spotifyPlayer) {
-                    return;
-                }
+                    if (!spotifyPlayer) {
+                        return;
+                    }
 
-                const currentState =
-                    await spotifyPlayer.getCurrentState();
+                    const currentState =
+                        await spotifyPlayer.getCurrentState();
 
-                if (!currentState) {
-                    return;
-                }
+                    if (!currentState) {
+                        return;
+                    }
 
-                const current =
-                    currentState.track_window?.current_track;
-
-                const currentUri =
-                    current?.uri || "";
-
-                // すでに別の曲になっていたら何もしない
-                if (currentUri !== uri) {
-                    return;
-                }
-
-                const currentDuration =
-                    Number(currentState.duration || 0);
-
-                const currentPosition =
-                    Number(currentState.position || 0);
-
-                if (currentDuration <= 0) {
-                    return;
-                }
-
-                // まだ曲が終わっていない場合
-                if (
-                    currentPosition <
-                    currentDuration - 1000
-                ) {
-
-                    // 残り時間を再計算してもう一度監視
-                    scheduleTrackEnded(
-                        current,
+                    const current =
                         currentState
+                            .track_window
+                            ?.current_track;
+
+                    const currentUri =
+                        current?.uri || "";
+
+                    // 別の曲になっていた
+                    if (currentUri !== uri) {
+                        return;
+                    }
+
+                    // 一時停止中
+                    if (currentState.paused) {
+
+                        console.log(
+                            "⏸ 一時停止中"
+                        );
+
+                        return;
+                    }
+
+                    const currentDuration =
+                        Number(
+                            currentState.duration || 0
+                        );
+
+                    const currentPosition =
+                        Number(
+                            currentState.position || 0
+                        );
+
+                    if (currentDuration <= 0) {
+                        return;
+                    }
+
+                    // まだ終了していない
+                    if (
+                        currentPosition <
+                        currentDuration - 1000
+                    ) {
+
+                        scheduleTrackEnded(
+                            current,
+                            currentState
+                        );
+
+                        return;
+                    }
+
+                    // 二重実行防止
+                    const now =
+                        Date.now();
+
+                    if (
+                        lastHandledEndedUri === uri &&
+                        now - lastHandledEndedTime < 2500
+                    ) {
+
+                        return;
+                    }
+
+                    lastHandledEndedUri =
+                        uri;
+
+                    lastHandledEndedTime =
+                        now;
+
+                    console.log(
+                        "🎵 曲終了:",
+                        current?.name ||
+                        track?.title
                     );
 
-                    return;
+                    await handleTrackEnded();
+
+                } catch (error) {
+
+                    console.warn(
+                        "曲終了処理:",
+                        error
+                    );
+
                 }
 
-                const now = Date.now();
+            },
 
-                // 二重実行防止
-                if (
-                    lastHandledEndedUri === uri &&
-                    now - lastHandledEndedTime < 2500
-                ) {
-                    return;
-                }
-
-                lastHandledEndedUri =
-                    uri;
-
-                lastHandledEndedTime =
-                    now;
-
-                console.log(
-                    "🎵 曲終了:",
-                    current?.name || track?.title
-                );
-
-                await handleTrackEnded();
-
-            } catch (error) {
-
-                console.warn(
-                    "曲終了処理:",
-                    error
-                );
-
-            }
-
-        },
-
-        // 曲終了予定時刻の少し前にチェック
-        Math.max(
-            300,
-            remaining - 300
-        )
-    );
+            Math.max(
+                500,
+                remaining - 300
+            )
+        );
 }
 
 
@@ -6224,86 +6260,117 @@ function initLogout() {
     });
 }
 function updateMediaSession(track) {
+    if (!track) return;
 
-    if (!("mediaSession" in navigator) || !track) {
-        return;
-    }
+    // iPhone / Safari が認識しやすいように情報を整理
+    const title =
+        track.title ||
+        track.name ||
+        "Music Picker";
+
+    const artist =
+        track.artist ||
+        getArtistText(track) ||
+        "";
 
     const image =
         track.image ||
         track.album?.images?.[0]?.url ||
         "";
 
-    navigator.mediaSession.metadata =
-        new MediaMetadata({
-            title: track.title || track.name || "Unknown",
-            artist: track.artist || "",
+    console.log("📱 Media Session:", {
+        title,
+        artist,
+        image
+    });
+
+    if (!("mediaSession" in navigator)) {
+        console.warn("Media Session API が利用できません");
+        return;
+    }
+
+    // 曲情報をiPhoneへ渡す
+    try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: title,
+            artist: artist,
             album: "Music Picker",
             artwork: image
                 ? [
                     {
                         src: image,
-                        sizes: "300x300",
+                        sizes: "96x96",
+                        type: "image/jpeg"
+                    },
+                    {
+                        src: image,
+                        sizes: "128x128",
+                        type: "image/jpeg"
+                    },
+                    {
+                        src: image,
+                        sizes: "192x192",
+                        type: "image/jpeg"
+                    },
+                    {
+                        src: image,
+                        sizes: "256x256",
+                        type: "image/jpeg"
+                    },
+                    {
+                        src: image,
+                        sizes: "512x512",
                         type: "image/jpeg"
                     }
                 ]
                 : []
         });
 
-    navigator.mediaSession.setActionHandler(
-        "play",
-        () => togglePlayback()
-    );
-
-    navigator.mediaSession.setActionHandler(
-        "pause",
-        () => togglePlayback()
-    );
-
-    navigator.mediaSession.setActionHandler(
-        "nexttrack",
-        () => playNext()
-    );
-
-    navigator.mediaSession.setActionHandler(
-        "previoustrack",
-        () => playPrevious()
-    );
-}
-function updateMediaSessionPosition(state) {
-
-    if (
-        !("mediaSession" in navigator) ||
-        !("setPositionState" in navigator.mediaSession)
-    ) {
-        return;
-    }
-
-    if (
-        !state ||
-        !state.duration ||
-        state.duration <= 0
-    ) {
-        return;
-    }
-
-    try {
-
-        navigator.mediaSession.setPositionState({
-            duration: state.duration / 1000,
-            playbackRate: state.playbackSpeed || 1,
-            position: Math.min(
-                state.position / 1000,
-                state.duration / 1000
-            )
-        });
-
+        console.log("✅ Media Session metadata設定完了");
     } catch (error) {
+        console.warn("Media Session metadata:", error);
+    }
 
-        console.warn(
-            "Media Session position:",
-            error
+    // ロック画面の再生・一時停止
+    try {
+        navigator.mediaSession.setActionHandler(
+            "play",
+            () => {
+                togglePlayback();
+            }
         );
 
+        navigator.mediaSession.setActionHandler(
+            "pause",
+            () => {
+                togglePlayback();
+            }
+        );
+    } catch (error) {
+        console.warn("play/pause設定:", error);
+    }
+
+    // 次の曲
+    try {
+        navigator.mediaSession.setActionHandler(
+            "nexttrack",
+            () => {
+                playNext();
+            }
+        );
+    } catch (error) {
+        console.warn("nexttrack設定:", error);
+    }
+
+    // 前の曲
+    try {
+        navigator.mediaSession.setActionHandler(
+            "previoustrack",
+            () => {
+                playPrevious();
+            }
+        );
+    } catch (error) {
+        console.warn("previoustrack設定:", error);
     }
 }
