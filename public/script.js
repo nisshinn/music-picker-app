@@ -7307,10 +7307,10 @@ function updateMediaSessionPosition(state) {
 
     try {
         navigator.mediaSession.setPositionState({
-            duration: duration,
-            position: safePosition,
-            playbackRate: Number(state.playbackRate || 1)
-        });
+    duration: 60,
+    position: 0,
+    playbackRate: 1
+});
     } catch (error) {
         console.warn(
             "Media Session位置設定:",
