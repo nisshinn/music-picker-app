@@ -2855,10 +2855,7 @@ console.log(
     spotifyPlayer.addListener(
     "player_state_changed",
     state => {
-
-        if (!state) {
-            return;
-        }
+        if (!state) return;
 
         updatePlayerState(state);
 
@@ -2871,43 +2868,20 @@ console.log(
         const current =
             state.track_window?.current_track;
 
-        if (!current) {
-            return;
-        }
+        if (!current) return;
 
-       const currentTrack = normalizeTrack(current);
-currentTrackData = currentTrack;
+        const currentTrack =
+            normalizeTrack(current);
 
-updateMediaSession(currentTrack);
+        currentTrackData =
+            currentTrack;
 
-// 📱 iPhone用デバッグ
-showIPhoneDebug(state, currentTrack);
-
-       // 🔒 iPhoneロック画面
-updateMediaSession(currentTrack);
-updateMediaSessionPosition(state);
-console.log("===== Spotify状態 =====");
-console.log("曲名:", currentTrack?.title);
-console.log("duration(ms):", state.duration);
-console.log("position(ms):", state.position);
-console.log("duration(秒):", state.duration / 1000);
-console.log("position(秒):", state.position / 1000);
-
-if ("mediaSession" in navigator) {
-    console.log("===== MediaSession状態 =====");
-    console.log("metadata:", navigator.mediaSession.metadata);
-    console.log("playbackState:", navigator.mediaSession.playbackState);
-}
-    
-updatePlayerInfo(currentTrack);
+        // 📱 ロック画面のジャケット・曲名
+        updateMediaSession(currentTrack);
 
         updatePlayerInfo(currentTrack);
 
-        // 曲終了判定
-        if (
-            state.duration > 0 &&
-            !state.paused
-        ) {
+        if (state.duration > 0 && !state.paused) {
             scheduleTrackEnded(
                 currentTrack,
                 state
@@ -7240,11 +7214,14 @@ window.location.href =
 }
 function updateMediaSession(track) {
     console.log("🔵 updateMediaSession 実行");
+
     if (!track) return;
     if (!("mediaSession" in navigator)) return;
 
     const title =
-        track.title || track.name || "Music Picker";
+        track.title ||
+        track.name ||
+        "Music Picker";
 
     const artist =
         track.artist ||
@@ -7262,7 +7239,6 @@ function updateMediaSession(track) {
         "";
 
     try {
-
         navigator.mediaSession.metadata =
             new MediaMetadata({
                 title: title,
@@ -7299,22 +7275,18 @@ function updateMediaSession(track) {
                     : []
             });
 
-        //navigator.mediaSession.playbackState ="playing";
-
         console.log(
-            "📱 手動Media Session設定:",
+            "📱 Media Session設定:",
             title,
             artist,
             album
         );
 
     } catch (error) {
-
         console.error(
             "Media Session設定エラー:",
             error
         );
-
     }
 }
 function updateMediaSessionPosition(state) {
