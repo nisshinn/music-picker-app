@@ -2768,6 +2768,37 @@ console.log(
     "metadata:",
     navigator.mediaSession?.metadata
 );
+// ============================================================
+// Spotify SDKがMedia Sessionに渡す時間を監視するテスト
+// ============================================================
+if ("mediaSession" in navigator) {
+
+    const originalSetPositionState =
+        navigator.mediaSession.setPositionState.bind(
+            navigator.mediaSession
+        );
+
+    navigator.mediaSession.setPositionState =
+        function(details) {
+
+            console.log(
+                "🔎 setPositionState が呼ばれた:",
+                details
+            );
+
+            if (details) {
+                console.log(
+                    "🔎 duration:",
+                    details.duration,
+                    "position:",
+                    details.position
+                );
+            }
+
+            return originalSetPositionState(details);
+        };
+
+}
     spotifyPlayer = new Spotify.Player({
 
     name: "Music Picker",
