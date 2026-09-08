@@ -2376,7 +2376,7 @@ async function playTrack(
 
     spotifyToken =
         localStorage.getItem(
-            "spotify_access_token"
+            "spotifyAccessToken"
         ) || "";
 
 
@@ -2605,7 +2605,7 @@ async function playTrack(
             ) {
 
                 localStorage.removeItem(
-                    "spotify_access_token"
+                   "spotifyAccessToken"
                 );
 
 
@@ -2738,7 +2738,7 @@ function setupSpotifyPlayer() {
 
     spotifyToken =
         localStorage.getItem(
-            "spotify_access_token"
+            "spotifyAccessToken"
         ) || "";
 
     if (!spotifyToken) {
@@ -2774,7 +2774,7 @@ console.log(
     getOAuthToken: callback => {
 
         const token =
-            localStorage.getItem("spotify_access_token") || "";
+            localStorage.getItem("spotifyAccessToken") || "";
 
         spotifyToken = token;
 
@@ -7737,7 +7737,7 @@ function initLogout() {
         // ========================================
 
         localStorage.removeItem(
-            "spotify_access_token"
+            "spotifyAccessToken"
         );
 
         // Spotifyの状態をリセット
@@ -8128,7 +8128,7 @@ async function savePlaylistToSpotify(
 
     const token =
         localStorage.getItem(
-            "spotify_access_token"
+            "spotifyAccessToken"
         ) || "";
 
     if (!token) {
@@ -8264,7 +8264,7 @@ async function savePlaylistToSpotify(
             ) {
 
                 localStorage.removeItem(
-                    "spotify_access_token"
+                   "spotifyAccessToken"
                 );
 
                 alert(
