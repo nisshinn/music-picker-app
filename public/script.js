@@ -2333,6 +2333,61 @@ function createTrackCard(
 
 
 // ============================================================
+// Spotifyトークン管理
+// ============================================================
+async function getFreshSpotifyToken(force = false) {
+    try {
+        const response = await fetch(
+            `/api/spotify-token${force ? "?force=1" : ""}`
+        );
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || !data.accessToken) {
+            throw new Error(
+                data.error || "Spotifyのログイン期限が切れています。"
+            );
+        }
+
+        spotifyToken = data.accessToken;
+        localStorage.setItem("spotifyAccessToken", spotifyToken);
+
+        return spotifyToken;
+    } catch (error) {
+        console.error("Spotifyトークン取得エラー:", error);
+        return "";
+    }
+}
+
+async function spotifyApiFetch(url, options = {}, retry = true) {
+    let token = await getFreshSpotifyToken(false);
+
+    if (!token) {
+        throw new Error("Spotifyにログインしてください。");
+    }
+
+    const headers = new Headers(options.headers || {});
+    headers.set("Authorization", `Bearer ${token}`);
+
+    let response = await fetch(url, { ...options, headers });
+
+    if (response.status === 401 && retry) {
+        token = await getFreshSpotifyToken(true);
+
+        if (!token) {
+            throw new Error(
+                "Spotifyのログイン期限が切れています。\nもう一度ログインしてください。"
+            );
+        }
+
+        headers.set("Authorization", `Bearer ${token}`);
+        response = await fetch(url, { ...options, headers });
+    }
+
+    return response;
+}
+
+// ============================================================
 // Spotify再生
 // ============================================================
 
@@ -2374,20 +2429,11 @@ async function playTrack(
     // Token
     // --------------------------------------------------------
 
-    spotifyToken =
-        localStorage.getItem(
-            "spotifyAccessToken"
-        ) || "";
-
+    spotifyToken = await getFreshSpotifyToken(false);
 
     if (!spotifyToken) {
-
-        alert(
-            "Spotifyにログインしてください。"
-        );
-
+        alert("Spotifyにログインしてください。");
         return;
-
     }
 
 
@@ -2493,7 +2539,7 @@ async function playTrack(
         // ----------------------------------------------------
 
         const transferResponse =
-            await fetch(
+            await spotifyApiFetch(
                 "https://api.spotify.com/v1/me/player",
                 {
 
@@ -2563,7 +2609,7 @@ async function playTrack(
 
 
         const response =
-            await fetch(
+            await spotifyApiFetch(
                 `https://api.spotify.com/v1/me/player/play?device_id=${encodeURIComponent(
                     spotifyDeviceId
                 )}`,
@@ -2605,7 +2651,7 @@ async function playTrack(
             ) {
 
                 localStorage.removeItem(
-                   "spotifyAccessToken"
+                    "spotifyAccessToken"
                 );
 
 
@@ -2688,14 +2734,11 @@ try {
 // Spotify初期化
 // ============================================================
 
-function initSpotify() {
+async function initSpotify() {
+    if (!window.Spotify) return;
 
-    if (window.Spotify) {
-
-        setupSpotifyPlayer();
-
-    }
-
+    await getFreshSpotifyToken(false);
+    setupSpotifyPlayer();
 }
 
 
@@ -2704,15 +2747,10 @@ function initSpotify() {
 // ============================================================
 
 window.onSpotifyWebPlaybackSDKReady =
-    function () {
-
-        console.log(
-            "Spotify SDK Ready"
-        );
-
-
+    async function () {
+        console.log("Spotify SDK Ready");
+        await getFreshSpotifyToken(false);
         setupSpotifyPlayer();
-
     };
 
 
@@ -2771,13 +2809,13 @@ console.log(
     enableMediaSession: false,
     volume: getSavedVolume(),
 
-    getOAuthToken: callback => {
-
+    getOAuthToken: async callback => {
         const token =
-            localStorage.getItem("spotifyAccessToken") || "";
+            await getFreshSpotifyToken(false) ||
+            localStorage.getItem("spotifyAccessToken") ||
+            "";
 
         spotifyToken = token;
-
         callback(token);
     }
 
@@ -5180,7 +5218,7 @@ async function loadSpotifyPlaylists() {
         </div>
     `;
 
-    const token = localStorage.getItem("spotifyAccessToken");
+    const token = await getFreshSpotifyToken(false);
 
     if (!token) {
         list.innerHTML = `
@@ -5194,13 +5232,11 @@ async function loadSpotifyPlaylists() {
 
     try {
 
-        const token = localStorage.getItem("spotifyAccessToken");
-
-const response = await fetch("/api/my-playlists", {
-    headers: {
-        Authorization: `Bearer ${token}`
-    }
-});
+        const response = await fetch("/api/my-playlists", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
 
         const data = await response.json();
 
@@ -7726,19 +7762,23 @@ function initLogout() {
 
     if (!logoutButton) return;
 
-    logoutButton.addEventListener("click", () => {
+    logoutButton.addEventListener("click", async () => {
 
         if (!confirm("Spotifyアカウントを切り替えますか？")) {
             return;
         }
 
         // ========================================
+        // サーバー側のSpotifyセッションも破棄
+        // ========================================
+        try {
+            await fetch("/api/spotify-logout", { method: "POST" });
+        } catch (_) {}
+
+        // ========================================
         // Music Picker側のログイン情報を削除
         // ========================================
-
-        localStorage.removeItem(
-            "spotifyAccessToken"
-        );
+        localStorage.removeItem("spotifyAccessToken");
 
         // Spotifyの状態をリセット
         spotifyToken = "";
@@ -8126,10 +8166,7 @@ async function savePlaylistToSpotify(
     playlist
 ) {
 
-    const token =
-        localStorage.getItem(
-            "spotifyAccessToken"
-        ) || "";
+    const token = await getFreshSpotifyToken(false);
 
     if (!token) {
 
@@ -8229,7 +8266,9 @@ async function savePlaylistToSpotify(
 
                     headers: {
                         "Content-Type":
-                            "application/json"
+                            "application/json",
+                        Authorization:
+                            `Bearer ${token}`
                     },
 
                     body:
@@ -8264,7 +8303,7 @@ async function savePlaylistToSpotify(
             ) {
 
                 localStorage.removeItem(
-                   "spotifyAccessToken"
+                    "spotifyAccessToken"
                 );
 
                 alert(
@@ -9684,14 +9723,12 @@ function escapeHtml(value) {
 // ========================================
 async function openSpotifyPlaylist(playlist) {
     try {
-        const token = localStorage.getItem("spotifyAccessToken");
+        const token = await getFreshSpotifyToken(false);
 
         if (!token) {
             alert("Spotifyにログインしてください");
             return;
         }
-
-        
 
         const response = await fetch(
             `/api/my-playlists/${encodeURIComponent(playlist.id)}/items`,

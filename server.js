@@ -27,6 +27,8 @@ const REDIRECT_URI =
 
 let pkceVerifier = "";
 let spotifyAccessToken = "";
+let spotifyRefreshToken = "";
+let spotifyAccessTokenExpiresAt = 0;
 
 // ========================================
 // Client Credentials用
@@ -75,6 +77,115 @@ function base64url(buffer) {
         .replace(/\+/g, "-")
         .replace(/\//g, "_")
         .replace(/=+$/, "");
+}
+
+// ========================================
+// Spotifyユーザートークン管理
+// ========================================
+
+function clearSpotifySession() {
+    spotifyAccessToken = "";
+    spotifyRefreshToken = "";
+    spotifyAccessTokenExpiresAt = 0;
+}
+function getCookie(req, name) {
+    const cookieHeader = req.headers.cookie || "";
+    const cookies = {};
+
+    cookieHeader.split(";").forEach(part => {
+        const index = part.indexOf("=");
+        if (index === -1) return;
+
+        const key = part.slice(0, index).trim();
+        const value = part.slice(index + 1).trim();
+        cookies[key] = decodeURIComponent(value);
+    });
+
+    return cookies[name] || "";
+}
+
+function setRefreshTokenCookie(res, refreshToken) {
+    if (!refreshToken) return;
+
+    res.setHeader(
+        "Set-Cookie",
+        `spotify_refresh_token=${encodeURIComponent(refreshToken)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=15552000`
+    );
+}
+
+function clearRefreshTokenCookie(res) {
+    res.setHeader(
+        "Set-Cookie",
+        "spotify_refresh_token=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0"
+    );
+}
+
+
+async function refreshSpotifyAccessToken(force = false) {
+    if (
+        spotifyAccessToken &&
+        !force &&
+        Date.now() < spotifyAccessTokenExpiresAt - 60_000
+    ) {
+        return spotifyAccessToken;
+    }
+
+    if (!spotifyRefreshToken) {
+        const error = new Error("Spotifyの再認証が必要です");
+        error.status = 401;
+        error.reason = "NO_REFRESH_TOKEN";
+        throw error;
+    }
+
+    const response = await fetch(
+        "https://accounts.spotify.com/api/token",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: new URLSearchParams({
+                grant_type: "refresh_token",
+                refresh_token: spotifyRefreshToken,
+                client_id: CLIENT_ID
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        console.error("Spotify Refresh Token Error:", response.status, data);
+
+        if (data?.error === "invalid_grant") {
+            clearSpotifySession();
+        }
+
+        const error = new Error(
+            data?.error_description ||
+            "Spotifyアクセストークンの更新に失敗しました"
+        );
+        error.status = 401;
+        error.reason = data?.error || "REFRESH_FAILED";
+        throw error;
+    }
+
+    spotifyAccessToken = data.access_token || "";
+
+    if (data.refresh_token) {
+        spotifyRefreshToken = data.refresh_token;
+    }
+
+    spotifyAccessTokenExpiresAt =
+        Date.now() + Number(data.expires_in || 3600) * 1000;
+
+    console.log("Spotifyアクセストークンを自動更新しました");
+
+    return spotifyAccessToken;
+}
+
+async function getValidSpotifyAccessToken() {
+    return refreshSpotifyAccessToken(false);
 }
 
 // ========================================
@@ -235,7 +346,7 @@ app.get("/account/change", (req, res) => {
 
             // Music Picker側のトークンを削除
             localStorage.removeItem(
-                "spotify_access_token"
+                "spotifyAccessToken"
             );
 
             // Spotify認証へ
@@ -362,6 +473,10 @@ app.get("/auth/callback", async (req, res) => {
         }
 
         spotifyAccessToken = tokenData.access_token;
+        spotifyRefreshToken = tokenData.refresh_token || spotifyRefreshToken;
+        setRefreshTokenCookie(res, spotifyRefreshToken);
+        spotifyAccessTokenExpiresAt =
+            Date.now() + Number(tokenData.expires_in || 3600) * 1000;
 
         console.log("Spotifyログイン成功");
 
@@ -394,6 +509,36 @@ app.get("/auth/callback", async (req, res) => {
             <h1>Callback Error</h1>
             <pre>${error.message}</pre>
         `);
+    }
+});
+
+// ========================================
+// ブラウザへ最新のSpotifyアクセストークンを渡す
+// ========================================
+app.get("/api/spotify-token", async (req, res) => {
+    try {
+        if (!spotifyRefreshToken) {
+            spotifyRefreshToken = getCookie(req, "spotify_refresh_token");
+        }
+
+        const force = req.query.force === "1";
+        const accessToken = await refreshSpotifyAccessToken(force);
+        setRefreshTokenCookie(res, spotifyRefreshToken);
+
+        res.json({
+            success: true,
+            accessToken
+        });
+    } catch (error) {
+        console.error("Spotify Token Endpoint Error:", error);
+
+        res.status(error.status === 401 ? 401 : 500).json({
+            error:
+                error.status === 401
+                    ? "Spotifyのログイン期限が切れています。再ログインしてください。"
+                    : error.message || "Spotifyトークン取得に失敗しました",
+            reason: error.reason || "TOKEN_ERROR"
+        });
     }
 });
 
@@ -1331,15 +1476,17 @@ app.post(
             // Spotifyログイン確認
             // --------------------------------
 
-            if (!spotifyAccessToken) {
+            let accessToken;
 
+            try {
+                accessToken = await getValidSpotifyAccessToken();
+            } catch (tokenError) {
                 return res
                     .status(401)
                     .json({
                         error:
-                            "Spotifyにログインしてください"
+                            "Spotifyのログイン期限が切れています。再ログインしてください。"
                     });
-
             }
 
 
@@ -1459,7 +1606,7 @@ app.post(
 
                         headers: {
                             Authorization:
-                                `Bearer ${spotifyAccessToken}`,
+                                `Bearer ${accessToken}`,
 
                             "Content-Type":
                                 "application/json"
@@ -1545,7 +1692,7 @@ app.post(
 
                         headers: {
                             Authorization:
-                                `Bearer ${spotifyAccessToken}`,
+                                `Bearer ${accessToken}`,
 
                             "Content-Type":
                                 "application/json"
@@ -1790,18 +1937,16 @@ app.get(
 
         try {
 
-            const accessToken =
-                getUserAccessToken(req) ||
-                spotifyAccessToken;
+            let accessToken;
 
-
-            if (!accessToken) {
-
+            try {
+                accessToken = await getValidSpotifyAccessToken();
+            } catch (tokenError) {
                 return res
                     .status(401)
                     .json({
                         error:
-                            "Spotifyにログインしてください"
+                            "Spotifyのログイン期限が切れています。再ログインしてください。"
                     });
             }
 
@@ -1918,6 +2063,15 @@ app.get(
     }
 );
 // ========================================
+// Spotifyログアウト / セッション破棄
+// ========================================
+app.post("/api/spotify-logout", (req, res) => {
+    clearSpotifySession();
+    clearRefreshTokenCookie(res);
+    res.json({ success: true });
+});
+
+// ========================================
 // TOP TRACKS
 // ========================================
 
@@ -1927,14 +2081,16 @@ app.get(
 
         try {
 
-            if (!spotifyAccessToken) {
+            let accessToken;
 
+            try {
+                accessToken = await getValidSpotifyAccessToken();
+            } catch (tokenError) {
                 return res
                     .status(401)
                     .json({
-
                         error:
-                            "Spotifyにログインしてください"
+                            "Spotifyのログイン期限が切れています。再ログインしてください。"
                     });
             }
 
@@ -1943,9 +2099,8 @@ app.get(
                     "https://api.spotify.com/v1/me/top/tracks?limit=50",
                     {
                         headers: {
-
                             Authorization:
-                                `Bearer ${spotifyAccessToken}`
+                                `Bearer ${accessToken}`
                         }
                     }
                 );
@@ -1971,7 +2126,7 @@ app.get(
                 error.status === 401
             ) {
 
-                spotifyAccessToken = "";
+                clearSpotifySession();
 
                 return res
                     .status(401)
