@@ -3276,104 +3276,98 @@ body[data-theme="night"] .spotify-playlist-detail-info h2 {
     color: #fff;
 }
 
-
 /* ============================================================
-   💻 PC版：NOW PLAYINGを本当に全画面にする
+   💻 PC版 NOW PLAYING：画面全体
    ============================================================ */
-
 @media (min-width: 701px) {
 
-    /* 背景の黒いオーバーレイ自体を画面いっぱいに */
     .full-player-overlay {
         position: fixed !important;
         inset: 0 !important;
-
         width: 100vw !important;
         height: 100vh !important;
-        min-height: 100vh !important;
-
         padding: 0 !important;
         margin: 0 !important;
 
-        display: flex !important;
         align-items: stretch !important;
         justify-content: stretch !important;
-
-        border-radius: 0 !important;
+        overflow: hidden !important;
     }
 
-    /* 白いプレイヤー本体も画面いっぱい */
     .full-player-main {
+        box-sizing: border-box !important;
+
         width: 100vw !important;
         height: 100vh !important;
         min-height: 100vh !important;
-        max-height: none !important;
+        max-height: 100vh !important;
 
-        padding: 35px 7vw 45px !important;
         margin: 0 !important;
+        padding: 28px 7vw 34px !important;
 
         border-radius: 0 !important;
-        box-shadow: none !important;
+        overflow: hidden !important;
 
-        overflow-y: auto !important;
-
-        display: flex !important;
-        flex-direction: column !important;
+        display: grid !important;
+        grid-template-rows: auto minmax(0, 1fr) auto auto auto auto !important;
+        align-items: center !important;
     }
 
-    /* 上部 */
+    /* NOW PLAYING / 閉じる / キュー */
     .full-player-top {
         width: 100% !important;
         max-width: 1100px !important;
-        margin: 0 auto 25px !important;
+        margin: 0 auto 18px !important;
+        min-height: 48px !important;
         flex-shrink: 0 !important;
     }
 
     .full-player-top-title {
         font-size: 18px !important;
+        line-height: 1.2 !important;
         letter-spacing: 2px !important;
+        position: relative !important;
+        z-index: 2 !important;
     }
 
     .full-player-close,
     .full-player-queue-button {
+        position: relative !important;
+        z-index: 3 !important;
         width: 48px !important;
         height: 48px !important;
-        font-size: 25px !important;
     }
 
     /* ジャケット */
     .full-player-art-wrap {
-        flex: 1 1 auto !important;
-        min-height: 0 !important;
-
         width: 100% !important;
-        margin: 0 auto 25px !important;
+        min-height: 0 !important;
+        margin: 0 auto 20px !important;
 
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+
+        overflow: hidden !important;
     }
 
     .full-player-art {
-        width: min(58vh, 600px) !important;
-        height: min(58vh, 600px) !important;
-        max-width: 65vw !important;
-        max-height: 58vh !important;
+        width: min(52vh, 560px) !important;
+        height: min(52vh, 560px) !important;
+        max-width: min(62vw, 560px) !important;
+        max-height: 52vh !important;
 
         aspect-ratio: 1 / 1 !important;
         object-fit: cover !important;
-
         border-radius: 24px !important;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25) !important;
     }
 
-    /* 曲情報 */
+    /* 曲名・アーティスト・お気に入り */
     .full-player-info {
         width: 100% !important;
         max-width: 900px !important;
-        margin: 0 auto 18px !important;
-
-        flex-shrink: 0 !important;
+        margin: 0 auto 14px !important;
+        min-height: 58px !important;
     }
 
     .full-player-title {
@@ -3382,13 +3376,13 @@ body[data-theme="night"] .spotify-playlist-detail-info h2 {
 
     .full-player-artist {
         font-size: 16px !important;
-        margin-top: 8px !important;
+        margin-top: 6px !important;
     }
 
     .full-player-favorite {
-        width: 54px !important;
-        height: 54px !important;
-        font-size: 34px !important;
+        width: 52px !important;
+        height: 52px !important;
+        font-size: 32px !important;
     }
 
     /* 再生バー */
@@ -3396,19 +3390,17 @@ body[data-theme="night"] .spotify-playlist-detail-info h2 {
         width: 100% !important;
         max-width: 900px !important;
         margin: 0 auto !important;
-        flex-shrink: 0 !important;
     }
 
     .full-player-times {
-        font-size: 13px !important;
         margin-top: 7px !important;
+        font-size: 13px !important;
     }
 
-    /* ⏮ ▶ ⏭ */
+    /* 再生ボタン */
     .full-player-controls {
         gap: 32px !important;
-        margin: 25px auto !important;
-        flex-shrink: 0 !important;
+        margin: 22px auto !important;
     }
 
     .full-player-control {
@@ -3427,43 +3419,33 @@ body[data-theme="night"] .spotify-playlist-detail-info h2 {
     .full-player-volume {
         width: 100% !important;
         max-width: 600px !important;
-        margin: 0 auto 22px !important;
-        flex-shrink: 0 !important;
+        margin: 0 auto 18px !important;
     }
 
-    /* シャッフル・リピート */
+    /* シャッフル・全曲 */
     .full-player-extra {
         width: 100% !important;
         max-width: 600px !important;
         margin: 0 auto !important;
         gap: 12px !important;
-        flex-shrink: 0 !important;
     }
 
     .full-player-extra button {
-        padding: 14px !important;
+        padding: 13px !important;
         font-size: 14px !important;
     }
 
     /* キュー画面もPCでは全画面 */
     .full-player-queue-screen {
+        box-sizing: border-box !important;
         width: 100vw !important;
         height: 100vh !important;
         min-height: 100vh !important;
-        max-height: none !important;
-
-        padding: 35px 7vw 45px !important;
+        max-height: 100vh !important;
         margin: 0 !important;
-
+        padding: 28px 7vw 34px !important;
         border-radius: 0 !important;
         overflow-y: auto !important;
     }
-
-    .queue-screen-header,
-    .full-player-queue-list {
-        width: 100% !important;
-        max-width: 900px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-    }
 }
+
