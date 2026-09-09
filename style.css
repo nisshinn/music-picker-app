@@ -3276,161 +3276,194 @@ body[data-theme="night"] .spotify-playlist-detail-info h2 {
     color: #fff;
 }
 
+
 /* ============================================================
-   💻 PC：フルプレイヤーを画面いっぱいに表示
-   ※スマホ（700px以下）は既存デザインをそのまま使用
+   💻 PC版：NOW PLAYINGを本当に全画面にする
    ============================================================ */
 
 @media (min-width: 701px) {
 
+    /* 背景の黒いオーバーレイ自体を画面いっぱいに */
     .full-player-overlay {
-        align-items: stretch;
-        justify-content: stretch;
-        padding: 0;
+        position: fixed !important;
+        inset: 0 !important;
+
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+
+        padding: 0 !important;
+        margin: 0 !important;
+
+        display: flex !important;
+        align-items: stretch !important;
+        justify-content: stretch !important;
+
+        border-radius: 0 !important;
     }
 
+    /* 白いプレイヤー本体も画面いっぱい */
     .full-player-main {
-        width: 100%;
-        height: 100vh;
-        max-height: none;
-        min-height: 100vh;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        max-height: none !important;
 
-        margin: 0;
-        padding: 45px 8vw 55px;
+        padding: 35px 7vw 45px !important;
+        margin: 0 !important;
 
-        border-radius: 0;
-        overflow-y: auto;
+        border-radius: 0 !important;
+        box-shadow: none !important;
 
-        display: flex;
-        flex-direction: column;
+        overflow-y: auto !important;
+
+        display: flex !important;
+        flex-direction: column !important;
     }
 
+    /* 上部 */
     .full-player-top {
-        width: 100%;
-        max-width: 1100px;
-        margin: 0 auto 35px;
+        width: 100% !important;
+        max-width: 1100px !important;
+        margin: 0 auto 25px !important;
+        flex-shrink: 0 !important;
     }
 
     .full-player-top-title {
-        font-size: 18px;
-        letter-spacing: 2px;
+        font-size: 18px !important;
+        letter-spacing: 2px !important;
     }
 
+    .full-player-close,
+    .full-player-queue-button {
+        width: 48px !important;
+        height: 48px !important;
+        font-size: 25px !important;
+    }
+
+    /* ジャケット */
     .full-player-art-wrap {
-        flex: 1;
-        min-height: 0;
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
 
-        margin: 0 auto 28px;
+        width: 100% !important;
+        margin: 0 auto 25px !important;
 
-        align-items: center;
-        justify-content: center;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
     .full-player-art {
-        width: min(62vh, 620px);
-        height: min(62vh, 620px);
-        max-width: 70vw;
-        max-height: 62vh;
+        width: min(58vh, 600px) !important;
+        height: min(58vh, 600px) !important;
+        max-width: 65vw !important;
+        max-height: 58vh !important;
 
-        border-radius: 24px;
+        aspect-ratio: 1 / 1 !important;
+        object-fit: cover !important;
 
-        box-shadow:
-            0 20px 60px rgba(0, 0, 0, 0.25);
+        border-radius: 24px !important;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25) !important;
     }
 
+    /* 曲情報 */
     .full-player-info {
-        width: 100%;
-        max-width: 900px;
-        margin: 0 auto 22px;
+        width: 100% !important;
+        max-width: 900px !important;
+        margin: 0 auto 18px !important;
 
-        gap: 20px;
+        flex-shrink: 0 !important;
     }
 
     .full-player-title {
-        font-size: 30px;
+        font-size: 30px !important;
     }
 
     .full-player-artist {
-        font-size: 16px;
-        margin-top: 8px;
+        font-size: 16px !important;
+        margin-top: 8px !important;
     }
 
     .full-player-favorite {
-        width: 52px;
-        height: 52px;
-        font-size: 34px;
+        width: 54px !important;
+        height: 54px !important;
+        font-size: 34px !important;
     }
 
+    /* 再生バー */
     .full-player-progress-area {
-        width: 100%;
-        max-width: 900px;
-        margin: 0 auto;
+        width: 100% !important;
+        max-width: 900px !important;
+        margin: 0 auto !important;
+        flex-shrink: 0 !important;
     }
 
     .full-player-times {
-        font-size: 13px;
-        margin-top: 8px;
+        font-size: 13px !important;
+        margin-top: 7px !important;
     }
 
+    /* ⏮ ▶ ⏭ */
     .full-player-controls {
-        gap: 35px;
-        margin: 28px auto;
+        gap: 32px !important;
+        margin: 25px auto !important;
+        flex-shrink: 0 !important;
     }
 
     .full-player-control {
-        width: 58px;
-        height: 58px;
-        font-size: 21px;
+        width: 58px !important;
+        height: 58px !important;
+        font-size: 21px !important;
     }
 
     .full-player-play {
-        width: 76px;
-        height: 76px;
-        font-size: 28px;
+        width: 76px !important;
+        height: 76px !important;
+        font-size: 28px !important;
     }
 
+    /* 音量 */
     .full-player-volume {
-        width: 100%;
-        max-width: 600px;
-        margin: 5px auto 25px;
+        width: 100% !important;
+        max-width: 600px !important;
+        margin: 0 auto 22px !important;
+        flex-shrink: 0 !important;
     }
 
+    /* シャッフル・リピート */
     .full-player-extra {
-        width: 100%;
-        max-width: 600px;
-        margin: 0 auto;
-        gap: 14px;
+        width: 100% !important;
+        max-width: 600px !important;
+        margin: 0 auto !important;
+        gap: 12px !important;
+        flex-shrink: 0 !important;
     }
 
     .full-player-extra button {
-        padding: 14px;
-        font-size: 14px;
+        padding: 14px !important;
+        font-size: 14px !important;
     }
 
-    /* プレイリスト画面もPCでは全画面 */
+    /* キュー画面もPCでは全画面 */
     .full-player-queue-screen {
-        width: 100%;
-        height: 100vh;
-        max-height: none;
-        min-height: 100vh;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+        max-height: none !important;
 
-        margin: 0;
-        padding: 45px 8vw 55px;
+        padding: 35px 7vw 45px !important;
+        margin: 0 !important;
 
-        border-radius: 0;
-        overflow-y: auto;
+        border-radius: 0 !important;
+        overflow-y: auto !important;
     }
 
-    .queue-screen-header {
-        width: 100%;
-        max-width: 900px;
-        margin: 0 auto 25px;
-    }
-
+    .queue-screen-header,
     .full-player-queue-list {
-        width: 100%;
-        max-width: 900px;
-        margin: 0 auto;
+        width: 100% !important;
+        max-width: 900px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
-
 }
