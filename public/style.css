@@ -4354,3 +4354,207 @@ body[data-theme="night"] .full-player-overlay {
     width: min(350px, calc(100vw - 10px)) !important;
   }
 }
+
+/* ============================================================
+   Connected iOS / Apple Music settings UI
+   すべての設定項目を一続きのリストとして見せる
+   ============================================================ */
+
+/* サイドメニュー全体を一枚の設定画面に */
+.side-menu {
+    gap: 0 !important;
+    padding-bottom: 24px !important;
+}
+
+.side-menu > .menu-section,
+.side-menu > section.menu-section {
+    margin: 0 12px !important;
+    border-radius: 0 !important;
+    border-left: 1px solid rgba(0,0,0,.06) !important;
+    border-right: 1px solid rgba(0,0,0,.06) !important;
+    border-top: 0 !important;
+    border-bottom: 1px solid #e5e5ea !important;
+    box-shadow: none !important;
+}
+
+/* 一番上だけ角を付ける */
+.side-menu > .menu-section:first-of-type,
+.side-menu > section.menu-section:first-of-type {
+    border-top: 1px solid rgba(0,0,0,.06) !important;
+    border-radius: 14px 14px 0 0 !important;
+}
+
+/* 一番下だけ角を付ける */
+.side-menu > .menu-section:last-of-type,
+.side-menu > section.menu-section:last-of-type {
+    border-radius: 0 0 14px 14px !important;
+}
+
+/* セクション見出しは設定アプリの見出し風 */
+.side-menu .menu-section-title {
+    margin: 0 !important;
+    padding: 14px 16px 7px !important;
+    background: #f5f5f7 !important;
+    color: #6e6e73 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+}
+
+/* NOW PLAYINGを一つのまとまりに */
+.side-menu .now-playing-section {
+    overflow: hidden !important;
+}
+
+.side-menu .menu-player {
+    border-radius: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+}
+
+/* メニュー項目を同じ高さ・同じ区切り線で連結 */
+.side-menu .menu-link,
+.side-menu .menu-item,
+.side-menu nav a,
+.side-menu nav button {
+    min-height: 48px !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid #e5e5ea !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+.side-menu .menu-link:last-child,
+.side-menu .menu-item:last-child,
+.side-menu nav a:last-child,
+.side-menu nav button:last-child {
+    border-bottom: 0 !important;
+}
+
+.side-menu .menu-link:hover,
+.side-menu .menu-item:hover,
+.side-menu nav a:hover,
+.side-menu nav button:hover {
+    background: #f2f2f7 !important;
+    transform: none !important;
+}
+
+/* 設定コントロールも外側の箱を作らず、横一列の項目に */
+.side-menu .setting,
+.side-menu .settings-item,
+.side-menu .setting-item,
+.side-menu .menu-setting,
+.side-menu .customize-item {
+    min-height: 48px !important;
+    margin: 0 !important;
+    padding: 0 16px !important;
+    border-radius: 0 !important;
+    border-bottom: 1px solid #e5e5ea !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+/* テーマ選択のボタンを横に並べても一枚のUIに見せる */
+.side-menu .theme-buttons,
+.side-menu .theme-options,
+.side-menu .customize-theme,
+.side-menu .theme-selector {
+    display: flex !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.side-menu .theme-button,
+.side-menu .theme-option,
+.side-menu .customize-theme button {
+    flex: 1 !important;
+    min-height: 46px !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+    border-right: 1px solid #e5e5ea !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+.side-menu .theme-button:last-child,
+.side-menu .theme-option:last-child,
+.side-menu .customize-theme button:last-child {
+    border-right: 0 !important;
+}
+
+/* スライダー・トグルを設定行の中に自然に収める */
+.side-menu input[type="range"] {
+    box-shadow: none !important;
+}
+
+.side-menu input[type="checkbox"],
+.side-menu input[type="range"],
+.side-menu select {
+    margin-left: auto !important;
+}
+
+.side-menu select {
+    border-radius: 8px !important;
+    border: 0 !important;
+    background: #f2f2f7 !important;
+}
+
+/* 「音楽の好み」などのリンクも連続リスト */
+.side-menu .preference-section,
+.side-menu .music-preferences,
+.side-menu .preference-list {
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+/* 区切りは余白ではなく薄い線 */
+.side-menu .menu-section + .menu-section {
+    margin-top: 16px !important;
+}
+
+/* ただし各セクション内部は完全につながる */
+.side-menu .menu-section > * {
+    box-shadow: none !important;
+}
+
+/* ダークテーマ */
+body[data-theme="night"] .side-menu {
+    background: #000 !important;
+}
+
+body[data-theme="night"] .side-menu > .menu-section,
+body[data-theme="night"] .side-menu > section.menu-section,
+body[data-theme="night"] .side-menu .menu-player,
+body[data-theme="night"] .side-menu .menu-link,
+body[data-theme="night"] .side-menu .menu-item,
+body[data-theme="night"] .side-menu nav a,
+body[data-theme="night"] .side-menu nav button,
+body[data-theme="night"] .side-menu .setting,
+body[data-theme="night"] .side-menu .settings-item,
+body[data-theme="night"] .side-menu .setting-item,
+body[data-theme="night"] .side-menu .menu-setting,
+body[data-theme="night"] .side-menu .customize-item,
+body[data-theme="night"] .side-menu .theme-buttons,
+body[data-theme="night"] .side-menu .theme-options,
+body[data-theme="night"] .side-menu .customize-theme,
+body[data-theme="night"] .side-menu .theme-button,
+body[data-theme="night"] .side-menu .theme-option,
+body[data-theme="night"] .side-menu .customize-theme button {
+    background: #1c1c1e !important;
+    border-color: #38383a !important;
+    color: #f5f5f7 !important;
+}
+
+body[data-theme="night"] .side-menu .menu-section-title {
+    background: #000 !important;
+    color: #98989d !important;
+}
