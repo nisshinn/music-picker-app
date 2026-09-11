@@ -4558,3 +4558,160 @@ body[data-theme="night"] .side-menu .menu-section-title {
     background: #000 !important;
     color: #98989d !important;
 }
+/* =========================================================
+   サイドメニュー全体を1つにつなげる
+   ========================================================= */
+
+.side-menu {
+    background: #f5f5f7 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: 10px 0 35px rgba(0,0,0,.12) !important;
+}
+
+/* メニュー上部 */
+.side-menu-header {
+    margin: 0 !important;
+    padding: 16px 18px !important;
+    background: #f5f5f7 !important;
+    border-bottom: 1px solid #d2d2d7 !important;
+}
+
+/* セクションを全部「箱」にしない */
+.side-menu .menu-section {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid #d2d2d7 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+}
+
+/* セクションタイトル */
+.side-menu .menu-section-title {
+    margin: 0 !important;
+    padding: 14px 16px 8px !important;
+    background: #f5f5f7 !important;
+    color: #86868b !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+/* NOW PLAYING */
+.side-menu .now-playing-section {
+    padding: 0 !important;
+}
+
+/* メニュー内プレイヤー */
+.side-menu .menu-player {
+    margin: 0 !important;
+    padding: 14px 16px 18px !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    border: 0 !important;
+}
+
+/* ページ項目 */
+.side-menu .menu-link,
+.side-menu a,
+.side-menu button {
+    width: 100% !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    padding: 0 18px !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+
+    color: #1d1d1f !important;
+}
+
+/* 選択中 */
+.side-menu .menu-link.active,
+.side-menu a.active,
+.side-menu button.active {
+    background: #f2f2f7 !important;
+    color: #ff2d55 !important;
+    font-weight: 600 !important;
+}
+
+/* 項目の区切り */
+.side-menu .menu-link + .menu-link,
+.side-menu a + a {
+    border-top: 1px solid #e5e5ea !important;
+}
+
+/* カスタマイズ部分も同じ流れにする */
+.side-menu .customize-section,
+.side-menu .settings-section {
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+/* テーマ・設定項目 */
+.side-menu .theme-button,
+.side-menu .theme-option,
+.side-menu .setting-item {
+    border-radius: 0 !important;
+    border: 0 !important;
+    border-top: 1px solid #e5e5ea !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+/* セクション同士の隙間を完全になくす */
+.side-menu > * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* =========================================================
+   Nightテーマでも「黒いカードが分離」しない
+   ========================================================= */
+
+body[data-theme="night"] .side-menu {
+    background: #000 !important;
+}
+
+body[data-theme="night"] .side-menu-header {
+    background: #000 !important;
+    border-color: #38383a !important;
+}
+
+body[data-theme="night"] .side-menu .menu-section,
+body[data-theme="night"] .side-menu .menu-player,
+body[data-theme="night"] .side-menu .menu-link,
+body[data-theme="night"] .side-menu a,
+body[data-theme="night"] .side-menu button,
+body[data-theme="night"] .side-menu .customize-section,
+body[data-theme="night"] .side-menu .settings-section,
+body[data-theme="night"] .side-menu .theme-button,
+body[data-theme="night"] .side-menu .theme-option,
+body[data-theme="night"] .side-menu .setting-item {
+    background: #1c1c1e !important;
+    color: #f5f5f7 !important;
+    border-color: #38383a !important;
+    box-shadow: none !important;
+}
+
+body[data-theme="night"] .side-menu .menu-section-title {
+    background: #000 !important;
+    color: #98989d !important;
+}
+
+body[data-theme="night"] .side-menu .menu-link.active,
+body[data-theme="night"] .side-menu a.active {
+    background: #2c2c2e !important;
+    color: #ff375f !important;
+}
