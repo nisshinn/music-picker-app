@@ -3277,1441 +3277,294 @@ body[data-theme="night"] .spotify-playlist-detail-info h2 {
 }
 
 /* ============================================================
-   💻 PC版 NOW PLAYING：画面全体
+   Apple Music / iOS UI final cleanup
+   HTML / JavaScript / functionality unchanged
    ============================================================ */
-@media (min-width: 701px) {
 
-    .full-player-overlay {
-        position: fixed !important;
-        inset: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        padding: 0 !important;
-        margin: 0 !important;
-
-        align-items: stretch !important;
-        justify-content: stretch !important;
-        overflow: hidden !important;
-    }
-
-    .full-player-main {
-        box-sizing: border-box !important;
-
-        width: 100vw !important;
-        height: 100vh !important;
-        min-height: 100vh !important;
-        max-height: 100vh !important;
-
-        margin: 0 !important;
-        padding: 28px 7vw 34px !important;
-
-        border-radius: 0 !important;
-        overflow: hidden !important;
-
-        display: grid !important;
-        grid-template-rows: auto minmax(0, 1fr) auto auto auto auto !important;
-        align-items: center !important;
-    }
-
-    /* NOW PLAYING / 閉じる / キュー */
-    .full-player-top {
-        width: 100% !important;
-        max-width: 1100px !important;
-        margin: 0 auto 18px !important;
-        min-height: 48px !important;
-        flex-shrink: 0 !important;
-    }
-
-    .full-player-top-title {
-        font-size: 18px !important;
-        line-height: 1.2 !important;
-        letter-spacing: 2px !important;
-        position: relative !important;
-        z-index: 2 !important;
-    }
-
-    .full-player-close,
-    .full-player-queue-button {
-        position: relative !important;
-        z-index: 3 !important;
-        width: 48px !important;
-        height: 48px !important;
-    }
-
-    /* ジャケット */
-    .full-player-art-wrap {
-        width: 100% !important;
-        min-height: 0 !important;
-        margin: 0 auto 20px !important;
-
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-
-        overflow: hidden !important;
-    }
-
-    .full-player-art {
-        width: min(52vh, 560px) !important;
-        height: min(52vh, 560px) !important;
-        max-width: min(62vw, 560px) !important;
-        max-height: 52vh !important;
-
-        aspect-ratio: 1 / 1 !important;
-        object-fit: cover !important;
-        border-radius: 24px !important;
-    }
-
-    /* 曲名・アーティスト・お気に入り */
-    .full-player-info {
-        width: 100% !important;
-        max-width: 900px !important;
-        margin: 0 auto 14px !important;
-        min-height: 58px !important;
-    }
-
-    .full-player-title {
-        font-size: 30px !important;
-    }
-
-    .full-player-artist {
-        font-size: 16px !important;
-        margin-top: 6px !important;
-    }
-
-    .full-player-favorite {
-        width: 52px !important;
-        height: 52px !important;
-        font-size: 32px !important;
-    }
-
-    /* 再生バー */
-    .full-player-progress-area {
-        width: 100% !important;
-        max-width: 900px !important;
-        margin: 0 auto !important;
-    }
-
-    .full-player-times {
-        margin-top: 7px !important;
-        font-size: 13px !important;
-    }
-
-    /* 再生ボタン */
-    .full-player-controls {
-        gap: 32px !important;
-        margin: 22px auto !important;
-    }
-
-    .full-player-control {
-        width: 58px !important;
-        height: 58px !important;
-        font-size: 21px !important;
-    }
-
-    .full-player-play {
-        width: 76px !important;
-        height: 76px !important;
-        font-size: 28px !important;
-    }
-
-    /* 音量 */
-    .full-player-volume {
-        width: 100% !important;
-        max-width: 600px !important;
-        margin: 0 auto 18px !important;
-    }
-
-    /* シャッフル・全曲 */
-    .full-player-extra {
-        width: 100% !important;
-        max-width: 600px !important;
-        margin: 0 auto !important;
-        gap: 12px !important;
-    }
-
-    .full-player-extra button {
-        padding: 13px !important;
-        font-size: 14px !important;
-    }
-
-    /* キュー画面もPCでは全画面 */
-    .full-player-queue-screen {
-        box-sizing: border-box !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        min-height: 100vh !important;
-        max-height: 100vh !important;
-        margin: 0 !important;
-        padding: 28px 7vw 34px !important;
-        border-radius: 0 !important;
-        overflow-y: auto !important;
-    }
-}
-
-/* ============================================================
-   Apple Music風・全体リデザイン
-   ※既存のclass名は一切変更しない
-   ============================================================ */
 :root {
-    --main-color: #fa2439 !important;
-    --main-dark: #d9182d !important;
-    --accent-color: #fa2439 !important;
-    --text-color: #111111 !important;
-    --sub-text: #6b6b70 !important;
-    --card-bg: #ffffff !important;
-    --input-bg: #f2f2f7 !important;
-    --shadow: 0 8px 28px rgba(0,0,0,.06) !important;
-    --radius: 18px !important;
+  --main-color:#ff2d55;
+  --main-dark:#e51f46;
+  --accent-color:#ff2d55;
+  --text-color:#1d1d1f;
+  --sub-text:#86868b;
+  --card-bg:#ffffff;
+  --input-bg:#f2f2f7;
+  --shadow:0 1px 4px rgba(0,0,0,.06);
+  --radius:14px;
 }
 
-html { scroll-behavior: smooth; }
+html, body { min-height:100%; }
 body {
-    background: #f5f5f7 !important;
-    color: #111 !important;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, "Noto Sans JP", sans-serif !important;
-    letter-spacing: -0.01em;
+  background:#f5f5f7 !important;
+  color:#1d1d1f !important;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","Noto Sans JP",Arial,sans-serif !important;
 }
 
-/* 背景設定も「普通の音楽アプリ」寄りに */
-body[data-background="gradient"],
-body[data-background="default"] { background: #f5f5f7 !important; }
-body[data-background="simple"] { background: #f2f2f7 !important; }
+/* メイン */
+#app { max-width:1100px !important; padding:72px 28px 155px !important; }
+.main-header { text-align:left !important; margin-bottom:28px !important; }
+.main-header h1 { font-size:42px !important; font-weight:700 !important; letter-spacing:-1.5px !important; }
+.main-header p { font-size:16px !important; color:#86868b !important; }
 
-#app {
-    max-width: 1180px !important;
-    padding: 74px 34px 150px !important;
+/* ホームの大きな箱を控えめに */
+.spotify-box,.picker-box,.content-box {
+  background:#fff !important;
+  border:1px solid #e5e5ea !important;
+  border-radius:16px !important;
+  box-shadow:0 1px 4px rgba(0,0,0,.045) !important;
+  backdrop-filter:none !important;
 }
+.spotify-box { padding:28px 20px !important; margin-bottom:16px !important; }
+.picker-box,.content-box { padding:24px !important; margin-bottom:16px !important; }
+.picker-box h2 { font-size:22px !important; }
 
-.main-header {
-    text-align: left !important;
-    margin: 0 auto 28px !important;
-    max-width: 1000px;
+/* 入力 */
+.artist-search,.big-search,input[type="text"],input[type="search"],select {
+  background:#f2f2f7 !important;
+  color:#1d1d1f !important;
+  border:1px solid transparent !important;
+  border-radius:10px !important;
+  box-shadow:none !important;
 }
-.main-header h1 {
-    font-size: clamp(34px, 4vw, 48px) !important;
-    font-weight: 800 !important;
-    letter-spacing: -1.5px !important;
-    margin-bottom: 5px !important;
-}
-.main-header p {
-    color: #6b6b70 !important;
-    font-size: 16px !important;
-}
-
-.page-header {
-    max-width: 1000px !important;
-    margin: 0 auto 24px !important;
-}
-.page-header h1 {
-    font-size: 32px !important;
-    font-weight: 800 !important;
-    letter-spacing: -1px !important;
-}
-.page-header p { color: #6b6b70 !important; }
-
-/* 上部メニュー */
-.menu-button {
-    width: 46px !important;
-    height: 46px !important;
-    top: 18px !important;
-    left: 18px !important;
-    border-radius: 50% !important;
-    background: rgba(255,255,255,.96) !important;
-    box-shadow: 0 5px 18px rgba(0,0,0,.10) !important;
-    font-size: 23px !important;
-}
-.menu-button:hover { transform: scale(1.03) !important; }
-
-/* メニュー */
-.side-menu {
-    width: 340px !important;
-    background: rgba(255,255,255,.98) !important;
-    backdrop-filter: blur(22px) !important;
-    box-shadow: 12px 0 40px rgba(0,0,0,.13) !important;
-}
-.menu-title { font-size: 22px !important; }
-.menu-section {
-    background: #f5f5f7 !important;
-    border-radius: 16px !important;
-    padding: 12px !important;
-}
-.menu-link { border-radius: 10px !important; }
-.menu-link:hover, .menu-link.active {
-    background: #eeeef2 !important;
-    color: #fa2439 !important;
-}
-
-/* Spotify */
-.spotify-box,
-.picker-box,
-.content-box,
-.settings-box,
-.spotify-save-box {
-    background: #fff !important;
-    border: 1px solid #e7e7eb !important;
-    border-radius: 18px !important;
-    box-shadow: 0 8px 28px rgba(0,0,0,.045) !important;
-    backdrop-filter: none !important;
-}
-.spotify-box { padding: 32px 24px !important; }
-.spotify-login-button,
-.spotify-button {
-    background: #fa2439 !important;
-    border-radius: 999px !important;
-    box-shadow: none !important;
-}
-.spotify-login-button:hover,
-.spotify-button:hover { background: #d9182d !important; }
-.spotify-status { color: #6b6b70 !important; }
+input:focus,select:focus { outline:none !important; border-color:rgba(255,45,85,.45) !important; box-shadow:0 0 0 3px rgba(255,45,85,.10) !important; }
 
 /* 気分 */
-.moods {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-}
+.moods { gap:8px !important; }
 .moods button {
-    min-height: 74px !important;
-    border: 1px solid #e4e4e8 !important;
-    border-radius: 15px !important;
-    background: #fff !important;
-    color: #222 !important;
-    box-shadow: none !important;
-    transition: .18s ease !important;
+  border:1px solid #d2d2d7 !important;
+  background:#fff !important;
+  color:#1d1d1f !important;
+  border-radius:10px !important;
+  box-shadow:none !important;
+  transform:none !important;
 }
-.moods button:hover { transform: translateY(-2px) !important; border-color: #cfcfd5 !important; }
-.moods button.selected {
-    background: #fff1f2 !important;
-    border-color: #fa2439 !important;
-    color: #fa2439 !important;
-}
+.moods button:hover { background:#f5f5f7 !important; transform:none !important; }
+.moods button.selected,.moods button.active { background:#ff2d55 !important; border-color:#ff2d55 !important; color:#fff !important; }
 
-/* 検索 */
-.big-search,
-.artist-search {
-    background: #e9e9ee !important;
-    border: none !important;
-    border-radius: 12px !important;
-    box-shadow: none !important;
+/* ボタン */
+#makePlaylist,.play-all-button,.spotify-save-button {
+  border-radius:980px !important;
+  box-shadow:none !important;
 }
-.big-search input,
-.artist-search input,
-.genre-select,
-.menu-select {
-    background: #f2f2f7 !important;
-    border: 1px solid transparent !important;
-    border-radius: 11px !important;
-    color: #111 !important;
-}
-.big-search input:focus,
-.artist-search input:focus,
-.genre-select:focus,
-.menu-select:focus { border-color: #fa2439 !important; outline: none !important; }
-.search-button { color: #fa2439 !important; }
+#makePlaylist { background:#ff2d55 !important; color:#fff !important; }
 
-/* アーティスト検索結果 */
-.artist-result {
-    background: #fff !important;
-    border-bottom: 1px solid #ececf0 !important;
-    border-radius: 0 !important;
-}
-.artist-result:hover { background: #f5f5f7 !important; }
-.artist-result img { border-radius: 50% !important; }
-.selected-artist-card {
-    background: #f5f5f7 !important;
-    border: none !important;
-    border-radius: 14px !important;
-}
-
-/* 曲カード */
-.playlist,
-.track-card,
-.library-track-item,
-.library-playlist-card,
-.spotify-playlist-card {
-    background: #fff !important;
-    border: 1px solid #e8e8ec !important;
-    box-shadow: none !important;
-}
+/* 曲：カードではなくApple Music風リスト */
 .track-card {
-    border-radius: 15px !important;
-    transition: transform .16s ease, background .16s ease !important;
+  min-height:74px !important;
+  padding:8px 4px !important;
+  margin:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  border-bottom:1px solid #e5e5ea !important;
+  box-shadow:none !important;
+  transform:none !important;
 }
-.track-card:hover,
-.library-track-item:hover,
-.library-playlist-card:hover,
-.spotify-playlist-card:hover {
-    transform: translateY(-2px) !important;
-    background: #fafafa !important;
-}
-.track-image,
-.library-playlist-card img,
-.spotify-playlist-image,
-.spotify-playlist-detail-image {
-    border-radius: 12px !important;
-}
-.track-title,
-.library-track-title { font-weight: 700 !important; color: #151519 !important; }
-.track-artist,
-.library-track-artist { color: #77777d !important; }
-.track-actions { gap: 6px !important; }
-
-.play-button,
-.track-play-button,
-.library-play-button,
-.library-play-all,
-.make-playlist-button,
-.play-all-button {
-    background: #fa2439 !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 999px !important;
-    box-shadow: none !important;
-}
-.play-button:hover,
-.track-play-button:hover,
-.library-play-button:hover,
-.library-play-all:hover,
-.make-playlist-button:hover,
-.play-all-button:hover { background: #d9182d !important; transform: translateY(-1px) !important; }
-.favorite-button { color: #fa2439 !important; }
-
-/* ライブラリ */
-.library-section {
-    background: #fff !important;
-    border: 1px solid #e7e7eb !important;
-    border-radius: 18px !important;
-    box-shadow: 0 8px 28px rgba(0,0,0,.045) !important;
-    margin-bottom: 16px !important;
-    overflow: hidden !important;
-}
-.library-section-header {
-    background: #fff !important;
-    border: none !important;
-    padding: 18px 20px !important;
-    font-weight: 750 !important;
-}
-.library-section-content { background: #fff !important; }
-.library-arrow { color: #8b8b91 !important; }
-.library-back-button {
-    color: #fa2439 !important;
-    background: transparent !important;
-    border: none !important;
-}
-
-/* 下部プレーヤー */
-.player-panel {
-    background: rgba(255,255,255,.96) !important;
-    border-top: 1px solid #dedee3 !important;
-    box-shadow: 0 -6px 25px rgba(0,0,0,.06) !important;
-    backdrop-filter: blur(18px) !important;
-}
-.player-main { background: transparent !important; }
-.player-image { border-radius: 8px !important; }
-.player-title { font-weight: 700 !important; }
-.player-artist { color: #77777d !important; }
-.player-button {
-    background: transparent !important;
-    color: #222 !important;
-    box-shadow: none !important;
-}
-.player-button:hover { color: #fa2439 !important; }
-.player-controls .player-button.play,
-.player-controls .player-button:first-child { color: #111 !important; }
-
-/* 再生バー */
-.progress-container input[type="range"],
-.volume-container input[type="range"],
-#menuProgressBar,
-#menuVolumeBar {
-    accent-color: #fa2439 !important;
-}
-
-/* NOW PLAYING */
-.full-player-overlay {
-    background: rgba(0,0,0,.52) !important;
-    backdrop-filter: blur(20px) !important;
-}
-.full-player-main {
-    background: #f7f7f9 !important;
-    color: #111 !important;
-}
-.full-player-art {
-    border-radius: 18px !important;
-    box-shadow: 0 24px 55px rgba(0,0,0,.18) !important;
-}
-.full-player-title { font-weight: 800 !important; color: #111 !important; }
-.full-player-artist { color: #77777d !important; }
-.full-player-favorite { color: #fa2439 !important; }
-.full-player-control {
-    background: transparent !important;
-    color: #222 !important;
-    box-shadow: none !important;
-}
-.full-player-play {
-    background: #111 !important;
-    color: #fff !important;
-    box-shadow: none !important;
-}
-.full-player-extra button {
-    background: transparent !important;
-    border: 1px solid #dedee3 !important;
-    color: #444 !important;
-    box-shadow: none !important;
-}
-
-/* 履歴・設定など */
-.danger-button { border-radius: 999px !important; }
-.loading, .no-results, .library-empty, .queue-empty { color: #77777d !important; }
-
-/* PC */
-@media (min-width: 701px) {
-    .moods { max-width: 1000px; margin: 0 auto; }
-    .spotify-box, .picker-box, .content-box, .settings-box { max-width: 1000px; margin-left: auto; margin-right: auto; }
-}
-
-/* スマホ */
-@media (max-width: 700px) {
-    #app { padding: 64px 16px 135px !important; }
-    .main-header { text-align: left !important; }
-    .main-header h1 { font-size: 34px !important; }
-    .moods { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
-    .menu-button { width: 44px !important; height: 44px !important; }
-}
-
+.track-card:hover { background:#f5f5f7 !important; box-shadow:none !important; transform:none !important; }
+.track-image { width:56px !important; height:56px !important; border-radius:6px !important; }
+.track-title { font-size:15px !important; font-weight:500 !important; }
+.track-artist { font-size:13px !important; color:#86868b !important; }
+.track-actions { gap:5px !important; }
+.track-play-button,.favorite-button { border-radius:50% !important; box-shadow:none !important; }
+.spotify-button { border-radius:8px !important; }
 
 /* ============================================================
-   Music Picker — Apple Music風 v3
-   HTML / JavaScript / 機能は変更せず、見た目だけを整理
+   下部ナビ：画面いっぱい・カプセル廃止
    ============================================================ */
-
-:root {
-  --main-color: #ff2d55 !important;
-  --accent-color: #ff2d55 !important;
-  --text-color: #1d1d1f !important;
-  --sub-text: #86868b !important;
-  --page-bg: #f5f5f7 !important;
-  --card-bg: #ffffff !important;
-}
-
-html, body {
-  background: #f5f5f7 !important;
-  color: #1d1d1f !important;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif !important;
-}
-
-body {
-  padding-bottom: 105px !important;
-}
-
-/* -----------------------------
-   ホーム全体
-   ----------------------------- */
-.app {
-  width: min(100%, 1080px) !important;
-  max-width: 1080px !important;
-  margin: 0 auto !important;
-  padding: 32px 34px 120px !important;
-}
-
-.page-header {
-  margin: 0 0 28px !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-.page-header h1 {
-  margin: 0 0 7px !important;
-  font-size: clamp(32px, 4vw, 44px) !important;
-  line-height: 1.05 !important;
-  font-weight: 750 !important;
-  letter-spacing: -1.5px !important;
-}
-
-.page-header p {
-  margin: 0 !important;
-  color: #86868b !important;
-  font-size: 15px !important;
-}
-
-/* -----------------------------
-   大きなカード感を弱める
-   ----------------------------- */
-.app > section:not(#playlistPage),
-.app .section {
-  background: #fff !important;
-  border: 1px solid rgba(0,0,0,.055) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,.035) !important;
-  margin-bottom: 14px !important;
-}
-
-.app > section {
-  padding: 23px !important;
-}
-
-/* Spotifyログイン */
-#spotifyLogin {
-  border: 0 !important;
-  border-radius: 999px !important;
-  background: #1ed760 !important;
-  color: #000 !important;
-  box-shadow: none !important;
-  font-weight: 650 !important;
-}
-
-#spotifyStatus {
-  color: #86868b !important;
-}
-
-/* 入力・セレクト */
-input, select {
-  background: #f2f2f7 !important;
-  border: 1px solid transparent !important;
-  border-radius: 10px !important;
-  box-shadow: none !important;
-  color: #1d1d1f !important;
-}
-
-input:focus, select:focus {
-  background: #fff !important;
-  border-color: rgba(255,45,85,.45) !important;
-  box-shadow: 0 0 0 3px rgba(255,45,85,.09) !important;
-  outline: none !important;
-}
-
-/* 気分 */
-.moods {
-  display: grid !important;
-  grid-template-columns: repeat(4, minmax(0,1fr)) !important;
-  gap: 8px !important;
-}
-
-.moods button {
-  min-height: 44px !important;
-  border: 1px solid #d2d2d7 !important;
-  border-radius: 10px !important;
-  background: #fff !important;
-  color: #1d1d1f !important;
-  box-shadow: none !important;
-  font-weight: 600 !important;
-}
-
-.moods button:hover {
-  transform: none !important;
-  background: #f5f5f7 !important;
-}
-
-.moods button.selected {
-  background: #ff2d55 !important;
-  border-color: #ff2d55 !important;
-  color: #fff !important;
-}
-
-#makePlaylist {
-  border: 0 !important;
-  border-radius: 999px !important;
-  background: #ff2d55 !important;
-  color: #fff !important;
-  box-shadow: none !important;
-  font-weight: 650 !important;
-}
-
-/* -----------------------------
-   曲一覧：カードではなくApple Music風リスト
-   ----------------------------- */
-.song,
-.track-item,
-.track-row {
-  display: flex !important;
-  align-items: center !important;
-  background: transparent !important;
-  border-radius: 0 !important;
-  border: 0 !important;
-  border-bottom: 1px solid #e5e5ea !important;
-  box-shadow: none !important;
-  transform: none !important;
-  padding-top: 10px !important;
-  padding-bottom: 10px !important;
-}
-
-.song:first-child,
-.track-item:first-child,
-.track-row:first-child {
-  padding-top: 2px !important;
-}
-
-.song:hover,
-.track-item:hover,
-.track-row:hover {
-  background: #f5f5f7 !important;
-  transform: none !important;
-}
-
-.song-cover,
-.track-cover,
-.track-image {
-  width: 58px !important;
-  height: 58px !important;
-  flex: 0 0 58px !important;
-  border-radius: 7px !important;
-  box-shadow: none !important;
-}
-
-.song-info,
-.track-info {
-  min-width: 0 !important;
-}
-
-.song-title,
-.track-title {
-  font-weight: 600 !important;
-  color: #1d1d1f !important;
-}
-
-.song-artist,
-.track-artist {
-  color: #86868b !important;
-  font-size: 13px !important;
-}
-
-.play-button,
-.song-play-button {
-  border-radius: 50% !important;
-  background: #ff2d55 !important;
-  color: #fff !important;
-  box-shadow: none !important;
-}
-
-/* -----------------------------
-   下部ナビ：カプセルを完全に廃止
-   ----------------------------- */
 .bottom-nav {
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  transform: none !important;
-  width: 100% !important;
-  height: 72px !important;
-  padding: 5px 18px calc(5px + env(safe-area-inset-bottom)) !important;
-  border: 0 !important;
-  border-top: 1px solid rgba(0,0,0,.09) !important;
-  border-radius: 0 !important;
-  background: rgba(250,250,252,.94) !important;
-  box-shadow: 0 -4px 18px rgba(0,0,0,.045) !important;
-  backdrop-filter: saturate(180%) blur(20px) !important;
-  -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+  left:0 !important; right:0 !important; bottom:0 !important; transform:none !important;
+  width:100% !important; height:68px !important;
+  padding:4px 8px calc(4px + env(safe-area-inset-bottom)) !important;
+  border:0 !important; border-top:1px solid rgba(0,0,0,.10) !important;
+  border-radius:0 !important;
+  background:rgba(250,250,252,.94) !important;
+  box-shadow:0 -4px 18px rgba(0,0,0,.05) !important;
+  backdrop-filter:saturate(180%) blur(20px) !important;
+  -webkit-backdrop-filter:saturate(180%) blur(20px) !important;
 }
-
 .bottom-nav-link {
-  width: 25% !important;
-  height: 62px !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  color: #86868b !important;
-  box-shadow: none !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  gap: 2px !important;
+  width:25% !important; height:60px !important;
+  border-radius:0 !important; background:transparent !important;
+  color:#86868b !important; box-shadow:none !important;
+  font-size:12px !important; font-weight:500 !important;
 }
+.bottom-nav-link:hover { background:transparent !important; }
+.bottom-nav-link:active { transform:scale(.97) !important; }
+.bottom-nav-link.active { background:transparent !important; color:#ff2d55 !important; font-weight:700 !important; }
+.bottom-nav-icon { font-size:23px !important; line-height:23px !important; }
+.bottom-nav-link[data-page="homePage"] .bottom-nav-icon { font-size:24px !important; }
 
-.bottom-nav-link:hover,
-.bottom-nav-link:active {
-  background: transparent !important;
-  transform: none !important;
-}
-
-.bottom-nav-link.active {
-  background: transparent !important;
-  color: #ff2d55 !important;
-  font-weight: 700 !important;
-}
-
-.bottom-nav-icon {
-  font-size: 23px !important;
-  line-height: 25px !important;
-}
-
-.bottom-nav-link[data-page="homePage"] .bottom-nav-icon {
-  font-size: 24px !important;
-}
-
-/* -----------------------------
-   ミニプレイヤー：ナビの直上の細いバー
-   ----------------------------- */
+/* ミニプレイヤー：ナビ直上 */
 .player-panel {
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 72px !important;
-  transform: none !important;
-  width: 100% !important;
-  padding: 7px 18px !important;
-  border-radius: 0 !important;
-  border: 0 !important;
-  border-top: 1px solid rgba(0,0,0,.07) !important;
-  background: rgba(255,255,255,.96) !important;
-  box-shadow: 0 -2px 12px rgba(0,0,0,.06) !important;
-  backdrop-filter: saturate(180%) blur(18px) !important;
-  -webkit-backdrop-filter: saturate(180%) blur(18px) !important;
+  left:12px !important; bottom:76px !important; transform:none !important;
+  width:calc(100% - 24px) !important;
+  padding:8px 12px !important;
+  border-radius:12px !important;
+  background:rgba(255,255,255,.96) !important;
+  border:1px solid rgba(0,0,0,.08) !important;
+  box-shadow:0 4px 18px rgba(0,0,0,.10) !important;
+  backdrop-filter:blur(18px) !important;
+  -webkit-backdrop-filter:blur(18px) !important;
 }
+.player-main { gap:8px !important; }
+.player-image { width:44px !important; height:44px !important; border-radius:6px !important; }
+.player-title { font-size:13px !important; font-weight:600 !important; }
+.player-artist { font-size:11px !important; color:#86868b !important; }
+.player-button { box-shadow:none !important; }
 
-.player-main {
-  gap: 10px !important;
-  max-width: 1080px !important;
-}
-
-.player-image {
-  width: 42px !important;
-  height: 42px !important;
-  border-radius: 5px !important;
-}
-
-.player-title {
-  font-size: 13px !important;
-  font-weight: 600 !important;
-}
-
-.player-artist {
-  margin-top: 1px !important;
-  font-size: 11px !important;
-  color: #86868b !important;
-}
-
-.player-controls {
-  gap: 2px !important;
-}
-
-.player-button {
-  width: 38px !important;
-  height: 38px !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.player-button.play-button {
-  background: transparent !important;
-  color: #1d1d1f !important;
-}
-
-.volume-container {
-  min-width: 130px !important;
-}
-
-.progress-container {
-  margin-top: 3px !important;
-  font-size: 9px !important;
-}
-
-/* -----------------------------
-   ハンバーガー
-   ----------------------------- */
+/* ハンバーガー */
 .menu-button {
-  top: 16px !important;
-  left: 16px !important;
-  width: 44px !important;
-  height: 44px !important;
-  border-radius: 50% !important;
-  background: rgba(255,255,255,.96) !important;
-  border: 1px solid rgba(0,0,0,.08) !important;
-  color: #1d1d1f !important;
-  font-size: 22px !important;
-  box-shadow: 0 2px 10px rgba(0,0,0,.08) !important;
-}
-
-.menu-button:hover {
-  transform: none !important;
-}
-
-/* -----------------------------
-   サイドメニュー：iOSのリスト風
-   ----------------------------- */
-.side-menu {
-  width: 360px !important;
-  max-width: calc(100vw - 20px) !important;
-  padding: 20px 14px 32px !important;
-  background: #f5f5f7 !important;
-  box-shadow: 12px 0 35px rgba(0,0,0,.13) !important;
-}
-
-.side-menu-header {
-  margin: 0 4px 18px !important;
-  padding-bottom: 12px !important;
-  border-bottom: 1px solid #d2d2d7 !important;
-}
-
-.menu-title {
-  padding: 5px !important;
-  font-size: 21px !important;
-  font-weight: 700 !important;
-}
-
-.menu-close-button {
-  width: 36px !important;
-  height: 36px !important;
-  background: #e5e5ea !important;
-  font-size: 23px !important;
-  box-shadow: none !important;
-}
-
-.menu-close-button:hover {
-  transform: none !important;
-}
-
-.menu-section {
-  margin-bottom: 14px !important;
-  padding: 0 !important;
-  border: 1px solid rgba(0,0,0,.055) !important;
-  border-radius: 13px !important;
-  background: #fff !important;
-  box-shadow: none !important;
-  overflow: hidden !important;
-}
-
-.menu-section-title {
-  margin: 0 !important;
-  padding: 12px 14px 8px !important;
-  color: #86868b !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  letter-spacing: .2px !important;
-}
-
-.menu-link {
-  margin: 0 !important;
-  padding: 12px 14px !important;
-  border-radius: 0 !important;
-  border-top: 1px solid #e5e5ea !important;
-  background: #fff !important;
-  color: #1d1d1f !important;
-  font-size: 15px !important;
-  font-weight: 500 !important;
-}
-
-.menu-link:hover,
-.menu-link.active {
-  background: #f2f2f7 !important;
-  color: #ff2d55 !important;
-}
-
-/* NOW PLAYING */
-.now-playing-section {
-  background: #fff !important;
-}
-
-.menu-player {
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background: #fff !important;
-}
-
-/* -----------------------------
-   フルプレイヤー
-   ----------------------------- */
-.full-player-overlay {
-  background: rgba(245,245,247,.97) !important;
-  backdrop-filter: blur(28px) !important;
-  -webkit-backdrop-filter: blur(28px) !important;
-}
-
-.full-player-main {
-  width: 100vw !important;
-  max-width: none !important;
-  max-height: none !important;
-  min-height: 100vh !important;
-  padding: 30px 7vw 35px !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.full-player-art {
-  border-radius: 12px !important;
-  box-shadow: 0 15px 38px rgba(0,0,0,.16) !important;
-}
-
-.full-player-title {
-  font-weight: 700 !important;
-  letter-spacing: -.7px !important;
-}
-
-.full-player-artist {
-  color: #86868b !important;
-}
-
-.full-player-play {
-  background: #1d1d1f !important;
-  color: #fff !important;
-  box-shadow: none !important;
-}
-
-.full-player-control {
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.full-player-extra button {
-  border-radius: 9px !important;
-  background: #e5e5ea !important;
-  box-shadow: none !important;
-}
-
-/* -----------------------------
-   夜テーマ
-   ----------------------------- */
-body[data-theme="night"] {
-  background: #000 !important;
-  color: #f5f5f7 !important;
-}
-
-body[data-theme="night"] .app > section,
-body[data-theme="night"] .app .section,
-body[data-theme="night"] .library-section,
-body[data-theme="night"] .menu-section {
-  background: #1c1c1e !important;
-  color: #f5f5f7 !important;
-  border-color: #38383a !important;
-}
-
-body[data-theme="night"] .bottom-nav {
-  background: rgba(28,28,30,.95) !important;
-  border-color: #38383a !important;
-}
-
-body[data-theme="night"] .player-panel {
-  background: rgba(28,28,30,.97) !important;
-  border-color: #38383a !important;
-}
-
-body[data-theme="night"] .side-menu,
-body[data-theme="night"] .full-player-overlay {
-  background: #000 !important;
-  color: #f5f5f7 !important;
-}
-
-/* -----------------------------
-   スマホ
-   ----------------------------- */
-@media (max-width: 700px) {
-  body {
-    padding-bottom: 115px !important;
-  }
-
-  .app {
-    padding: 24px 16px 125px !important;
-  }
-
-  .page-header h1 {
-    font-size: 34px !important;
-  }
-
-  .app > section {
-    padding: 18px !important;
-    margin-bottom: 12px !important;
-    border-radius: 14px !important;
-  }
-
-  .moods {
-    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
-  }
-
-  .bottom-nav {
-    height: 68px !important;
-    padding-left: 4px !important;
-    padding-right: 4px !important;
-  }
-
-  .bottom-nav-link {
-    min-width: 0 !important;
-    flex: 1 !important;
-  }
-
-  .player-panel {
-    bottom: 68px !important;
-    padding: 6px 10px !important;
-  }
-
-  .player-main {
-    gap: 8px !important;
-  }
-
-  .player-image {
-    width: 40px !important;
-    height: 40px !important;
-  }
-
-  .volume-container {
-    display: none !important;
-  }
-
-  .progress-container {
-    display: none !important;
-  }
-
-  .side-menu {
-    width: min(350px, calc(100vw - 10px)) !important;
-  }
+  top:14px !important; left:14px !important;
+  width:44px !important; height:44px !important;
+  border-radius:50% !important;
+  background:#fff !important; color:#1d1d1f !important;
+  box-shadow:0 2px 10px rgba(0,0,0,.10) !important;
 }
 
 /* ============================================================
-   Connected iOS / Apple Music settings UI
-   すべての設定項目を一続きのリストとして見せる
+   サイドメニュー：全体を1枚のiOS画面にする
    ============================================================ */
-
-/* サイドメニュー全体を一枚の設定画面に */
 .side-menu {
-    gap: 0 !important;
-    padding-bottom: 24px !important;
+  width:360px !important; max-width:calc(100vw - 18px) !important;
+  padding:0 !important; background:#f5f5f7 !important;
+  box-shadow:12px 0 35px rgba(0,0,0,.14) !important;
+  backdrop-filter:none !important;
 }
-
-.side-menu > .menu-section,
-.side-menu > section.menu-section {
-    margin: 0 12px !important;
-    border-radius: 0 !important;
-    border-left: 1px solid rgba(0,0,0,.06) !important;
-    border-right: 1px solid rgba(0,0,0,.06) !important;
-    border-top: 0 !important;
-    border-bottom: 1px solid #e5e5ea !important;
-    box-shadow: none !important;
-}
-
-/* 一番上だけ角を付ける */
-.side-menu > .menu-section:first-of-type,
-.side-menu > section.menu-section:first-of-type {
-    border-top: 1px solid rgba(0,0,0,.06) !important;
-    border-radius: 14px 14px 0 0 !important;
-}
-
-/* 一番下だけ角を付ける */
-.side-menu > .menu-section:last-of-type,
-.side-menu > section.menu-section:last-of-type {
-    border-radius: 0 0 14px 14px !important;
-}
-
-/* セクション見出しは設定アプリの見出し風 */
-.side-menu .menu-section-title {
-    margin: 0 !important;
-    padding: 14px 16px 7px !important;
-    background: #f5f5f7 !important;
-    color: #6e6e73 !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-}
-
-/* NOW PLAYINGを一つのまとまりに */
-.side-menu .now-playing-section {
-    overflow: hidden !important;
-}
-
-.side-menu .menu-player {
-    border-radius: 0 !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    background: #fff !important;
-}
-
-/* メニュー項目を同じ高さ・同じ区切り線で連結 */
-.side-menu .menu-link,
-.side-menu .menu-item,
-.side-menu nav a,
-.side-menu nav button {
-    min-height: 48px !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    border: 0 !important;
-    border-bottom: 1px solid #e5e5ea !important;
-    background: #fff !important;
-    box-shadow: none !important;
-}
-
-.side-menu .menu-link:last-child,
-.side-menu .menu-item:last-child,
-.side-menu nav a:last-child,
-.side-menu nav button:last-child {
-    border-bottom: 0 !important;
-}
-
-.side-menu .menu-link:hover,
-.side-menu .menu-item:hover,
-.side-menu nav a:hover,
-.side-menu nav button:hover {
-    background: #f2f2f7 !important;
-    transform: none !important;
-}
-
-/* 設定コントロールも外側の箱を作らず、横一列の項目に */
-.side-menu .setting,
-.side-menu .settings-item,
-.side-menu .setting-item,
-.side-menu .menu-setting,
-.side-menu .customize-item {
-    min-height: 48px !important;
-    margin: 0 !important;
-    padding: 0 16px !important;
-    border-radius: 0 !important;
-    border-bottom: 1px solid #e5e5ea !important;
-    background: #fff !important;
-    box-shadow: none !important;
-}
-
-/* テーマ選択のボタンを横に並べても一枚のUIに見せる */
-.side-menu .theme-buttons,
-.side-menu .theme-options,
-.side-menu .customize-theme,
-.side-menu .theme-selector {
-    display: flex !important;
-    gap: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: #fff !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-.side-menu .theme-button,
-.side-menu .theme-option,
-.side-menu .customize-theme button {
-    flex: 1 !important;
-    min-height: 46px !important;
-    border-radius: 0 !important;
-    border: 0 !important;
-    border-right: 1px solid #e5e5ea !important;
-    background: #fff !important;
-    box-shadow: none !important;
-}
-
-.side-menu .theme-button:last-child,
-.side-menu .theme-option:last-child,
-.side-menu .customize-theme button:last-child {
-    border-right: 0 !important;
-}
-
-/* スライダー・トグルを設定行の中に自然に収める */
-.side-menu input[type="range"] {
-    box-shadow: none !important;
-}
-
-.side-menu input[type="checkbox"],
-.side-menu input[type="range"],
-.side-menu select {
-    margin-left: auto !important;
-}
-
-.side-menu select {
-    border-radius: 8px !important;
-    border: 0 !important;
-    background: #f2f2f7 !important;
-}
-
-/* 「音楽の好み」などのリンクも連続リスト */
-.side-menu .preference-section,
-.side-menu .music-preferences,
-.side-menu .preference-list {
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    background: #fff !important;
-    box-shadow: none !important;
-}
-
-/* 区切りは余白ではなく薄い線 */
-.side-menu .menu-section + .menu-section {
-    margin-top: 16px !important;
-}
-
-/* ただし各セクション内部は完全につながる */
-.side-menu .menu-section > * {
-    box-shadow: none !important;
-}
-
-/* ダークテーマ */
-body[data-theme="night"] .side-menu {
-    background: #000 !important;
-}
-
-body[data-theme="night"] .side-menu > .menu-section,
-body[data-theme="night"] .side-menu > section.menu-section,
-body[data-theme="night"] .side-menu .menu-player,
-body[data-theme="night"] .side-menu .menu-link,
-body[data-theme="night"] .side-menu .menu-item,
-body[data-theme="night"] .side-menu nav a,
-body[data-theme="night"] .side-menu nav button,
-body[data-theme="night"] .side-menu .setting,
-body[data-theme="night"] .side-menu .settings-item,
-body[data-theme="night"] .side-menu .setting-item,
-body[data-theme="night"] .side-menu .menu-setting,
-body[data-theme="night"] .side-menu .customize-item,
-body[data-theme="night"] .side-menu .theme-buttons,
-body[data-theme="night"] .side-menu .theme-options,
-body[data-theme="night"] .side-menu .customize-theme,
-body[data-theme="night"] .side-menu .theme-button,
-body[data-theme="night"] .side-menu .theme-option,
-body[data-theme="night"] .side-menu .customize-theme button {
-    background: #1c1c1e !important;
-    border-color: #38383a !important;
-    color: #f5f5f7 !important;
-}
-
-body[data-theme="night"] .side-menu .menu-section-title {
-    background: #000 !important;
-    color: #98989d !important;
-}
-/* =========================================================
-   サイドメニュー全体を1つにつなげる
-   ========================================================= */
-
-.side-menu {
-    background: #f5f5f7 !important;
-    padding: 0 !important;
-    gap: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: 10px 0 35px rgba(0,0,0,.12) !important;
-}
-
-/* メニュー上部 */
 .side-menu-header {
-    margin: 0 !important;
-    padding: 16px 18px !important;
-    background: #f5f5f7 !important;
-    border-bottom: 1px solid #d2d2d7 !important;
+  min-height:58px !important; margin:0 !important; padding:8px 14px 8px 18px !important;
+  background:#f5f5f7 !important; border-bottom:1px solid #d2d2d7 !important;
 }
-
-/* セクションを全部「箱」にしない */
+.menu-title { padding:0 !important; font-size:20px !important; font-weight:700 !important; }
+.menu-close-button { width:38px !important; height:38px !important; background:#e5e5ea !important; color:#1d1d1f !important; }
 .side-menu .menu-section {
-    margin: 0 !important;
-    border-radius: 0 !important;
-    border: 0 !important;
-    border-bottom: 1px solid #d2d2d7 !important;
-    box-shadow: none !important;
-    background: #fff !important;
+  margin:0 !important; padding:0 !important;
+  border:0 !important; border-bottom:1px solid #d2d2d7 !important;
+  border-radius:0 !important; background:#fff !important; box-shadow:none !important;
 }
-
-/* セクションタイトル */
 .side-menu .menu-section-title {
-    margin: 0 !important;
-    padding: 14px 16px 8px !important;
-    background: #f5f5f7 !important;
-    color: #86868b !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
+  margin:0 !important; padding:12px 16px 7px !important;
+  background:#f5f5f7 !important; color:#86868b !important;
+  font-size:12px !important; font-weight:600 !important;
 }
+.side-menu .menu-link,
+.side-menu .menu-preference-button {
+  width:100% !important; min-height:48px !important;
+  margin:0 !important; padding:0 16px !important;
+  border:0 !important; border-top:1px solid #e5e5ea !important;
+  border-radius:0 !important; background:#fff !important;
+  color:#1d1d1f !important; box-shadow:none !important;
+  font-size:14px !important; font-weight:400 !important;
+}
+.side-menu .menu-link:first-child,.side-menu .menu-preference-button:first-child { border-top:0 !important; }
+.side-menu .menu-link:hover,.side-menu .menu-preference-button:hover { background:#f5f5f7 !important; }
+.side-menu .menu-link.active { background:#f2f2f7 !important; color:#ff2d55 !important; }
 
 /* NOW PLAYING */
-.side-menu .now-playing-section {
-    padding: 0 !important;
+.now-playing-section { background:#f5f5f7 !important; }
+.menu-player {
+  margin:0 !important; padding:12px 14px 16px !important;
+  border-radius:0 !important; background:#fff !important;
+  box-shadow:none !important;
 }
-
-/* メニュー内プレイヤー */
-.side-menu .menu-player {
-    margin: 0 !important;
-    padding: 14px 16px 18px !important;
-    border-radius: 0 !important;
-    background: #fff !important;
-    box-shadow: none !important;
-    border: 0 !important;
+.menu-player-image {
+  width:100% !important; max-height:none !important; aspect-ratio:1/1 !important;
+  border-radius:10px !important; margin-bottom:10px !important; background:#e5e5ea !important;
 }
+/* 再生前の空画像による壊れた画像アイコンを表示しない */
+.menu-player-image[src=""], .player-image[src=""] { visibility:hidden !important; }
+.menu-player-title { font-size:15px !important; color:#1d1d1f !important; }
+.menu-player-artist { color:#86868b !important; }
+.menu-player-button { box-shadow:none !important; }
+.menu-player-button.menu-play-button { background:#1d1d1f !important; }
 
-/* ページ項目 */
-.side-menu .menu-link,
-.side-menu a,
-.side-menu button {
-    width: 100% !important;
-    min-height: 48px !important;
-    margin: 0 !important;
-    padding: 0 18px !important;
-
-    display: flex !important;
-    align-items: center !important;
-
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: #fff !important;
-    box-shadow: none !important;
-
-    color: #1d1d1f !important;
+/* 設定コントロール */
+.theme-buttons,.background-buttons { gap:0 !important; }
+.theme-button,.background-button {
+  min-height:46px !important; border:0 !important; border-top:1px solid #e5e5ea !important;
+  border-radius:0 !important; background:#fff !important; color:#1d1d1f !important;
+  box-shadow:none !important; transform:none !important;
 }
+.theme-button.active,.background-button.active { background:#f2f2f7 !important; color:#ff2d55 !important; border-color:#e5e5ea !important; }
+.menu-select { border:0 !important; border-radius:0 !important; background:#f2f2f7 !important; color:#1d1d1f !important; }
+.toggle-slider { background:#d1d1d6 !important; }
+.toggle-switch input:checked + .toggle-slider { background:#34c759 !important; }
+.toggle-slider::before { box-shadow:none !important; }
 
-/* 選択中 */
-.side-menu .menu-link.active,
-.side-menu a.active,
-.side-menu button.active {
-    background: #f2f2f7 !important;
-    color: #ff2d55 !important;
-    font-weight: 600 !important;
+/* フルプレイヤー */
+.full-player-overlay { background:rgba(245,245,247,.98) !important; backdrop-filter:blur(24px) !important; }
+.full-player-main { background:transparent !important; border-radius:0 !important; box-shadow:none !important; }
+.full-player-art { border-radius:12px !important; box-shadow:0 14px 35px rgba(0,0,0,.15) !important; }
+.full-player-title { color:#1d1d1f !important; font-weight:700 !important; }
+.full-player-artist { color:#86868b !important; }
+.full-player-control { background:transparent !important; box-shadow:none !important; color:#1d1d1f !important; }
+.full-player-play { background:#1d1d1f !important; color:#fff !important; box-shadow:none !important; }
+
+/* ============================================================
+   NIGHT：白い部分を残さず、サイドメニューも完全ブラック
+   ============================================================ */
+body[data-theme="night"] {
+  --main-color:#ff375f !important; --main-dark:#ff1744 !important; --accent-color:#ff375f !important;
+  --text-color:#f5f5f7 !important; --sub-text:#98989d !important; --card-bg:#1c1c1e !important;
+  background:#000 !important; color:#f5f5f7 !important;
 }
-
-/* 項目の区切り */
-.side-menu .menu-link + .menu-link,
-.side-menu a + a {
-    border-top: 1px solid #e5e5ea !important;
-}
-
-/* カスタマイズ部分も同じ流れにする */
-.side-menu .customize-section,
-.side-menu .settings-section {
-    margin: 0 !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    border: 0 !important;
-    background: #fff !important;
-    box-shadow: none !important;
-}
-
-/* テーマ・設定項目 */
-.side-menu .theme-button,
-.side-menu .theme-option,
-.side-menu .setting-item {
-    border-radius: 0 !important;
-    border: 0 !important;
-    border-top: 1px solid #e5e5ea !important;
-    background: #fff !important;
-    box-shadow: none !important;
-}
-
-/* セクション同士の隙間を完全になくす */
-.side-menu > * {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-}
-
-/* =========================================================
-   Nightテーマでも「黒いカードが分離」しない
-   ========================================================= */
-
-body[data-theme="night"] .side-menu {
-    background: #000 !important;
-}
-
-body[data-theme="night"] .side-menu-header {
-    background: #000 !important;
-    border-color: #38383a !important;
-}
-
-body[data-theme="night"] .side-menu .menu-section,
-body[data-theme="night"] .side-menu .menu-player,
+body[data-theme="night"][data-background="default"],
+body[data-theme="night"][data-background="gradient"],
+body[data-theme="night"][data-background="simple"] { background:#000 !important; }
+body[data-theme="night"] #app { color:#f5f5f7 !important; }
+body[data-theme="night"] .main-header h1,
+body[data-theme="night"] .main-header p,
+body[data-theme="night"] .picker-box h2,
+body[data-theme="night"] .picker-box p,
+body[data-theme="night"] .track-title,
+body[data-theme="night"] .track-artist { color:inherit !important; }
+body[data-theme="night"] .main-header p,
+body[data-theme="night"] .picker-box p,
+body[data-theme="night"] .track-artist { color:#98989d !important; }
+body[data-theme="night"] .spotify-box,
+body[data-theme="night"] .picker-box,
+body[data-theme="night"] .content-box { background:#1c1c1e !important; border-color:#38383a !important; box-shadow:none !important; }
+body[data-theme="night"] input,body[data-theme="night"] select { background:#2c2c2e !important; color:#f5f5f7 !important; border-color:#38383a !important; }
+body[data-theme="night"] .moods button { background:#1c1c1e !important; color:#f5f5f7 !important; border-color:#48484a !important; }
+body[data-theme="night"] .moods button.selected,body[data-theme="night"] .moods button.active { background:#ff375f !important; border-color:#ff375f !important; color:#fff !important; }
+body[data-theme="night"] .track-card { background:transparent !important; border-color:#38383a !important; }
+body[data-theme="night"] .track-card:hover { background:#1c1c1e !important; }
+body[data-theme="night"] .bottom-nav { background:rgba(0,0,0,.96) !important; border-color:#38383a !important; }
+body[data-theme="night"] .bottom-nav-link { color:#98989d !important; }
+body[data-theme="night"] .bottom-nav-link.active { color:#ff375f !important; }
+body[data-theme="night"] .player-panel { background:rgba(28,28,30,.97) !important; border-color:#38383a !important; color:#f5f5f7 !important; }
+body[data-theme="night"] .player-title { color:#f5f5f7 !important; }
+body[data-theme="night"] .player-artist { color:#98989d !important; }
+body[data-theme="night"] .menu-button { background:#1c1c1e !important; color:#f5f5f7 !important; }
+body[data-theme="night"] .side-menu { background:#000 !important; color:#f5f5f7 !important; }
+body[data-theme="night"] .side-menu-header { background:#000 !important; border-color:#38383a !important; }
+body[data-theme="night"] .menu-close-button { background:#2c2c2e !important; color:#f5f5f7 !important; }
+body[data-theme="night"] .side-menu .menu-section { background:#000 !important; border-color:#38383a !important; }
+body[data-theme="night"] .side-menu .menu-section-title { background:#000 !important; color:#98989d !important; }
 body[data-theme="night"] .side-menu .menu-link,
-body[data-theme="night"] .side-menu a,
-body[data-theme="night"] .side-menu button,
-body[data-theme="night"] .side-menu .customize-section,
-body[data-theme="night"] .side-menu .settings-section,
-body[data-theme="night"] .side-menu .theme-button,
-body[data-theme="night"] .side-menu .theme-option,
-body[data-theme="night"] .side-menu .setting-item {
-    background: #1c1c1e !important;
-    color: #f5f5f7 !important;
-    border-color: #38383a !important;
-    box-shadow: none !important;
-}
+body[data-theme="night"] .side-menu .menu-preference-button { background:#1c1c1e !important; color:#f5f5f7 !important; border-color:#38383a !important; }
+body[data-theme="night"] .side-menu .menu-link:hover,
+body[data-theme="night"] .side-menu .menu-preference-button:hover { background:#2c2c2e !important; }
+body[data-theme="night"] .side-menu .menu-link.active { background:#2c2c2e !important; color:#ff375f !important; }
+body[data-theme="night"] .menu-player { background:#1c1c1e !important; color:#f5f5f7 !important; }
+body[data-theme="night"] .menu-player-title { color:#f5f5f7 !important; }
+body[data-theme="night"] .menu-player-artist { color:#98989d !important; }
+body[data-theme="night"] .theme-button,
+body[data-theme="night"] .background-button,
+body[data-theme="night"] .menu-select { background:#1c1c1e !important; color:#f5f5f7 !important; border-color:#38383a !important; }
+body[data-theme="night"] .theme-button.active,
+body[data-theme="night"] .background-button.active { background:#2c2c2e !important; color:#ff375f !important; }
+body[data-theme="night"] .full-player-overlay,
+body[data-theme="night"] .full-player-main { background:#000 !important; color:#f5f5f7 !important; }
+body[data-theme="night"] .full-player-title { color:#f5f5f7 !important; }
+body[data-theme="night"] .full-player-control { color:#f5f5f7 !important; }
 
-body[data-theme="night"] .side-menu .menu-section-title {
-    background: #000 !important;
-    color: #98989d !important;
-}
-
-body[data-theme="night"] .side-menu .menu-link.active,
-body[data-theme="night"] .side-menu a.active {
-    background: #2c2c2e !important;
-    color: #ff375f !important;
+/* モバイル */
+@media (max-width:700px) {
+  #app { padding:72px 14px 145px !important; }
+  .main-header h1 { font-size:34px !important; }
+  .spotify-box,.picker-box,.content-box { border-radius:14px !important; padding:20px !important; }
+  .track-card { min-height:70px !important; }
+  .track-image { width:56px !important; height:56px !important; }
+  .side-menu { width:340px !important; max-width:calc(100vw - 10px) !important; }
+  .menu-player-image { max-height:220px !important; }
+  .player-panel { left:8px !important; width:calc(100% - 16px) !important; bottom:72px !important; }
 }
