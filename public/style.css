@@ -3568,3 +3568,724 @@ body[data-theme="night"] .full-player-control { color:#f5f5f7 !important; }
   .menu-player-image { max-height:220px !important; }
   .player-panel { left:8px !important; width:calc(100% - 16px) !important; bottom:72px !important; }
 }
+/* ============================================================
+   Music Picker
+   Apple Music風 最終UI調整
+   ・サイドメニューを見やすく区切る
+   ・Music Pickerを中央配置
+   ・下部ナビをApple Music風の浮遊カプセル
+   ・ミニプレイヤーとナビの横幅を統一
+   ・NIGHTは完全な黒＋白文字
+   ============================================================ */
+
+
+/* ============================================================
+   ① Music Picker ヘッダーを中央にする
+   ============================================================ */
+
+.app > header,
+.app header {
+    position: relative !important;
+
+    width: 100% !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    text-align: center !important;
+
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.app > header h1,
+.app header h1 {
+    width: 100% !important;
+
+    margin: 0 auto !important;
+
+    text-align: center !important;
+
+    justify-content: center !important;
+
+    font-weight: 700 !important;
+    letter-spacing: -1.5px !important;
+}
+
+.app > header p,
+.app header p {
+    width: 100% !important;
+
+    margin-left: auto !important;
+    margin-right: auto !important;
+
+    text-align: center !important;
+
+    color: #86868b !important;
+}
+
+
+/* ============================================================
+   ② サイドメニュー
+   「全部つながった巨大カード」ではなく
+   「Apple / iOS設定風の区切られた項目」
+   ============================================================ */
+
+.side-menu {
+    background: #f5f5f7 !important;
+
+    padding: 14px 10px 28px !important;
+
+    gap: 0 !important;
+
+    border-radius: 0 !important;
+
+    box-shadow: 10px 0 35px rgba(0,0,0,.12) !important;
+}
+
+
+/* 各セクションを独立 */
+.side-menu .menu-section {
+    margin: 0 0 10px 0 !important;
+
+    padding: 0 !important;
+
+    background: #fff !important;
+
+    border: 1px solid #d9d9de !important;
+
+    border-radius: 14px !important;
+
+    overflow: hidden !important;
+
+    box-shadow: none !important;
+}
+
+
+/* セクションタイトル */
+.side-menu .menu-section-title {
+    margin: 0 !important;
+
+    padding: 11px 14px !important;
+
+    background: #f2f2f7 !important;
+
+    color: #6e6e73 !important;
+
+    border-bottom: 1px solid #dedee3 !important;
+
+    font-size: 13px !important;
+
+    font-weight: 600 !important;
+}
+
+
+/* ============================================================
+   ③ メニュー項目を一つずつ区切る
+   ============================================================ */
+
+.side-menu .menu-link,
+.side-menu .menu-section .menu-link,
+.side-menu a.menu-link {
+
+    width: 100% !important;
+
+    min-height: 47px !important;
+
+    margin: 0 !important;
+
+    padding: 0 14px !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    box-sizing: border-box !important;
+
+    background: #fff !important;
+
+    color: #1d1d1f !important;
+
+    border: 0 !important;
+
+    border-bottom: 1px solid #e5e5ea !important;
+
+    border-radius: 0 !important;
+
+    box-shadow: none !important;
+
+    transform: none !important;
+}
+
+
+/* 最後の項目には余計な線を出さない */
+.side-menu .menu-link:last-child,
+.side-menu a.menu-link:last-child {
+    border-bottom: 0 !important;
+}
+
+
+/* マウスを乗せたとき */
+.side-menu .menu-link:hover,
+.side-menu a.menu-link:hover {
+    background: #f5f5f7 !important;
+
+    transform: none !important;
+}
+
+
+/* 選択中 */
+.side-menu .menu-link.active,
+.side-menu a.menu-link.active {
+    background: #f2f2f7 !important;
+
+    color: #ff2d55 !important;
+
+    font-weight: 600 !important;
+}
+
+
+/* ============================================================
+   ④ NOW PLAYING
+   ============================================================ */
+
+.side-menu .now-playing-section {
+
+    margin: 0 0 10px 0 !important;
+
+    padding: 0 !important;
+
+    background: #fff !important;
+
+    border: 1px solid #d9d9de !important;
+
+    border-radius: 14px !important;
+
+    overflow: hidden !important;
+
+    box-shadow: none !important;
+}
+
+
+.side-menu .menu-player {
+
+    margin: 0 !important;
+
+    padding: 14px !important;
+
+    background: #fff !important;
+
+    border: 0 !important;
+
+    border-radius: 0 !important;
+
+    box-shadow: none !important;
+}
+
+
+/* ============================================================
+   ⑤ テーマ選択
+   ============================================================ */
+
+.side-menu .theme-buttons,
+.side-menu .background-buttons {
+
+    padding: 0 !important;
+
+    margin: 0 !important;
+
+    background: #fff !important;
+
+    gap: 0 !important;
+}
+
+
+.side-menu .theme-button,
+.side-menu .background-button {
+
+    min-height: 47px !important;
+
+    margin: 0 !important;
+
+    border: 0 !important;
+
+    border-right: 1px solid #e5e5ea !important;
+
+    border-bottom: 1px solid #e5e5ea !important;
+
+    border-radius: 0 !important;
+
+    background: #fff !important;
+
+    color: #1d1d1f !important;
+
+    box-shadow: none !important;
+
+    transform: none !important;
+}
+
+
+.side-menu .theme-button:hover,
+.side-menu .background-button:hover {
+
+    background: #f5f5f7 !important;
+
+    transform: none !important;
+}
+
+
+.side-menu .theme-button.active,
+.side-menu .background-button.active {
+
+    background: #f2f2f7 !important;
+
+    color: #ff2d55 !important;
+
+    border-color: #d2d2d7 !important;
+}
+
+
+/* ============================================================
+   ⑥ 設定項目
+   ============================================================ */
+
+.side-menu .setting-item,
+.side-menu .settings-item,
+.side-menu .preference-item {
+
+    min-height: 48px !important;
+
+    margin: 0 !important;
+
+    padding: 0 14px !important;
+
+    box-sizing: border-box !important;
+
+    background: #fff !important;
+
+    color: #1d1d1f !important;
+
+    border: 0 !important;
+
+    border-bottom: 1px solid #e5e5ea !important;
+
+    border-radius: 0 !important;
+
+    box-shadow: none !important;
+}
+
+
+/* ============================================================
+   ⑦ 下部ナビ
+   Apple Musicのような「中央に浮いたカプセル」
+   ============================================================ */
+
+.bottom-nav {
+
+    position: fixed !important;
+
+    left: 50% !important;
+
+    right: auto !important;
+
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+
+    transform: translateX(-50%) !important;
+
+    width: min(700px, calc(100% - 28px)) !important;
+
+    height: 68px !important;
+
+    padding: 5px 8px !important;
+
+    box-sizing: border-box !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+
+    justify-content: space-around !important;
+
+    background: rgba(255,255,255,.94) !important;
+
+    border: 1px solid rgba(0,0,0,.10) !important;
+
+    border-radius: 36px !important;
+
+    box-shadow:
+        0 8px 30px rgba(0,0,0,.14),
+        0 1px 3px rgba(0,0,0,.08) !important;
+
+    backdrop-filter: saturate(180%) blur(20px) !important;
+
+    -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+
+    z-index: 9999 !important;
+}
+
+
+/* ナビ4項目 */
+.bottom-nav-link {
+
+    width: 25% !important;
+
+    height: 58px !important;
+
+    margin: 0 !important;
+
+    border: 0 !important;
+
+    border-radius: 30px !important;
+
+    background: transparent !important;
+
+    color: #86868b !important;
+
+    box-shadow: none !important;
+
+    transform: none !important;
+}
+
+
+.bottom-nav-link:hover {
+
+    background: transparent !important;
+
+    transform: none !important;
+}
+
+
+.bottom-nav-link.active {
+
+    background: transparent !important;
+
+    color: #ff2d55 !important;
+
+    font-weight: 600 !important;
+}
+
+
+.bottom-nav-icon {
+    font-size: 22px !important;
+}
+
+
+.bottom-nav-label {
+    font-size: 11px !important;
+
+    font-weight: 500 !important;
+}
+
+
+/* ============================================================
+   ⑧ ミニプレイヤー
+   下部ナビと「完全に同じ横幅」
+   ============================================================ */
+
+#playerPanel,
+.player-panel,
+.mini-player {
+
+    position: fixed !important;
+
+    left: 50% !important;
+
+    right: auto !important;
+
+    transform: translateX(-50%) !important;
+
+    width: min(700px, calc(100% - 28px)) !important;
+
+    bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+
+    box-sizing: border-box !important;
+
+    border-radius: 22px !important;
+
+    border: 1px solid rgba(0,0,0,.10) !important;
+
+    background: rgba(255,255,255,.96) !important;
+
+    box-shadow:
+        0 5px 20px rgba(0,0,0,.12),
+        0 1px 3px rgba(0,0,0,.06) !important;
+
+    backdrop-filter: saturate(180%) blur(18px) !important;
+
+    -webkit-backdrop-filter: saturate(180%) blur(18px) !important;
+
+    z-index: 9998 !important;
+}
+
+
+/* ============================================================
+   ⑨ NIGHT
+   白いところを残さない
+   ============================================================ */
+
+body[data-theme="night"] {
+
+    background: #000 !important;
+
+    color: #fff !important;
+}
+
+
+/* サイドメニュー */
+body[data-theme="night"] .side-menu {
+
+    background: #000 !important;
+
+    color: #fff !important;
+}
+
+
+/* セクション */
+body[data-theme="night"] .side-menu .menu-section,
+body[data-theme="night"] .side-menu .now-playing-section {
+
+    background: #1c1c1e !important;
+
+    border-color: #38383a !important;
+}
+
+
+/* セクションタイトル */
+body[data-theme="night"] .side-menu .menu-section-title {
+
+    background: #000 !important;
+
+    color: #98989d !important;
+
+    border-color: #38383a !important;
+}
+
+
+/* メニュー */
+body[data-theme="night"] .side-menu .menu-link,
+body[data-theme="night"] .side-menu a.menu-link,
+body[data-theme="night"] .side-menu .menu-player,
+body[data-theme="night"] .side-menu .theme-button,
+body[data-theme="night"] .side-menu .background-button,
+body[data-theme="night"] .side-menu .setting-item,
+body[data-theme="night"] .side-menu .settings-item,
+body[data-theme="night"] .side-menu .preference-item {
+
+    background: #1c1c1e !important;
+
+    color: #fff !important;
+
+    border-color: #38383a !important;
+}
+
+
+/* Night ホバー */
+body[data-theme="night"] .side-menu .menu-link:hover,
+body[data-theme="night"] .side-menu .theme-button:hover,
+body[data-theme="night"] .side-menu .background-button:hover {
+
+    background: #2c2c2e !important;
+
+    color: #fff !important;
+}
+
+
+/* Night 選択中 */
+body[data-theme="night"] .side-menu .menu-link.active,
+body[data-theme="night"] .side-menu .theme-button.active,
+body[data-theme="night"] .side-menu .background-button.active {
+
+    background: #2c2c2e !important;
+
+    color: #ff375f !important;
+}
+
+
+/* ============================================================
+   ⑩ Night 下部ナビ
+   ============================================================ */
+
+body[data-theme="night"] .bottom-nav {
+
+    background: rgba(28,28,30,.96) !important;
+
+    border-color: #38383a !important;
+
+    box-shadow:
+        0 8px 30px rgba(0,0,0,.55) !important;
+}
+
+
+body[data-theme="night"] .bottom-nav-link {
+
+    color: #98989d !important;
+}
+
+
+body[data-theme="night"] .bottom-nav-link.active {
+
+    color: #ff375f !important;
+}
+
+
+/* ============================================================
+   ⑪ Night ミニプレイヤー
+   ============================================================ */
+
+body[data-theme="night"] #playerPanel,
+body[data-theme="night"] .player-panel,
+body[data-theme="night"] .mini-player {
+
+    background: rgba(28,28,30,.97) !important;
+
+    color: #fff !important;
+
+    border-color: #38383a !important;
+
+    box-shadow:
+        0 5px 20px rgba(0,0,0,.55) !important;
+}
+
+
+/* Night プレイヤー文字 */
+body[data-theme="night"] #playerPanel *,
+body[data-theme="night"] .player-panel *,
+body[data-theme="night"] .mini-player * {
+
+    color: #fff !important;
+}
+
+
+/* 補助文字だけ少し暗く */
+body[data-theme="night"] #playerPanel .artist,
+body[data-theme="night"] #playerPanel .sub-text,
+body[data-theme="night"] .player-panel .artist,
+body[data-theme="night"] .mini-player .artist {
+
+    color: #98989d !important;
+}
+
+
+/* ============================================================
+   ⑫ Night フルプレイヤー
+   ============================================================ */
+
+body[data-theme="night"] .full-player-overlay {
+
+    background: rgba(0,0,0,.97) !important;
+}
+
+
+body[data-theme="night"] .full-player-main {
+
+    background: transparent !important;
+
+    color: #fff !important;
+}
+
+
+body[data-theme="night"] .full-player-title {
+
+    color: #fff !important;
+}
+
+
+body[data-theme="night"] .full-player-artist {
+
+    color: #98989d !important;
+}
+
+
+body[data-theme="night"] .full-player-control {
+
+    color: #fff !important;
+
+    background: transparent !important;
+}
+
+
+/* ============================================================
+   ⑬ Night 入力欄
+   ============================================================ */
+
+body[data-theme="night"] input,
+body[data-theme="night"] select,
+body[data-theme="night"] textarea {
+
+    background: #1c1c1e !important;
+
+    color: #fff !important;
+
+    border-color: #38383a !important;
+}
+
+
+/* ============================================================
+   ⑭ Nightの見出し・文字
+   ============================================================ */
+
+body[data-theme="night"] h1,
+body[data-theme="night"] h2,
+body[data-theme="night"] h3,
+body[data-theme="night"] h4,
+body[data-theme="night"] p,
+body[data-theme="night"] label {
+
+    color: #fff !important;
+}
+
+
+/* ============================================================
+   ⑮ スマホ
+   ============================================================ */
+
+@media (max-width: 700px) {
+
+    .app {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+        padding-bottom: 125px !important;
+    }
+
+
+    .bottom-nav {
+
+        width: calc(100% - 20px) !important;
+
+        height: 66px !important;
+
+        bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+
+        border-radius: 34px !important;
+    }
+
+
+    .bottom-nav-link {
+
+        width: 25% !important;
+
+        height: 56px !important;
+    }
+
+
+    #playerPanel,
+    .player-panel,
+    .mini-player {
+
+        width: calc(100% - 20px) !important;
+
+        bottom: calc(82px + env(safe-area-inset-bottom)) !important;
+
+        border-radius: 20px !important;
+    }
+
+
+    .app > header h1,
+    .app header h1 {
+
+        font-size: 32px !important;
+    }
+}
