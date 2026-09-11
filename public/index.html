@@ -228,132 +228,43 @@
          アプリをカスタマイズ
          ===================================================== -->
 
-    <section class="menu-section">
+         <section class="menu-section">
 
-        <h3 class="menu-section-title">
-            🎨 アプリをカスタマイズ
-        </h3>
-
-
-        <div class="menu-setting">
-
-            <div class="menu-setting-label">
-                🎨 テーマ
+            <h3 class="menu-section-title">
+                🎨 アプリをカスタマイズ
+            </h3>
+        
+            <!-- ダークモードだけ -->
+            <div class="menu-setting dark-mode-setting">
+        
+                <div class="menu-setting-row">
+                    <span>🌙 ダークモード</span>
+        
+                    <label class="toggle-switch">
+                        <input
+                            type="checkbox"
+                            id="darkModeToggle"
+                        >
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+        
             </div>
-
-
-            <div class="theme-buttons">
-
-                <button
-                    type="button"
-                    class="theme-button"
-                    data-theme="ocean"
-                >
-                    🌊 Ocean
-                </button>
-
-
-                <button
-                    type="button"
-                    class="theme-button"
-                    data-theme="night"
-                >
-                    🌌 Night
-                </button>
-
-
-                <button
-                    type="button"
-                    class="theme-button"
-                    data-theme="sunset"
-                >
-                    🌅 Sunset
-                </button>
-
-
-                <button
-                    type="button"
-                    class="theme-button"
-                    data-theme="sakura"
-                >
-                    🌸 Sakura
-                </button>
-
-
-                <button
-                    type="button"
-                    class="theme-button"
-                    data-theme="classic"
-                >
-                    🎵 Classic
-                </button>
-
+        
+            <!-- アニメーション -->
+            <div class="menu-setting menu-setting-row">
+                <span>✨ アニメーション</span>
+        
+                <label class="toggle-switch">
+                    <input
+                        type="checkbox"
+                        id="animationToggle"
+                    >
+                    <span class="toggle-slider"></span>
+                </label>
             </div>
-
-        </div>
-
-
-        <div class="menu-setting">
-
-            <div class="menu-setting-label">
-                🖼️ 背景
-            </div>
-
-
-            <div class="background-buttons">
-
-                <button
-                    type="button"
-                    class="background-button"
-                    data-background="default"
-                >
-                    デフォルト
-                </button>
-
-
-                <button
-                    type="button"
-                    class="background-button"
-                    data-background="gradient"
-                >
-                    グラデーション
-                </button>
-
-
-                <button
-                    type="button"
-                    class="background-button"
-                    data-background="simple"
-                >
-                    シンプル
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <div class="menu-setting menu-setting-row">
-
-            <span>
-                ✨ アニメーション
-            </span>
-
-
-            <label class="toggle-switch">
-
-                <input
-                    type="checkbox"
-                    id="animationToggle"
-                >
-
-                <span class="toggle-slider"></span>
-
-            </label>
-
-        </div>
-
-    </section>
+        
+        </section>
 
 
     <!-- =====================================================

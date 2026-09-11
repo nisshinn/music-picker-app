@@ -6544,46 +6544,55 @@ function initMenuSettings() {
     // テーマ
     // ========================================================
 
-    document.querySelectorAll(
-        ".theme-button"
-    ).forEach(
-        button => {
+    // ========================================================
+// ダークモード ON / OFF
+// ========================================================
 
-            button.addEventListener(
-                "click",
-                () => {
+const darkModeToggle =
+document.getElementById("darkModeToggle");
 
-                    const theme =
-                        button.dataset.theme;
+if (darkModeToggle) {
 
+darkModeToggle.checked =
+    appSettings.theme === "night";
 
-                    if (!theme) {
-                        return;
-                    }
+darkModeToggle.addEventListener(
+    "change",
+    () => {
 
+        const isDark =
+            darkModeToggle.checked;
 
-                    saveAppSetting(
-                        "theme",
-                        theme
-                    );
+        const newTheme =
+            isDark
+                ? "night"
+                : "ocean";
 
+        saveAppSetting(
+            "theme",
+            newTheme
+        );
 
-                    document.body.dataset.theme =
-                        theme;
+        document.body.dataset.theme =
+            newTheme;
 
+        // 背景も通常色に戻す
+        document.body.dataset.background =
+            "default";
 
-                    syncMenuSettingsUI();
+        saveAppSetting(
+            "background",
+            "default"
+        );
 
-
-                    showToast(
-                        `🎨 ${getThemeName(theme)} に変更しました`
-                    );
-
-                }
-            );
-
-        }
-    );
+        showToast(
+            isDark
+                ? "🌙 ダークモード ON"
+                : "☀️ ダークモード OFF"
+        );
+    }
+);
+}
 
 
     // ========================================================
@@ -7022,19 +7031,18 @@ function syncMenuSettingsUI() {
     // テーマ
     // --------------------------------------------------------
 
-    document.querySelectorAll(
-        ".theme-button"
-    ).forEach(
-        button => {
+    // ========================================================
+// ダークモード表示状態
+// ========================================================
 
-            button.classList.toggle(
-                "active",
-                button.dataset.theme ===
-                appSettings.theme
-            );
+const darkModeToggle =
+document.getElementById("darkModeToggle");
 
-        }
-    );
+if (darkModeToggle) {
+
+darkModeToggle.checked =
+    appSettings.theme === "night";
+}
 
 
     // --------------------------------------------------------
