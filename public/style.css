@@ -44,23 +44,6 @@ body {
 }
 
 
-/* ============================================================
-   テーマ
-   ============================================================ */
-
-/* Ocean */
-
-body[data-theme="ocean"] {
-    --main-color: #19b957;
-    --main-dark: #149d49;
-    --accent-color: #6354e8;
-
-    --text-color: #111827;
-    --sub-text: #64748b;
-
-    --card-bg: rgba(255, 255, 255, 0.95);
-}
-
 
 /* Night */
 
@@ -1829,7 +1812,7 @@ body[data-theme="night"] .menu-player-button:hover {
 .search-icon {
     width: 18px;
 height: 18px;
-border: 3px;
+border: 3px; color: white;
     border-radius: 50%;
 
     position: relative;
