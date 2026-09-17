@@ -543,7 +543,9 @@ app.get("/api/spotify-token", async (req, res) => {
             accessToken
         });
     } catch (error) {
-        console.error("Spotify Token Endpoint Error:", error);
+        if (error.reason !== "NO_REFRESH_TOKEN") {
+            console.error("Spotify Token Endpoint Error:", error);
+        }
 
         res.status(error.status === 401 ? 401 : 500).json({
             error:
@@ -706,7 +708,10 @@ function formatTrack(track) {
             track.uri,
 
         artistId:
-            track.artists?.[0]?.id || ""
+            track.artists?.[0]?.id || "",
+
+        previewUrl:
+            track.preview_url || null
     };
 }
 
@@ -2048,7 +2053,10 @@ app.get(
 
             spotifyUrl:
                 track.external_urls
-                    ?.spotify || ""
+                    ?.spotify || "",
+
+            previewUrl:
+                track.preview_url || null
         }));
 
            res.json({

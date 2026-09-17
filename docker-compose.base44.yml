@@ -1,0 +1,18 @@
+services:
+  app:
+    image: node:22-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
+      - BASE44_SANDBOX_HOST_DOMAIN=${BASE44_SANDBOX_HOST_DOMAIN}
+    env_file:
+      - /run/base44/app.env
+    command: sh -c "npm install && node --watch server.js"
+    restart: unless-stopped
