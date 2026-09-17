@@ -7,6 +7,19 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+let geminiAI = null;
+
+async function getGeminiAI() {
+    if (geminiAI) return geminiAI;
+
+    const { GoogleGenAI } = await import("@google/genai");
+
+    geminiAI = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY
+    });
+
+    return geminiAI;
+}
 // ========================================
 // 基本設定
 // ========================================
@@ -2148,6 +2161,278 @@ app.get(
         }
     }
 );
+app.get("/api/gemini-test", async (req, res) => {
+    try {
+        const ai = await getGeminiAI();
+
+        const response = await generateWithRetry(
+    "gemini-3.8-flash",
+    contents
+);
+
+        res.json({
+            success: true,
+            answer: response.text
+        });
+
+    } catch (error) {
+        console.error("Gemini Test Error:", error);
+
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ========================================
+// Gemini：自由入力の気分を分析
+// ========================================
+async function analyzeMoodWithGemini(text) {
+    const ai = await getGeminiAI();
+
+    const prompt = `
+あなたは音楽アプリ「Music Picker」の推薦アシスタントです。
+ユーザーが入力した日本語の気分・状況を、音楽選びに使える情報へ変換してください。
+
+ユーザー入力：
+${text}
+
+次のJSONだけを返してください。Markdownや説明文は不要です。
+{
+  "summary": "気分を日本語で短く要約",
+  "mood": "楽しい / テンション高い / 落ち着きたい / しんみり / その他 のいずれか",
+  "energy": 1,
+  "positivity": 1,
+  "keywords": ["短い日本語キーワード"],
+  "searchQueries": ["Spotify検索に使える短い検索語", "別の検索語"]
+}
+
+ルール：
+- energy と positivity は1～5の整数。
+- keywords は1～5個。
+- searchQueries は1～3個。曲名を捏造せず、気分・状況・ジャンルなどの検索語だけにする。
+- ユーザーの入力にない事実を作らない。
+`.trim();
+
+    const response = await ai.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: prompt
+    });
+
+    let raw = String(response.text || "").trim();
+    raw = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+
+    let result;
+    try {
+        result = JSON.parse(raw);
+    } catch (error) {
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error("Geminiの気分分析結果を読み取れませんでした。");
+        result = JSON.parse(match[0]);
+    }
+
+    const allowedMoods = ["楽しい", "テンション高い", "落ち着きたい", "しんみり", "その他"];
+
+    return {
+        summary: String(result.summary || "気分を分析しました").slice(0, 100),
+        mood: allowedMoods.includes(result.mood) ? result.mood : "その他",
+        energy: Math.max(1, Math.min(5, Number(result.energy) || 3)),
+        positivity: Math.max(1, Math.min(5, Number(result.positivity) || 3)),
+        keywords: Array.isArray(result.keywords)
+            ? result.keywords.map(v => String(v).trim()).filter(Boolean).slice(0, 5)
+            : [],
+        searchQueries: Array.isArray(result.searchQueries)
+            ? result.searchQueries.map(v => String(v).trim()).filter(Boolean).slice(0, 3)
+            : []
+    };
+}
+
+// ========================================
+// Gemini：Spotify候補から5曲を選ぶ
+// ========================================
+async function rankTracksWithGemini(criteria, tracks) {
+    const ai = await getGeminiAI();
+
+    const candidates = tracks.slice(0, 40).map((track, index) => ({
+        index,
+        id: track.id,
+        title: track.title || track.name || "",
+        artist: track.artist || ""
+    }));
+
+    const prompt = `
+あなたは音楽アプリ「Music Picker」の選曲担当です。
+ユーザーの気分分析結果をもとに、Spotifyから取得済みの候補曲だけから5曲を選んでください。
+候補にない曲を追加してはいけません。曲名やアーティスト名を変更してはいけません。
+
+気分分析：
+${JSON.stringify(criteria, null, 2)}
+
+Spotify候補：
+${JSON.stringify(candidates, null, 2)}
+
+次のJSONだけを返してください。Markdownや説明文は不要です。
+{
+  "selected": [
+    {"index": 0, "reason": "この曲を選んだ理由を短く日本語で"}
+  ]
+}
+
+ルール：
+- selected は5件。候補不足なら存在する候補だけでよい。
+- index は候補に存在する番号だけを使う。
+- 同じindexを重複させない。
+- reason は30文字程度まで。
+`.trim();
+
+    const response = await ai.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: prompt
+    });
+
+    let raw = String(response.text || "").trim();
+    raw = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+
+    let result;
+    try {
+        result = JSON.parse(raw);
+    } catch (error) {
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error("Geminiの選曲結果を読み取れませんでした。");
+        result = JSON.parse(match[0]);
+    }
+
+    const validIndexes = new Set(candidates.map(item => item.index));
+    const used = new Set();
+    const selected = [];
+
+    for (const item of Array.isArray(result.selected) ? result.selected : []) {
+        const index = Number(item?.index);
+        if (!validIndexes.has(index) || used.has(index)) continue;
+        used.add(index);
+        selected.push({ index, reason: String(item?.reason || "気分に合う候補として選びました").slice(0, 50) });
+        if (selected.length >= 5) break;
+    }
+
+    // Geminiが5曲選ばなかった場合は候補から安全に補充
+    for (const item of candidates) {
+        if (selected.length >= 5) break;
+        if (used.has(item.index)) continue;
+        used.add(item.index);
+        selected.push({ index: item.index, reason: "候補の中からバランスを考えて選びました" });
+    }
+
+    return selected.map(item => ({
+        track: tracks[item.index],
+        reason: item.reason
+    }));
+}
+
+// ========================================
+// Gemini：自由入力の気分だけを分析
+// ========================================
+app.post("/api/gemini/analyze-mood", async (req, res) => {
+    try {
+        const text = String(req.body?.text || "").trim();
+
+        if (!text) {
+            return res.status(400).json({ error: "今の気分を入力してください。" });
+        }
+        if (text.length > 300) {
+            return res.status(400).json({ error: "気分の入力は300文字以内にしてください。" });
+        }
+
+        const analysis = await analyzeMoodWithGemini(text);
+        res.json({ success: true, analysis });
+    } catch (error) {
+        console.error("Gemini Mood Analyze Error:", error);
+        res.status(500).json({ error: error.message || "気分の分析に失敗しました。" });
+    }
+});
+
+// ========================================
+// Gemini：自由入力 → Spotify候補 → 5曲
+// ========================================
+app.post("/api/gemini/recommend-from-mood", async (req, res) => {
+    try {
+        const text = String(req.body?.text || "").trim();
+        const artistId = String(req.body?.artistId || "").trim();
+        const artistName = String(req.body?.artistName || "").trim();
+        const genre = String(req.body?.genre || "").trim();
+
+        if (!text) {
+            return res.status(400).json({ error: "今の気分を入力してください。" });
+        }
+        if (text.length > 300) {
+            return res.status(400).json({ error: "気分の入力は300文字以内にしてください。" });
+        }
+        if (!artistId && (!genre || genre === "all")) {
+            return res.status(400).json({ error: "アーティストまたはジャンルを選択してください。" });
+        }
+
+        const suppliedAnalysis = req.body?.analysis;
+        const analysis = suppliedAnalysis && typeof suppliedAnalysis === "object" && suppliedAnalysis.mood
+            ? suppliedAnalysis
+            : await analyzeMoodWithGemini(text);
+        const token = await getSpotifyToken();
+        let rawTracks = [];
+
+        if (artistId) {
+            const artistResponse = await spotifyFetch(
+                `https://api.spotify.com/v1/artists/${encodeURIComponent(artistId)}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const artistData = await artistResponse.json();
+            const actualArtistName = artistData.name || artistName;
+            const response = await searchSpotifyTracks(token, `artist:"${actualArtistName}"`, 30, 0);
+            const data = await response.json();
+            rawTracks = (data.tracks?.items || []).filter(track =>
+                track.artists?.some(artist => artist.id === artistId)
+            );
+        } else {
+            const queries = [];
+            const baseGenre = genre === "j-pop" ? "J-Pop" : genre;
+            queries.push(`${baseGenre} ${analysis.keywords.join(" ")}`.trim());
+            for (const query of analysis.searchQueries) {
+                queries.push(`${baseGenre} ${query}`.trim());
+            }
+
+            const uniqueQueries = [...new Set(queries.filter(Boolean))].slice(0, 3);
+            for (const query of uniqueQueries) {
+                const response = await searchSpotifyTracks(token, query, 10, 0);
+                const data = await response.json();
+                rawTracks.push(...(data.tracks?.items || []));
+            }
+        }
+
+        const candidates = uniqueTracks(rawTracks).map(formatTrack).filter(track => track.uri).slice(0, 40);
+        if (candidates.length < 5) {
+            return res.status(404).json({ error: "気分に合う候補曲を5曲以上見つけられませんでした。別の入力で試してください。", analysis });
+        }
+
+        const ranked = await rankTracksWithGemini(analysis, candidates);
+        const tracks = ranked.map(item => item.track).filter(Boolean).slice(0, 5);
+        const reasons = ranked.slice(0, 5).map(item => item.reason);
+
+        res.json({
+            success: true,
+            analysis,
+            tracks,
+            reasons
+        });
+    } catch (error) {
+        console.error("Gemini Recommend Error:", error);
+
+        if (error.status === 429 || error.reason === "QUOTA_EXCEEDED") {
+            return res.status(429).json({ error: "Spotify APIの利用上限に達しています。少し待ってから試してください。" });
+        }
+
+        res.status(500).json({
+            error: error.message || "AIおすすめの作成に失敗しました。"
+        });
+    }
+});
 
 // ========================================
 // サーバー起動

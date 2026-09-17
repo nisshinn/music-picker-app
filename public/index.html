@@ -228,132 +228,43 @@
          アプリをカスタマイズ
          ===================================================== -->
 
-    <section class="menu-section">
+         <section class="menu-section">
 
-        <h3 class="menu-section-title">
-            🎨 アプリをカスタマイズ
-        </h3>
-
-
-        <div class="menu-setting">
-
-            <div class="menu-setting-label">
-                🎨 テーマ
+            <h3 class="menu-section-title">
+                🎨 アプリをカスタマイズ
+            </h3>
+        
+            <!-- ダークモードだけ -->
+            <div class="menu-setting dark-mode-setting">
+        
+                <div class="menu-setting-row">
+                    <span>🌙 ダークモード</span>
+        
+                    <label class="toggle-switch">
+                        <input
+                            type="checkbox"
+                            id="darkModeToggle"
+                        >
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+        
             </div>
-
-
-            <div class="theme-buttons">
-
-                <button
-                    type="button"
-                    class="theme-button"
-                    data-theme="ocean"
-                >
-                    🌊 Ocean
-                </button>
-
-
-                <button
-                    type="button"
-                    class="theme-button"
-                    data-theme="night"
-                >
-                    🌌 Night
-                </button>
-
-
-                <button
-                    type="button"
-                    class="theme-button"
-                    data-theme="sunset"
-                >
-                    🌅 Sunset
-                </button>
-
-
-                <button
-                    type="button"
-                    class="theme-button"
-                    data-theme="sakura"
-                >
-                    🌸 Sakura
-                </button>
-
-
-                <button
-                    type="button"
-                    class="theme-button"
-                    data-theme="classic"
-                >
-                    🎵 Classic
-                </button>
-
+        
+            <!-- アニメーション -->
+            <div class="menu-setting menu-setting-row">
+                <span>✨ アニメーション</span>
+        
+                <label class="toggle-switch">
+                    <input
+                        type="checkbox"
+                        id="animationToggle"
+                    >
+                    <span class="toggle-slider"></span>
+                </label>
             </div>
-
-        </div>
-
-
-        <div class="menu-setting">
-
-            <div class="menu-setting-label">
-                🖼️ 背景
-            </div>
-
-
-            <div class="background-buttons">
-
-                <button
-                    type="button"
-                    class="background-button"
-                    data-background="default"
-                >
-                    デフォルト
-                </button>
-
-
-                <button
-                    type="button"
-                    class="background-button"
-                    data-background="gradient"
-                >
-                    グラデーション
-                </button>
-
-
-                <button
-                    type="button"
-                    class="background-button"
-                    data-background="simple"
-                >
-                    シンプル
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <div class="menu-setting menu-setting-row">
-
-            <span>
-                ✨ アニメーション
-            </span>
-
-
-            <label class="toggle-switch">
-
-                <input
-                    type="checkbox"
-                    id="animationToggle"
-                >
-
-                <span class="toggle-slider"></span>
-
-            </label>
-
-        </div>
-
-    </section>
+        
+        </section>
 
 
     <!-- =====================================================
@@ -761,6 +672,18 @@
                     😢 しんみり
                 </button>
 
+            </div>
+
+            <div class="ai-mood-divider">
+                <span>または</span>
+            </div>
+
+            <div class="ai-mood-input">
+                <label for="freeMoodInput">🤖 今の気分を自由に入力</label>
+                <p>文章で入力すると、Geminiが気分を分析して曲選びに反映します。</p>
+                <textarea id="freeMoodInput" maxlength="300" rows="3" placeholder="例：今日は学校で疲れたけど、帰り道に少し元気になりたい"></textarea>
+                <button type="button" id="aiMoodButton" class="ai-mood-button">🤖 AIに気分を分析してもらう</button>
+                <div id="aiMoodResult" class="ai-mood-result" aria-live="polite"></div>
             </div>
 
         </section>

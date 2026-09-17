@@ -17,6 +17,9 @@ let playbackGeneration = 0;
 let lastEndedTrackUri = "";
 let isChangingTrack = false;
 let selectedMood = "";
+let aiMoodText = "";
+let aiMoodAnalysis = null;
+let aiRecommendationReasons = [];
 let selectedGenre = "all";
 
 let selectedArtistId = "";
@@ -868,6 +871,107 @@ function initHome() {
     }
 
 
+    const freeMoodInput =
+        document.getElementById(
+            "freeMoodInput"
+        );
+
+    const aiMoodButton =
+        document.getElementById(
+            "aiMoodButton"
+        );
+
+    const aiMoodResult =
+        document.getElementById(
+            "aiMoodResult"
+        );
+
+    if (freeMoodInput) {
+        freeMoodInput.addEventListener(
+            "input",
+            () => {
+                aiMoodText = freeMoodInput.value.trim();
+
+                if (aiMoodText) {
+                    moodButtons.forEach(btn =>
+                        btn.classList.remove("selected")
+                    );
+                    selectedMood = "";
+                    aiMoodAnalysis = null;
+                    aiRecommendationReasons = [];
+                    if (aiMoodResult) aiMoodResult.innerHTML = "";
+                }
+            }
+        );
+    }
+
+    if (aiMoodButton) {
+        aiMoodButton.addEventListener(
+            "click",
+            async () => {
+                const text = freeMoodInput?.value.trim() || "";
+
+                if (!text) {
+                    alert("今の気分を入力してください。");
+                    freeMoodInput?.focus();
+                    return;
+                }
+
+                aiMoodText = text;
+                aiMoodButton.disabled = true;
+                aiMoodButton.textContent = "🤖 AIが分析中...";
+                if (aiMoodResult) {
+                    aiMoodResult.innerHTML = `<div class="loading">気分を分析しています...</div>`;
+                }
+
+                try {
+                    const response = await fetch("/api/gemini/analyze-mood", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text })
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || !data.analysis) {
+                        throw new Error(data.error || "AIの気分分析に失敗しました。");
+                    }
+
+                    aiMoodAnalysis = data.analysis;
+                    selectedMood = aiMoodAnalysis.mood || "その他";
+
+                    if (aiMoodResult) {
+                        const keywords = Array.isArray(aiMoodAnalysis.keywords)
+                            ? aiMoodAnalysis.keywords.join("・")
+                            : "";
+
+                        aiMoodResult.innerHTML = `
+                            <div class="ai-mood-result-title">🤖 AIが気分を分析しました</div>
+                            <div class="ai-mood-summary">${escapeHtml(aiMoodAnalysis.summary || "気分を分析しました")}</div>
+                            <div class="ai-mood-metrics">
+                                <span>元気度 ${aiMoodAnalysis.energy}/5</span>
+                                <span>明るさ ${aiMoodAnalysis.positivity}/5</span>
+                            </div>
+                            ${keywords ? `<div class="ai-mood-keywords">${escapeHtml(keywords)}</div>` : ""}
+                            <div class="ai-mood-hint">下の「5曲選ぶ」を押すと、この分析をもとにSpotifyから5曲を選びます。</div>
+                        `;
+                    }
+
+                    showToast("🤖 気分をAIが分析しました");
+                } catch (error) {
+                    console.error("AI気分分析エラー:", error);
+                    aiMoodAnalysis = null;
+                    if (aiMoodResult) {
+                        aiMoodResult.innerHTML = `<div class="ai-mood-error">${escapeHtml(error.message || "AIの分析に失敗しました")}</div>`;
+                    }
+                } finally {
+                    aiMoodButton.disabled = false;
+                    aiMoodButton.textContent = "🤖 AIに気分を分析してもらう";
+                }
+            }
+        );
+    }
+
+
     initArtistSearch();
 
 
@@ -1312,10 +1416,12 @@ function selectArtist(
 
 async function makePlaylist() {
 
-    if (!selectedMood) {
+    const useAIMood = Boolean(aiMoodText);
+
+    if (!useAIMood && !selectedMood) {
 
         alert(
-            "気分を選択してください。"
+            "気分を選択するか、AIに気分を入力してください。"
         );
 
         return;
@@ -1363,10 +1469,44 @@ async function makePlaylist() {
 
 
         // ====================================================
+        // AI自由入力
+        // ====================================================
+
+        if (useAIMood) {
+            if (!aiMoodAnalysis) {
+                throw new Error("先に「AIに気分を分析してもらう」を押してください。");
+            }
+
+            const response = await fetch("/api/gemini/recommend-from-mood", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    text: aiMoodText,
+                    analysis: aiMoodAnalysis,
+                    artistId: selectedArtistId,
+                    artistName: selectedArtistName,
+                    genre: selectedGenre
+                })
+            });
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.error || "AIおすすめの作成に失敗しました。");
+            }
+
+            tracks = Array.isArray(data.tracks) ? data.tracks : [];
+            aiRecommendationReasons = Array.isArray(data.reasons) ? data.reasons : [];
+
+            if (data.analysis) {
+                aiMoodAnalysis = data.analysis;
+            }
+        }
+
+        // ====================================================
         // アーティスト
         // ====================================================
 
-        if (selectedArtistId) {
+        else if (selectedArtistId) {
 
             const url =
                 `/api/artist-tracks?id=${encodeURIComponent(
@@ -1520,11 +1660,13 @@ async function makePlaylist() {
         // 気分で並べ替え
         // ====================================================
 
-        tracks =
-            sortTracksByMood(
-                tracks,
-                selectedMood
-            );
+        if (!useAIMood) {
+            tracks =
+                sortTracksByMood(
+                    tracks,
+                    selectedMood
+                );
+        }
 
 
         // ====================================================
@@ -6544,46 +6686,55 @@ function initMenuSettings() {
     // テーマ
     // ========================================================
 
-    document.querySelectorAll(
-        ".theme-button"
-    ).forEach(
-        button => {
+    // ========================================================
+// ダークモード ON / OFF
+// ========================================================
 
-            button.addEventListener(
-                "click",
-                () => {
+const darkModeToggle =
+document.getElementById("darkModeToggle");
 
-                    const theme =
-                        button.dataset.theme;
+if (darkModeToggle) {
 
+darkModeToggle.checked =
+    appSettings.theme === "night";
 
-                    if (!theme) {
-                        return;
-                    }
+darkModeToggle.addEventListener(
+    "change",
+    () => {
 
+        const isDark =
+            darkModeToggle.checked;
 
-                    saveAppSetting(
-                        "theme",
-                        theme
-                    );
+        const newTheme =
+            isDark
+                ? "night"
+                : "ocean";
 
+        saveAppSetting(
+            "theme",
+            newTheme
+        );
 
-                    document.body.dataset.theme =
-                        theme;
+        document.body.dataset.theme =
+            newTheme;
 
+        // 背景も通常色に戻す
+        document.body.dataset.background =
+            "default";
 
-                    syncMenuSettingsUI();
+        saveAppSetting(
+            "background",
+            "default"
+        );
 
-
-                    showToast(
-                        `🎨 ${getThemeName(theme)} に変更しました`
-                    );
-
-                }
-            );
-
-        }
-    );
+        showToast(
+            isDark
+                ? "🌙 ダークモード ON"
+                : "☀️ ダークモード OFF"
+        );
+    }
+);
+}
 
 
     // ========================================================
@@ -7022,19 +7173,18 @@ function syncMenuSettingsUI() {
     // テーマ
     // --------------------------------------------------------
 
-    document.querySelectorAll(
-        ".theme-button"
-    ).forEach(
-        button => {
+    // ========================================================
+// ダークモード表示状態
+// ========================================================
 
-            button.classList.toggle(
-                "active",
-                button.dataset.theme ===
-                appSettings.theme
-            );
+const darkModeToggle =
+document.getElementById("darkModeToggle");
 
-        }
-    );
+if (darkModeToggle) {
+
+darkModeToggle.checked =
+    appSettings.theme === "night";
+}
 
 
     // --------------------------------------------------------
