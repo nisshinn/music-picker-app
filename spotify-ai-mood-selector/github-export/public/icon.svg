@@ -1,0 +1,19 @@
+<!-- Music Picker App Icon Placeholder -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF5252"/>
+      <stop offset="50%" stop-color="#7C4DFF"/>
+      <stop offset="100%" stop-color="#448AFF"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="115" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="4"/>
+  <path d="M220 140 L340 115 C350 113 360 120 360 130 L360 280 C345 270 325 265 305 270 C275 278 255 305 260 335 C265 365 295 385 325 380 C350 375 370 355 370 330 L370 170 L240 195 L240 310 C225 300 205 295 185 300 C155 308 135 335 140 365 C145 395 175 415 205 410 C230 405 250 385 250 360 L250 160 C250 148 238 138 220 140 Z" fill="#FFFFFF" filter="url(#shadow)"/>
+  <path d="M150 160 L155 175 L170 180 L155 185 L150 200 L145 185 L130 180 L145 175 Z" fill="#FFFFFF"/>
+  <path d="M390 250 L393 260 L403 263 L393 266 L390 276 L387 266 L377 263 L387 260 Z" fill="#FFFFFF"/>
+  <text x="256" y="445" font-family="system-ui, sans-serif" font-size="28" font-weight="800" fill="#FFFFFF" text-anchor="middle" letter-spacing="4">MUSIC PICKER</text>
+</svg>

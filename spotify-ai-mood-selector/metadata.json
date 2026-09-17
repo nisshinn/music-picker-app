@@ -1,0 +1,6 @@
+{
+  "name": "Spotify AI Mood Selector",
+  "description": "AIが今の気分やシチュエーションに合わせてSpotify楽曲を5曲厳選。ブラウザ上のSpotify埋め込みプレイヤーで即時試聴、連続再生コントローラー、お気に入り保存に対応。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
