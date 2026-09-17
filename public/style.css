@@ -4602,3 +4602,144 @@ body[data-theme="night"] main {
         font-size: 10px !important;
     }
 }
+/* ============================================================
+   🤖 AI自由入力
+   ============================================================ */
+.ai-mood-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 22px 0 18px;
+    color: #8a8a8a;
+    font-size: 13px;
+}
+
+.ai-mood-divider::before,
+.ai-mood-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(128, 128, 128, 0.22);
+}
+
+.ai-mood-input {
+    margin-top: 4px;
+    text-align: left;
+}
+
+.ai-mood-input > label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.ai-mood-input > p {
+    margin: 0 0 10px;
+    color: #888;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.ai-mood-input textarea {
+    display: block;
+    width: 100%;
+    min-height: 82px;
+    box-sizing: border-box;
+    resize: vertical;
+    border: 1px solid rgba(128, 128, 128, 0.22);
+    border-radius: 14px;
+    padding: 13px 14px;
+    font: inherit;
+    line-height: 1.55;
+    background: rgba(128, 128, 128, 0.07);
+    color: inherit;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+}
+
+.ai-mood-input textarea:focus {
+    border-color: #ff2d55;
+    box-shadow: 0 0 0 3px rgba(255, 45, 85, 0.10);
+    background: rgba(128, 128, 128, 0.10);
+}
+
+.ai-mood-button {
+    width: 100%;
+    margin-top: 10px;
+    border: 0;
+    border-radius: 13px;
+    padding: 12px 16px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    background: #ff2d55;
+    color: #fff;
+    transition: transform .15s, opacity .15s;
+}
+
+.ai-mood-button:hover {
+    transform: translateY(-1px);
+}
+
+.ai-mood-button:disabled {
+    opacity: .6;
+    cursor: wait;
+    transform: none;
+}
+
+.ai-mood-result {
+    margin-top: 12px;
+}
+
+.ai-mood-result-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.ai-mood-summary {
+    line-height: 1.55;
+    font-size: 14px;
+}
+
+.ai-mood-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 9px;
+}
+
+.ai-mood-metrics span,
+.ai-mood-keywords {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 5px 9px;
+    background: rgba(128, 128, 128, 0.10);
+    font-size: 12px;
+}
+
+.ai-mood-keywords {
+    margin-top: 8px;
+}
+
+.ai-mood-hint {
+    margin-top: 9px;
+    color: #888;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.ai-mood-error {
+    color: #ff3b30;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+body[data-theme="night"] .ai-mood-input textarea {
+    background: #151515;
+    border-color: #333;
+}
+
+body[data-theme="night"] .ai-mood-input textarea:focus {
+    background: #1b1b1b;
+}
