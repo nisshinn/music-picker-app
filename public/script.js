@@ -2409,13 +2409,98 @@ function createTrackCard(
     );
 
 
+    // --------------------------------------------------------
+    // プレビュー再生
+    // --------------------------------------------------------
+
+    const preview =
+        document.createElement(
+            "button"
+        );
+
+
+    preview.className =
+        "preview-button";
+
+
+    preview.textContent =
+        track.previewUrl ? "🎧" : "🔇";
+
+
+    preview.title =
+        track.previewUrl
+            ? "30秒プレビュー"
+            : "プレビューなし";
+
+
+    preview.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            togglePreview(
+                track,
+                preview
+            );
+
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // シェア
+    // --------------------------------------------------------
+
+    const share =
+        document.createElement(
+            "button"
+        );
+
+
+    share.className =
+        "share-button";
+
+
+    share.textContent =
+        "🔗";
+
+
+    share.title =
+        "シェア";
+
+
+    share.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            shareTrack(
+                track
+            );
+
+        }
+    );
+
+
     actions.appendChild(
         play
     );
 
 
     actions.appendChild(
+        preview
+    );
+
+
+    actions.appendChild(
         favorite
+    );
+
+
+    actions.appendChild(
+        share
     );
 
 
@@ -2565,6 +2650,13 @@ async function playTrack(
         return;
 
     }
+
+
+    // --------------------------------------------------------
+    // プレビュー再生中なら停止
+    // --------------------------------------------------------
+
+    stopPreview();
 
 
     // --------------------------------------------------------
@@ -7446,6 +7538,11 @@ function normalizeTrack(
         );
 
 
+    const previewUrl =
+        track.previewUrl ||
+        track.preview_url ||
+        null;
+
     return {
 
         ...track,
@@ -7481,7 +7578,9 @@ function normalizeTrack(
 
         image,
 
-        spotifyUrl
+        spotifyUrl,
+
+        previewUrl
 
     };
 
@@ -10007,5 +10106,88 @@ const detail = document.createElement("div");
             "プレイリストを開けませんでした\n" +
             error.message
         );
+    }
+}
+
+// ============================================================
+// プレビュー再生
+// ============================================================
+
+let previewAudio = null;
+let previewCurrentButton = null;
+
+function stopPreview() {
+    if (previewAudio) {
+        previewAudio.pause();
+        previewAudio.currentTime = 0;
+        previewAudio = null;
+    }
+    if (previewCurrentButton) {
+        previewCurrentButton.textContent = "🎧";
+        previewCurrentButton.classList.remove("preview-playing");
+        previewCurrentButton = null;
+    }
+}
+
+function togglePreview(track, button) {
+    if (previewAudio && previewCurrentButton === button) {
+        stopPreview();
+        return;
+    }
+
+    stopPreview();
+
+    if (!track.previewUrl) {
+        showToast("この曲にはプレビュー音源がありません");
+        return;
+    }
+
+    previewAudio = new Audio(track.previewUrl);
+    previewCurrentButton = button;
+    button.textContent = "⏸";
+    button.classList.add("preview-playing");
+
+    previewAudio.addEventListener("ended", stopPreview);
+    previewAudio.addEventListener("error", () => {
+        stopPreview();
+        showToast("プレビューの再生に失敗しました");
+    });
+
+    previewAudio.play().catch(() => {
+        stopPreview();
+        showToast("プレビューの再生に失敗しました");
+    });
+}
+
+
+// ============================================================
+// シェア機能
+// ============================================================
+
+async function shareTrack(track) {
+    const url =
+        track.spotifyUrl ||
+        (track.id
+            ? `https://open.spotify.com/track/${track.id}`
+            : "");
+
+    if (!url) {
+        showToast("シェアURLがありません");
+        return;
+    }
+
+    const text = `🎵 ${track.title} - ${getArtistText(track)}`;
+
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: track.title, text, url });
+        } catch (_) {}
+    } else {
+        try {
+            await navigator.clipboard.writeText(`${text}\n${url}`);
+            showToast("📋 リンクをコピーしました");
+        } catch (_) {
+            showToast("コピーに失敗しました");
+        }
     }
 }

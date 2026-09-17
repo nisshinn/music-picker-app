@@ -708,7 +708,10 @@ function formatTrack(track) {
             track.uri,
 
         artistId:
-            track.artists?.[0]?.id || ""
+            track.artists?.[0]?.id || "",
+
+        previewUrl:
+            track.preview_url || null
     };
 }
 
@@ -2050,7 +2053,10 @@ app.get(
 
             spotifyUrl:
                 track.external_urls
-                    ?.spotify || ""
+                    ?.spotify || "",
+
+            previewUrl:
+                track.preview_url || null
         }));
 
            res.json({

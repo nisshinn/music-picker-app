@@ -1162,6 +1162,58 @@ body[data-animation="off"] *::after {
     transform: translateY(-1px);
 }
 
+.preview-button {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--input-bg);
+    color: var(--sub-text);
+    font-size: 17px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.preview-button:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.preview-button.preview-playing {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background: var(--accent-glow);
+    animation: preview-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes preview-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+    50% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.share-button {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--input-bg);
+    color: var(--sub-text);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.share-button:hover {
+    border-color: var(--main-color);
+    color: var(--main-color);
+}
+
 /* ============================================================
    検索
    ============================================================ */
