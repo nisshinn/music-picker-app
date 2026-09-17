@@ -674,6 +674,18 @@
 
             </div>
 
+            <div class="ai-mood-divider">
+                <span>または</span>
+            </div>
+
+            <div class="ai-mood-input">
+                <label for="freeMoodInput">🤖 今の気分を自由に入力</label>
+                <p>文章で入力すると、Geminiが気分を分析して曲選びに反映します。</p>
+                <textarea id="freeMoodInput" maxlength="300" rows="3" placeholder="例：今日は学校で疲れたけど、帰り道に少し元気になりたい"></textarea>
+                <button type="button" id="aiMoodButton" class="ai-mood-button">🤖 AIに気分を分析してもらう</button>
+                <div id="aiMoodResult" class="ai-mood-result" aria-live="polite"></div>
+            </div>
+
         </section>
 
 
