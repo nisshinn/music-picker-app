@@ -1,6 +1,6 @@
 /* ============================================================
-   Music Picker — Apple Music Style
-   クラス名・構造は維持、Apple Music風デザインに刷新
+   Music Picker — Dark Spotify Style
+   クラス名・構造は維持、ダーク×グリーンの大胆なデザイン
    ============================================================ */
 
 * {
@@ -8,30 +8,32 @@
 }
 
 :root {
-    --main-color: #FA233B;
-    --main-dark: #E11C33;
-    --accent-color: #FA233B;
-    --accent-glow: rgba(250, 35, 59, 0.15);
+    --main-color: #1DB954;
+    --main-dark: #169c46;
+    --accent-color: #1DB954;
+    --accent-glow: rgba(29, 185, 84, 0.25);
 
-    --text-color: #1D1D1F;
-    --sub-text: #86868B;
+    --text-color: #FFFFFF;
+    --sub-text: #B3B3B3;
 
-    --card-bg: #FFFFFF;
-    --input-bg: #F5F5F7;
+    --card-bg: #181818;
+    --card-bg-hover: #282828;
+    --input-bg: #282828;
 
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
 
-    --radius: 14px;
-    --border-color: rgba(0, 0, 0, 0.07);
+    --radius: 16px;
+    --border-color: rgba(255, 255, 255, 0.08);
 
-    --nav-bg: rgba(255, 255, 255, 0.82);
-    --nav-active: #FA233B;
+    --nav-bg: rgba(18, 18, 18, 0.92);
+    --nav-active: #1DB954;
+    --bg-base: #121212;
 }
 
 html {
     min-height: 100%;
-    background: #F5F5F7;
+    background: var(--bg-base);
 }
 
 body {
@@ -45,7 +47,7 @@ body {
 
     min-height: 100vh;
 
-    background: #F5F5F7;
+    background: var(--bg-base);
 
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -57,22 +59,22 @@ body {
    テーマ
    ============================================================ */
 
-/* Night (dark) */
+/* Night (default dark) */
 body[data-theme="night"] {
-    --main-color: #FA233B;
-    --main-dark: #E11C33;
-    --accent-color: #FA233B;
-    --accent-glow: rgba(250, 35, 59, 0.2);
-    --text-color: #F5F5F7;
-    --sub-text: #98989D;
-    --card-bg: #1C1C1E;
-    --input-bg: #2C2C2E;
+    --main-color: #1DB954;
+    --main-dark: #169c46;
+    --accent-color: #1DB954;
+    --accent-glow: rgba(29, 185, 84, 0.25);
+    --text-color: #FFFFFF;
+    --sub-text: #B3B3B3;
+    --card-bg: #181818;
+    --card-bg-hover: #282828;
+    --input-bg: #282828;
     --border-color: rgba(255, 255, 255, 0.08);
-    --nav-bg: rgba(28, 28, 30, 0.82);
-    --nav-active: #FA233B;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05);
-    background: #000000;
+    --nav-bg: rgba(18, 18, 18, 0.92);
+    --nav-active: #1DB954;
+    --bg-base: #121212;
+    background: #121212;
 }
 
 /* Sunset */
@@ -80,15 +82,17 @@ body[data-theme="sunset"] {
     --main-color: #FF6B35;
     --main-dark: #E85D2D;
     --accent-color: #FF6B35;
-    --accent-glow: rgba(255, 107, 53, 0.15);
-    --text-color: #1D1D1F;
-    --sub-text: #86868B;
-    --card-bg: #FFFFFF;
-    --input-bg: #FFF4EE;
-    --border-color: rgba(0, 0, 0, 0.07);
-    --nav-bg: rgba(255, 255, 255, 0.82);
+    --accent-glow: rgba(255, 107, 53, 0.2);
+    --text-color: #FFFFFF;
+    --sub-text: #C9A89C;
+    --card-bg: #1E1410;
+    --card-bg-hover: #2E2018;
+    --input-bg: #2E2018;
+    --border-color: rgba(255, 255, 255, 0.06);
+    --nav-bg: rgba(20, 12, 8, 0.92);
     --nav-active: #FF6B35;
-    background: #FFF8F4;
+    --bg-base: #140C08;
+    background: #140C08;
     background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 107, 53, 0.12), transparent);
     background-attachment: fixed;
 }
@@ -98,39 +102,39 @@ body[data-theme="sakura"] {
     --main-color: #FF2D55;
     --main-dark: #E6234A;
     --accent-color: #FF2D55;
-    --accent-glow: rgba(255, 45, 85, 0.15);
-    --text-color: #1D1D1F;
-    --sub-text: #86868B;
-    --card-bg: #FFFFFF;
-    --input-bg: #FFF0F4;
-    --border-color: rgba(0, 0, 0, 0.07);
-    --nav-bg: rgba(255, 255, 255, 0.82);
+    --accent-glow: rgba(255, 45, 85, 0.2);
+    --text-color: #FFFFFF;
+    --sub-text: #C9A0B0;
+    --card-bg: #1E1018;
+    --card-bg-hover: #2E1828;
+    --input-bg: #2E1828;
+    --border-color: rgba(255, 255, 255, 0.06);
+    --nav-bg: rgba(20, 10, 16, 0.92);
     --nav-active: #FF2D55;
-    background: #FFF5F8;
+    --bg-base: #14080E;
+    background: #14080E;
     background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 45, 85, 0.10), transparent);
     background-attachment: fixed;
 }
 
-/* Classic (dark default) */
+/* Classic (light) */
 body[data-theme="classic"] {
-    --main-color: #6c5ce7;
-    --main-dark: #5a4bd1;
-    --accent-color: #a855f7;
-    --accent-glow: rgba(168, 85, 247, 0.2);
-    --text-color: #f0f0f5;
-    --sub-text: #8b8b9e;
-    --card-bg: rgba(30, 30, 45, 0.72);
-    --input-bg: rgba(255, 255, 255, 0.06);
-    --border-color: rgba(255, 255, 255, 0.08);
-    --nav-bg: rgba(15, 15, 25, 0.92);
-    --nav-active: #6c5ce7;
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
-    --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.18);
-    background: #0a0a12;
-    background-image:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(108, 92, 231, 0.18), transparent),
-        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(168, 85, 247, 0.10), transparent);
-    background-attachment: fixed;
+    --main-color: #1DB954;
+    --main-dark: #169c46;
+    --accent-color: #1DB954;
+    --accent-glow: rgba(29, 185, 84, 0.12);
+    --text-color: #1D1D1F;
+    --sub-text: #86868B;
+    --card-bg: #FFFFFF;
+    --card-bg-hover: #F5F5F7;
+    --input-bg: #F5F5F7;
+    --border-color: rgba(0, 0, 0, 0.08);
+    --nav-bg: rgba(255, 255, 255, 0.85);
+    --nav-active: #1DB954;
+    --bg-base: #F5F5F7;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+    background: #F5F5F7;
 }
 
 /* ============================================================
@@ -142,17 +146,12 @@ body[data-background="default"] {
 }
 
 body[data-background="gradient"] {
-    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(250, 35, 59, 0.06), transparent);
+    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(29, 185, 84, 0.08), transparent);
     background-attachment: fixed;
 }
 
 body[data-background="simple"] {
     background-image: none;
-}
-
-body[data-theme="night"][data-background="gradient"] {
-    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(250, 35, 59, 0.08), transparent);
-    background-attachment: fixed;
 }
 
 body[data-theme="sunset"][data-background="gradient"] {
@@ -192,9 +191,9 @@ body[data-animation="off"] *::after {
     font-size: 20px;
     cursor: pointer;
     z-index: 7500;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow);
     color: var(--text-color);
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -202,6 +201,7 @@ body[data-animation="off"] *::after {
 
 .menu-button:hover {
     transform: scale(1.05);
+    background: var(--card-bg-hover);
 }
 
 /* ============================================================
@@ -211,7 +211,7 @@ body[data-animation="off"] *::after {
 .menu-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.7);
     z-index: 6500;
     opacity: 0;
     visibility: hidden;
@@ -237,7 +237,7 @@ body[data-animation="off"] *::after {
     padding: 0;
     background: var(--nav-bg);
     z-index: 7000;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.5);
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
     backdrop-filter: blur(40px) saturate(180%);
@@ -256,19 +256,19 @@ body[data-animation="off"] *::after {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px 14px;
+    padding: 20px 20px 16px;
 }
 
 .menu-title {
-    font-size: 19px;
+    font-size: 20px;
     font-weight: 700;
     padding: 0;
     color: var(--text-color);
 }
 
 .menu-close-button {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: none;
     border-radius: 50%;
     background: var(--input-bg);
@@ -283,14 +283,14 @@ body[data-animation="off"] *::after {
 }
 
 .menu-close-button:hover {
-    background: var(--border-color);
+    background: var(--card-bg-hover);
     color: var(--text-color);
 }
 
 /* 古いページ用 */
 .close-menu {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: none;
     border-radius: 50%;
     background: var(--input-bg);
@@ -321,10 +321,10 @@ body[data-animation="off"] *::after {
 .menu-section-title {
     margin: 0;
     padding: 16px 20px 6px;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     color: var(--sub-text);
 }
 
@@ -355,7 +355,7 @@ body[data-animation="off"] *::after {
 
 .menu-link.active {
     color: var(--accent-color);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* ============================================================
@@ -383,7 +383,7 @@ body[data-animation="off"] *::after {
     border-radius: 12px;
     background: var(--input-bg);
     margin-bottom: 14px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .menu-player-image[src=""],
@@ -404,7 +404,7 @@ body[data-animation="off"] *::after {
 
 .menu-player-title {
     font-size: 17px;
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -437,7 +437,7 @@ body[data-animation="off"] *::after {
     border: none;
     border-radius: 50%;
     background: transparent;
-    color: var(--text-color);
+    color: var(--sub-text);
     cursor: pointer;
     font-size: 16px;
     transition: transform 0.15s ease, color 0.15s ease;
@@ -447,7 +447,7 @@ body[data-animation="off"] *::after {
 }
 
 .menu-player-button:hover {
-    color: var(--accent-color);
+    color: var(--text-color);
     transform: scale(1.08);
 }
 
@@ -456,17 +456,18 @@ body[data-animation="off"] *::after {
 }
 
 .menu-player-button.menu-play-button {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     background: var(--accent-color);
-    color: white;
-    font-size: 18px;
-    box-shadow: 0 4px 12px var(--accent-glow);
+    color: #000;
+    font-size: 20px;
+    box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 .menu-player-button.menu-play-button:hover {
-    background: var(--main-dark);
-    color: white;
+    background: #1ed760;
+    color: #000;
+    transform: scale(1.08);
 }
 
 /* ============================================================
@@ -512,7 +513,7 @@ body[data-animation="off"] *::after {
     padding: 10px 8px;
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    background: var(--card-bg);
+    background: var(--input-bg);
     color: var(--text-color);
     font-size: 14px;
     cursor: pointer;
@@ -523,6 +524,7 @@ body[data-animation="off"] *::after {
 .background-button:hover {
     transform: translateY(-1px);
     border-color: var(--accent-color);
+    background: var(--card-bg-hover);
 }
 
 .theme-button.active,
@@ -530,7 +532,7 @@ body[data-animation="off"] *::after {
     border-color: var(--accent-color);
     background: var(--accent-glow);
     color: var(--accent-color);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* ============================================================
@@ -540,8 +542,8 @@ body[data-animation="off"] *::after {
 .toggle-switch {
     position: relative;
     display: inline-block;
-    width: 51px;
-    height: 31px;
+    width: 48px;
+    height: 28px;
     flex-shrink: 0;
 }
 
@@ -554,8 +556,8 @@ body[data-animation="off"] *::after {
 .toggle-slider {
     position: absolute;
     inset: 0;
-    border-radius: 31px;
-    background: #E5E5EA;
+    border-radius: 28px;
+    background: #5A5A5A;
     cursor: pointer;
     transition: 0.25s;
 }
@@ -563,26 +565,22 @@ body[data-animation="off"] *::after {
 .toggle-slider::before {
     content: "";
     position: absolute;
-    width: 27px;
-    height: 27px;
-    left: 2px;
-    top: 2px;
+    width: 22px;
+    height: 22px;
+    left: 3px;
+    top: 3px;
     border-radius: 50%;
     background: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     transition: 0.25s;
 }
 
 .toggle-switch input:checked + .toggle-slider {
-    background: #34C759;
+    background: var(--accent-color);
 }
 
 .toggle-switch input:checked + .toggle-slider::before {
     transform: translateX(20px);
-}
-
-body[data-theme="night"] .toggle-slider {
-    background: #3A3A3C;
 }
 
 /* ============================================================
@@ -671,7 +669,7 @@ body[data-theme="night"] .toggle-slider {
     width: 100%;
     max-width: 1000px;
     margin: 0 auto;
-    padding: 64px 24px 170px;
+    padding: 64px 20px 170px;
 }
 
 .page {
@@ -684,7 +682,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -698,9 +696,9 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .main-header h1 {
-    font-size: 40px;
+    font-size: 42px;
     margin: 0 0 6px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: -1px;
     color: var(--text-color);
 }
@@ -722,7 +720,7 @@ body[data-theme="night"] .toggle-slider {
     border-radius: var(--radius);
     padding: 24px 20px;
     text-align: center;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     box-shadow: var(--shadow);
 }
 
@@ -731,20 +729,20 @@ body[data-theme="night"] .toggle-slider {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 12px 28px;
+    padding: 14px 32px;
     border-radius: 980px;
-    background: #1DB954;
-    color: white;
+    background: var(--accent-color);
+    color: #000;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 16px;
-    box-shadow: 0 2px 8px rgba(29, 185, 84, 0.25);
+    box-shadow: 0 4px 16px var(--accent-glow);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .spotify-login-button:hover {
-    transform: scale(1.03);
-    box-shadow: 0 4px 14px rgba(29, 185, 84, 0.35);
+    transform: scale(1.05);
+    box-shadow: 0 6px 24px var(--accent-glow);
 }
 
 .spotify-status {
@@ -787,15 +785,15 @@ body[data-theme="night"] .toggle-slider {
 .artist-search,
 .big-search {
     width: 100%;
-    height: 50px;
-    border: 1px solid var(--border-color);
+    height: 52px;
+    border: none;
     border-radius: 12px;
     padding: 0 16px;
     font-size: 16px;
     outline: none;
     background: var(--input-bg);
     color: var(--text-color);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .artist-search::placeholder,
@@ -805,9 +803,8 @@ body[data-theme="night"] .toggle-slider {
 
 .artist-search:focus,
 .big-search:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-    background: var(--card-bg);
+    box-shadow: 0 0 0 2px var(--accent-color);
+    background: var(--card-bg-hover);
 }
 
 .artist-results {
@@ -825,7 +822,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .artist-result:hover {
-    background: var(--input-bg);
+    background: var(--card-bg-hover);
 }
 
 .artist-result img {
@@ -890,10 +887,10 @@ body[data-theme="night"] .toggle-slider {
 
 .genre-select {
     width: 100%;
-    height: 50px;
+    height: 52px;
     padding: 0 16px;
     border-radius: 12px;
-    border: 1px solid var(--border-color);
+    border: none;
     font-size: 16px;
     background: var(--input-bg);
     color: var(--text-color);
@@ -901,12 +898,11 @@ body[data-theme="night"] .toggle-slider {
     outline: none;
     appearance: none;
     -webkit-appearance: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: box-shadow 0.2s ease;
 }
 
 .genre-select:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px var(--accent-glow);
+    box-shadow: 0 0 0 2px var(--accent-color);
 }
 
 /* ============================================================
@@ -921,8 +917,8 @@ body[data-theme="night"] .toggle-slider {
 
 .moods button {
     padding: 14px;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border: none;
+    border-radius: 980px;
     background: var(--input-bg);
     color: var(--text-color);
     font-size: 16px;
@@ -932,17 +928,15 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .moods button:hover {
-    border-color: var(--accent-color);
-    background: var(--accent-glow);
+    background: var(--card-bg-hover);
     transform: translateY(-1px);
 }
 
 .moods button.selected,
 .moods button.active {
-    border-color: var(--accent-color);
     background: var(--accent-color);
-    color: white;
-    font-weight: 600;
+    color: #000;
+    font-weight: 700;
 }
 
 /* ============================================================
@@ -952,21 +946,21 @@ body[data-theme="night"] .toggle-slider {
 .make-playlist-button {
     display: block;
     margin: 24px auto;
-    padding: 14px 36px;
+    padding: 16px 40px;
     border: none;
     border-radius: 980px;
     background: var(--accent-color);
-    color: white;
-    font-size: 17px;
-    font-weight: 600;
+    color: #000;
+    font-size: 18px;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 14px var(--accent-glow);
+    box-shadow: 0 4px 20px var(--accent-glow);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .make-playlist-button:hover {
-    transform: scale(1.03);
-    box-shadow: 0 6px 20px var(--accent-glow);
+    transform: scale(1.05);
+    box-shadow: 0 8px 32px var(--accent-glow);
 }
 
 .make-playlist-button:active {
@@ -1001,24 +995,24 @@ body[data-theme="night"] .toggle-slider {
 .playlist-header h2 {
     margin: 0;
     font-size: 24px;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .play-all-button {
     border: none;
     border-radius: 980px;
-    padding: 10px 22px;
+    padding: 12px 24px;
     background: var(--accent-color);
-    color: white;
-    font-weight: 600;
+    color: #000;
+    font-weight: 700;
     font-size: 15px;
     cursor: pointer;
-    box-shadow: 0 2px 8px var(--accent-glow);
+    box-shadow: 0 2px 12px var(--accent-glow);
     transition: transform 0.15s ease;
 }
 
 .play-all-button:hover {
-    transform: scale(1.03);
+    transform: scale(1.05);
 }
 
 /* ============================================================
@@ -1029,7 +1023,7 @@ body[data-theme="night"] .toggle-slider {
     display: flex;
     align-items: center;
     width: 100%;
-    min-height: 64px;
+    min-height: 68px;
     padding: 8px 12px;
     margin-bottom: 4px;
     border-radius: 10px;
@@ -1041,7 +1035,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .track-card:hover {
-    background: var(--input-bg);
+    background: var(--card-bg-hover);
 }
 
 .track-image {
@@ -1051,13 +1045,13 @@ body[data-theme="night"] .toggle-slider {
     object-fit: cover;
     border-radius: 8px;
     background: var(--input-bg);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .track-info {
     flex: 1;
     min-width: 0;
-    margin-left: 12px;
+    margin-left: 14px;
 }
 
 .track-title {
@@ -1088,17 +1082,18 @@ body[data-theme="night"] .toggle-slider {
     border: none;
     border-radius: 50%;
     background: transparent;
-    color: var(--accent-color);
+    color: var(--sub-text);
     cursor: pointer;
     font-size: 14px;
-    transition: background 0.15s ease, transform 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .track-play-button:hover {
-    background: var(--accent-glow);
+    background: var(--accent-color);
+    color: #000;
     transform: scale(1.08);
 }
 
@@ -1119,7 +1114,7 @@ body[data-theme="night"] .toggle-slider {
 
 .favorite-button:hover {
     color: #FF3B30;
-    background: rgba(255, 59, 48, 0.1);
+    background: rgba(255, 59, 48, 0.15);
 }
 
 .favorite-button.favorite-active {
@@ -1132,19 +1127,19 @@ body[data-theme="night"] .toggle-slider {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 12px;
-    border-radius: 8px;
-    background: #1DB954;
-    color: white;
+    padding: 0 14px;
+    border-radius: 980px;
+    background: var(--accent-color);
+    color: #000;
     text-decoration: none;
     font-size: 13px;
-    font-weight: 600;
-    transition: background 0.2s ease, transform 0.15s ease;
+    font-weight: 700;
+    transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .spotify-button:hover {
     background: #1ed760;
-    transform: scale(1.03);
+    transform: scale(1.05);
 }
 
 .preview-button {
@@ -1208,16 +1203,16 @@ body[data-theme="night"] .toggle-slider {
     border: none;
     border-radius: 980px;
     background: var(--accent-color);
-    color: white;
-    font-weight: 600;
+    color: #000;
+    font-weight: 700;
     font-size: 15px;
     cursor: pointer;
-    box-shadow: 0 2px 8px var(--accent-glow);
+    box-shadow: 0 2px 12px var(--accent-glow);
     transition: transform 0.15s ease;
 }
 
 .search-button:hover {
-    transform: scale(1.03);
+    transform: scale(1.05);
 }
 
 .search-results {
@@ -1235,7 +1230,7 @@ body[data-theme="night"] .toggle-slider {
 .page-header h1 {
     font-size: 34px;
     margin: 0 0 4px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: -0.5px;
 }
 
@@ -1270,7 +1265,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .danger-button:hover {
-    background: var(--input-bg);
+    background: var(--card-bg-hover);
 }
 
 .danger-button:last-of-type {
@@ -1286,17 +1281,17 @@ body[data-theme="night"] .toggle-slider {
     background: var(--input-bg);
     color: #FF3B30;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: background 0.15s ease;
 }
 
 .logout-button:hover {
-    background: rgba(255, 59, 48, 0.1);
+    background: rgba(255, 59, 48, 0.15);
 }
 
 /* ============================================================
-   プレイヤー
+   プレイヤー (ミニ)
    ============================================================ */
 
 .player-panel {
@@ -1308,9 +1303,14 @@ body[data-theme="night"] .toggle-slider {
     background: var(--card-bg);
     border: none;
     border-radius: 14px;
-    box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
     z-index: 5000;
     padding: 10px 16px;
+    transition: transform 0.2s ease;
+}
+
+.player-panel:hover {
+    transform: translateX(-50%) scale(1.01);
 }
 
 .player-main {
@@ -1327,7 +1327,8 @@ body[data-theme="night"] .toggle-slider {
     object-fit: cover;
     border-radius: 8px;
     background: var(--input-bg);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
 }
 
 .player-info {
@@ -1336,7 +1337,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .player-title {
-    font-weight: 600;
+    font-weight: 700;
     font-size: 14px;
     white-space: nowrap;
     overflow: hidden;
@@ -1361,29 +1362,29 @@ body[data-theme="night"] .toggle-slider {
     border: none;
     border-radius: 50%;
     background: transparent;
-    color: var(--text-color);
+    color: var(--sub-text);
     cursor: pointer;
     font-size: 15px;
-    transition: background 0.15s ease, transform 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .player-button:hover {
-    background: var(--input-bg);
-    transform: scale(1.05);
+    color: var(--text-color);
+    transform: scale(1.08);
 }
 
 .play-button {
-    background: var(--accent-color);
-    color: white;
-    box-shadow: 0 2px 8px var(--accent-glow);
+    background: var(--text-color);
+    color: #000;
 }
 
 .play-button:hover {
-    background: var(--main-dark);
-    color: white;
+    background: var(--text-color);
+    color: #000;
+    transform: scale(1.08);
 }
 
 .volume-container {
@@ -1454,7 +1455,7 @@ body[data-theme="night"] .toggle-slider {
     background: var(--nav-bg);
     border: none;
     border-radius: 980px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
     z-index: 6000;
     backdrop-filter: blur(40px) saturate(180%);
     -webkit-backdrop-filter: blur(40px) saturate(180%);
@@ -1489,7 +1490,7 @@ body[data-theme="night"] .toggle-slider {
 
 .bottom-nav-link.active {
     color: var(--nav-active);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .bottom-nav-icon {
@@ -1542,10 +1543,10 @@ body[data-theme="night"] .toggle-slider {
     padding: 12px 16px;
     border: none;
     border-radius: 12px;
-    background: #1DB954;
-    color: #fff;
+    background: var(--accent-color);
+    color: #000;
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: transform 0.15s ease, opacity 0.15s ease;
 }
@@ -1563,7 +1564,7 @@ body[data-theme="night"] .toggle-slider {
     justify-content: center;
     align-items: center;
     padding: 20px;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 }
@@ -1574,9 +1575,9 @@ body[data-theme="night"] .toggle-slider {
     padding: 24px;
     border-radius: 18px;
     background: var(--card-bg);
-    border: none;
+    border: 1px solid var(--border-color);
     color: var(--text-color);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 .spotify-save-box h2 {
@@ -1629,8 +1630,8 @@ body[data-theme="night"] .toggle-slider {
     position: absolute;
     top: 12px;
     right: 12px;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: none;
     border-radius: 50%;
     background: var(--input-bg);
@@ -1644,7 +1645,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .spotify-save-close:hover {
-    background: var(--border-color);
+    background: var(--card-bg-hover);
     color: var(--text-color);
 }
 
@@ -1659,7 +1660,7 @@ body[data-theme="night"] .toggle-slider {
     padding: 12px;
     border: none;
     border-radius: 12px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     font-size: 15px;
 }
@@ -1670,12 +1671,12 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .spotify-cancel-button:hover {
-    background: var(--border-color);
+    background: var(--card-bg-hover);
 }
 
 .spotify-confirm-button {
-    background: #1DB954;
-    color: #fff;
+    background: var(--accent-color);
+    color: #000;
 }
 
 .spotify-confirm-button:disabled {
@@ -1734,7 +1735,7 @@ body[data-theme="night"] .toggle-slider {
 
 .library-playlist-name {
     font-size: 17px;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 4px;
 }
 
@@ -1752,27 +1753,27 @@ body[data-theme="night"] .toggle-slider {
 .library-play-button,
 .library-delete-button {
     border: none;
-    border-radius: 8px;
+    border-radius: 980px;
     padding: 8px 14px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: transform 0.15s ease;
 }
 
 .library-play-button {
     background: var(--accent-color);
-    color: white;
+    color: #000;
 }
 
 .library-delete-button {
-    background: rgba(255, 59, 48, 0.1);
+    background: rgba(255, 59, 48, 0.15);
     color: #FF3B30;
 }
 
 .library-play-button:hover,
 .library-delete-button:hover {
-    transform: scale(1.03);
+    transform: scale(1.05);
 }
 
 .library-track-list {
@@ -1792,7 +1793,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .library-track-item:hover {
-    background: var(--input-bg);
+    background: var(--card-bg-hover);
 }
 
 .library-track-item img {
@@ -1863,7 +1864,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .library-section-header:hover {
-    background: var(--input-bg);
+    background: var(--card-bg-hover);
 }
 
 .library-arrow {
@@ -1890,7 +1891,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 /* ============================================================
-   フルスクリーン NOW PLAYING
+   フルスクリーン NOW PLAYING (大幅改善)
    ============================================================ */
 
 .full-player-overlay {
@@ -1898,15 +1899,15 @@ body[data-theme="night"] .toggle-slider {
     inset: 0;
     z-index: 10000;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
 }
 
 .full-player-overlay.is-open {
@@ -1916,43 +1917,61 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .full-player-main {
-    width: min(420px, calc(100% - 30px));
-    max-height: calc(100vh - 30px);
+    width: min(480px, 100%);
+    max-height: 100vh;
     overflow-y: auto;
-    padding: 20px;
-    border-radius: 20px;
-    background: var(--card-bg);
+    padding: 0 24px 32px;
+    border-radius: 24px 24px 0 0;
+    background: linear-gradient(180deg, var(--card-bg) 0%, var(--bg-base) 100%);
     border: none;
     color: var(--text-color);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.full-player-overlay.is-open .full-player-main {
+    transform: translateY(0);
+}
+
+/* ドラッグハンドル */
+.full-player-main::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--border-color);
+    margin: 10px auto 0;
 }
 
 .full-player-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 18px;
+    margin-bottom: 20px;
+    margin-top: 8px;
 }
 
 .full-player-top-title {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--sub-text);
 }
 
 .full-player-close,
 .full-player-queue-button {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border: none;
     border-radius: 50%;
     background: var(--input-bg);
     color: var(--text-color);
-    font-size: 18px;
+    font-size: 20px;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background 0.15s ease, transform 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1960,30 +1979,36 @@ body[data-theme="night"] .toggle-slider {
 
 .full-player-close:hover,
 .full-player-queue-button:hover {
-    background: var(--border-color);
+    background: var(--card-bg-hover);
+    transform: scale(1.05);
 }
 
 .full-player-art-wrap {
     width: 100%;
     display: flex;
     justify-content: center;
-    margin-bottom: 18px;
+    margin-bottom: 24px;
 }
 
 .full-player-art {
-    width: min(340px, 80vw);
+    width: min(340px, 75vw);
     aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 14px;
+    border-radius: 16px;
     background: var(--input-bg);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease;
+}
+
+.full-player-art:hover {
+    transform: scale(1.02);
 }
 
 .full-player-info {
     display: flex;
     align-items: center;
     gap: 14px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .full-player-text {
@@ -1993,7 +2018,7 @@ body[data-theme="night"] .toggle-slider {
 
 .full-player-title {
     font-size: 22px;
-    font-weight: 700;
+    font-weight: 800;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2006,17 +2031,27 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .full-player-favorite {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border: none;
+    border-radius: 50%;
     background: transparent;
     font-size: 28px;
     color: #FF3B30;
     cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.full-player-favorite:hover {
+    background: rgba(255, 59, 48, 0.15);
+    transform: scale(1.1);
 }
 
 .full-player-progress-area {
-    margin-top: 10px;
+    margin-top: 8px;
 }
 
 .full-player-progress {
@@ -2026,7 +2061,7 @@ body[data-theme="night"] .toggle-slider {
 .full-player-times {
     display: flex;
     justify-content: space-between;
-    margin-top: 5px;
+    margin-top: 6px;
     font-size: 12px;
     color: var(--sub-text);
 }
@@ -2035,49 +2070,51 @@ body[data-theme="night"] .toggle-slider {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 28px;
-    margin: 20px 0;
+    gap: 32px;
+    margin: 24px 0;
 }
 
 .full-player-control {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border: none;
     border-radius: 50%;
     background: transparent;
-    color: var(--text-color);
-    font-size: 18px;
+    color: var(--sub-text);
+    font-size: 20px;
     cursor: pointer;
-    transition: background 0.15s ease, transform 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .full-player-control:hover {
+    color: var(--text-color);
     background: var(--input-bg);
-    transform: scale(1.05);
+    transform: scale(1.08);
 }
 
 .full-player-play {
-    width: 60px;
-    height: 60px;
+    width: 72px;
+    height: 72px;
     background: var(--accent-color);
-    color: white;
-    font-size: 22px;
-    box-shadow: 0 4px 16px var(--accent-glow);
+    color: #000;
+    font-size: 26px;
+    box-shadow: 0 8px 32px var(--accent-glow);
 }
 
 .full-player-play:hover {
-    background: var(--main-dark);
-    color: white;
+    background: #1ed760;
+    color: #000;
+    transform: scale(1.08);
 }
 
 .full-player-volume {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin: 10px 0 18px;
+    gap: 12px;
+    margin: 8px 0 20px;
 }
 
 .full-player-volume input {
@@ -2091,25 +2128,26 @@ body[data-theme="night"] .toggle-slider {
 
 .full-player-extra button {
     flex: 1;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
     background: var(--input-bg);
     color: var(--text-color);
     cursor: pointer;
     font-size: 14px;
-    font-weight: 500;
-    transition: background 0.15s ease;
+    font-weight: 600;
+    transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .full-player-extra button:hover {
-    background: var(--border-color);
+    background: var(--card-bg-hover);
+    transform: translateY(-1px);
 }
 
 .full-player-extra button.active {
     background: var(--accent-color);
-    color: white;
-    border-color: transparent;
+    color: #000;
+    border: none;
 }
 
 /* ============================================================
@@ -2117,14 +2155,31 @@ body[data-theme="night"] .toggle-slider {
    ============================================================ */
 
 .full-player-queue-screen {
-    width: min(420px, calc(100% - 30px));
-    max-height: calc(100vh - 30px);
-    padding: 20px;
-    border-radius: 20px;
-    background: var(--card-bg);
+    width: min(480px, 100%);
+    max-height: 100vh;
+    padding: 0 24px 32px;
+    border-radius: 24px 24px 0 0;
+    background: linear-gradient(180deg, var(--card-bg) 0%, var(--bg-base) 100%);
     border: none;
     color: var(--text-color);
     overflow-y: auto;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.full-player-overlay.is-open .full-player-queue-screen {
+    transform: translateY(0);
+}
+
+.full-player-queue-screen::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--border-color);
+    margin: 10px auto 0;
 }
 
 .queue-screen-header {
@@ -2132,25 +2187,31 @@ body[data-theme="night"] .toggle-slider {
     align-items: center;
     gap: 14px;
     margin-bottom: 18px;
+    margin-top: 8px;
 }
 
 .queue-screen-back {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border: none;
     border-radius: 50%;
     background: var(--input-bg);
     color: var(--text-color);
-    font-size: 18px;
+    font-size: 20px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.15s ease;
+}
+
+.queue-screen-back:hover {
+    background: var(--card-bg-hover);
 }
 
 .queue-screen-title {
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .full-player-queue-list {
@@ -2170,7 +2231,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .full-player-queue-item:hover {
-    background: var(--input-bg);
+    background: var(--card-bg-hover);
 }
 
 .full-player-queue-item.is-current {
@@ -2205,6 +2266,7 @@ body[data-theme="night"] .toggle-slider {
 
 .full-player-queue-play {
     font-size: 18px;
+    color: var(--sub-text);
 }
 
 .queue-empty {
@@ -2222,7 +2284,7 @@ body[data-theme="night"] .toggle-slider {
     align-items: center;
     gap: 12px;
     padding: 10px 12px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     background: transparent;
     border: none;
     border-radius: 10px;
@@ -2232,7 +2294,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .spotify-playlist-card:hover {
-    background: var(--input-bg);
+    background: var(--card-bg-hover);
 }
 
 .spotify-playlist-card:active {
@@ -2330,13 +2392,13 @@ body[data-theme="night"] .toggle-slider {
 
 .spotify-open-button {
     display: inline-block;
-    padding: 6px 14px;
+    padding: 7px 16px;
     border-radius: 980px;
-    background: #1DB954;
-    color: white;
+    background: var(--accent-color);
+    color: #000;
     text-decoration: none;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .library-back-button {
@@ -2344,7 +2406,7 @@ body[data-theme="night"] .toggle-slider {
     background: transparent;
     color: var(--accent-color);
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
     padding: 4px 0 12px;
     cursor: pointer;
 }
@@ -2356,11 +2418,11 @@ body[data-theme="night"] .toggle-slider {
     padding: 12px;
     margin-bottom: 10px;
     background: var(--accent-color);
-    color: white;
+    color: #000;
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 2px 8px var(--accent-glow);
+    box-shadow: 0 2px 12px var(--accent-glow);
 }
 
 .library-loading,
@@ -2378,9 +2440,9 @@ body[data-theme="night"] .toggle-slider {
     border-radius: 10px;
     padding: 8px 14px;
     background: var(--accent-color);
-    color: white;
+    color: #000;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* ============================================================
@@ -2412,7 +2474,7 @@ body[data-theme="night"] .toggle-slider {
 .ai-mood-input > label {
     display: block;
     margin-bottom: 6px;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 15px;
 }
 
@@ -2429,7 +2491,7 @@ body[data-theme="night"] .toggle-slider {
     min-height: 76px;
     box-sizing: border-box;
     resize: vertical;
-    border: 1px solid var(--border-color);
+    border: none;
     border-radius: 12px;
     padding: 12px 14px;
     font: inherit;
@@ -2437,13 +2499,12 @@ body[data-theme="night"] .toggle-slider {
     background: var(--input-bg);
     color: var(--text-color);
     outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: box-shadow 0.2s;
 }
 
 .ai-mood-input textarea:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-    background: var(--card-bg);
+    box-shadow: 0 0 0 2px var(--accent-color);
+    background: var(--card-bg-hover);
 }
 
 .ai-mood-button {
@@ -2453,11 +2514,11 @@ body[data-theme="night"] .toggle-slider {
     border-radius: 12px;
     padding: 12px 16px;
     font: inherit;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     background: var(--accent-color);
-    color: #fff;
-    box-shadow: 0 2px 8px var(--accent-glow);
+    color: #000;
+    box-shadow: 0 2px 12px var(--accent-glow);
     transition: transform 0.15s, opacity 0.15s;
 }
 
@@ -2476,7 +2537,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .ai-mood-result-title {
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 6px;
 }
 
@@ -2496,7 +2557,7 @@ body[data-theme="night"] .toggle-slider {
 .ai-mood-keywords {
     display: inline-block;
     border-radius: 980px;
-    padding: 4px 10px;
+    padding: 5px 12px;
     background: var(--input-bg);
     border: none;
     font-size: 12px;
@@ -2515,7 +2576,7 @@ body[data-theme="night"] .toggle-slider {
 }
 
 .ai-mood-error {
-    color: #FF3B30;
+    color: #FF6B6B;
     font-size: 13px;
     line-height: 1.5;
 }
@@ -2527,29 +2588,31 @@ body[data-theme="night"] .toggle-slider {
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--border-color);
+    height: 6px;
+    border-radius: 3px;
+    background: var(--input-bg);
     outline: none;
 }
 
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
-    background: var(--text-color);
+    background: #FFFFFF;
     cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 input[type="range"]::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
-    background: var(--text-color);
+    background: #FFFFFF;
     cursor: pointer;
     border: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================================
@@ -2562,7 +2625,7 @@ input[type="range"]::-moz-range-thumb {
     }
 
     .main-header h1 {
-        font-size: 32px;
+        font-size: 34px;
     }
 
     .main-header p {
@@ -2583,7 +2646,7 @@ input[type="range"]::-moz-range-thumb {
     }
 
     .menu-title {
-        font-size: 17px;
+        font-size: 18px;
     }
 
     .menu-player-image {
@@ -2746,22 +2809,28 @@ input[type="range"]::-moz-range-thumb {
 
     .full-player-main,
     .full-player-queue-screen {
-        width: calc(100% - 20px);
-        max-height: calc(100vh - 20px);
-        padding: 16px;
-        border-radius: 18px;
+        width: 100%;
+        max-height: 100vh;
+        padding: 0 20px 28px;
+        border-radius: 20px 20px 0 0;
     }
 
     .full-player-art {
-        width: min(300px, 82vw);
+        width: min(280px, 78vw);
     }
 
     .full-player-title {
-        font-size: 18px;
+        font-size: 20px;
     }
 
     .full-player-controls {
-        gap: 20px;
+        gap: 24px;
+    }
+
+    .full-player-play {
+        width: 64px;
+        height: 64px;
+        font-size: 24px;
     }
 
     .library-playlist-header {
@@ -2812,7 +2881,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ============================================================
-   Classic (dark) テーマの調整
+   Classic (light) テーマの調整
    ============================================================ */
 
 body[data-theme="classic"] .menu-button,
@@ -2823,61 +2892,63 @@ body[data-theme="classic"] .player-panel {
 }
 
 body[data-theme="classic"] .spotify-save-box {
-    background: #1a1a28;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: #1D1D1F;
 }
 
 body[data-theme="classic"] .spotify-save-box p {
-    color: #b3b3b3;
+    color: #86868B;
 }
 
 body[data-theme="classic"] #spotifyPlaylistName {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #1D1D1F;
 }
 
 body[data-theme="classic"] .spotify-cancel-button {
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
+    background: rgba(0, 0, 0, 0.06);
+    color: #1D1D1F;
 }
 
 body[data-theme="classic"] .spotify-save-close {
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
+    background: rgba(0, 0, 0, 0.06);
+    color: #1D1D1F;
 }
 
 body[data-theme="classic"] .ai-mood-error {
-    color: #ff6b6b;
+    color: #d63031;
 }
 
 body[data-theme="classic"] .toggle-slider {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.12);
 }
 
 body[data-theme="classic"] .toggle-slider::before {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
-/* ======================================
-   追加: classic テーマのカード透過対応
-   ====================================== */
-
-body[data-theme="classic"] .picker-box,
-body[data-theme="classic"] .content-box,
-body[data-theme="classic"] .spotify-box,
-body[data-theme="classic"] .library-section {
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+body[data-theme="classic"] .full-player-overlay {
+    background: rgba(0, 0, 0, 0.5);
 }
 
-body[data-theme="classic"] .track-card {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+body[data-theme="classic"] .full-player-main,
+body[data-theme="classic"] .full-player-queue-screen {
+    background: linear-gradient(180deg, #FFFFFF 0%, #F5F5F7 100%);
 }
 
-body[data-theme="classic"] .spotify-playlist-card {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+body[data-theme="classic"] .full-player-main::before,
+body[data-theme="classic"] .full-player-queue-screen::before {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+body[data-theme="classic"] .play-button {
+    background: #1D1D1F;
+    color: #fff;
+}
+
+body[data-theme="classic"] .menu-player-button.menu-play-button {
+    background: var(--accent-color);
+    color: #000;
 }
