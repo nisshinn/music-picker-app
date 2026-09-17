@@ -1,0 +1,19 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "SPOTIFY_CLIENT_ID",
+      "description": "Spotify app Client ID from the Spotify Developer Dashboard (https://developer.spotify.com/dashboard)"
+    },
+    {
+      "name": "SPOTIFY_CLIENT_SECRET",
+      "description": "Spotify app Client Secret from the Spotify Developer Dashboard (https://developer.spotify.com/dashboard)"
+    },
+    {
+      "name": "GEMINI_API_KEY",
+      "description": "Google Gemini API key from Google AI Studio (https://aistudio.google.com/apikey)"
+    }
+  ]
+}
