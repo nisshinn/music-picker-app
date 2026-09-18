@@ -3610,45 +3610,6 @@ async function handleTrackEnded() {
     }
 }
 // ============================================================
-// フルスクリーンプレイヤー
-// ============================================================
-function setupFullPlayer() {
-    const panel = document.getElementById("playerPanel");
-    const full = document.getElementById("fullPlayer");
-    const close = document.getElementById("fullPlayerClose");
-    if (!panel || !full || !close || full.dataset.ready) return;
-    full.dataset.ready = "1";
-    const open = () => {
-        if (!currentTrackData) return;
-        const t = normalizeTrack(currentTrackData);
-        if (!t) return;
-        const img = document.getElementById("fullPlayerImage");
-        const title = document.getElementById("fullPlayerTitle");
-        const artist = document.getElementById("fullPlayerArtist");
-        if (img) img.src = t.image || "";
-        if (title) title.textContent = t.title || "曲名なし";
-        if (artist) artist.textContent = getArtistText(t);
-        full.classList.add("open");
-        full.setAttribute("aria-hidden", "false");
-        document.body.classList.add("full-player-open");
-    };
-    const shut = () => {
-        full.classList.remove("open");
-        full.setAttribute("aria-hidden", "true");
-        document.body.classList.remove("full-player-open");
-    };
-    panel.addEventListener("dblclick", open);
-    panel.addEventListener("click", (e) => {
-        if (e.target.closest("button,input,a")) return;
-        open();
-    });
-    close.addEventListener("click", shut);
-    document.getElementById("fullPlayerPrev")?.addEventListener("click", () => document.getElementById("previousButton")?.click());
-    document.getElementById("fullPlayerNext")?.addEventListener("click", () => document.getElementById("nextButton")?.click());
-    document.getElementById("fullPlayerPlay")?.addEventListener("click", () => document.getElementById("playPauseButton")?.click());
-}
-
-// ============================================================
 // Spotifyデバイス待機
 // ============================================================
 
