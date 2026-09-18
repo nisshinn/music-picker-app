@@ -17,3 +17,190 @@
 .artist-results{display:flex;flex-direction:column;gap:6px;margin-top:8px}.artist-result{display:flex!important;align-items:center!important;gap:10px!important;width:100%!important;min-height:58px!important;padding:6px 8px!important;background:#151a1a!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:10px!important;cursor:pointer!important;overflow:hidden!important}.artist-result img{width:44px!important;height:44px!important;min-width:44px!important;max-width:44px!important;min-height:44px!important;max-height:44px!important;object-fit:cover!important;border-radius:50%!important;display:block!important}.artist-result span{font-size:12px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}.artist-result:hover{background:#1c2323!important}
 .full-player-overlay{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;z-index:99999!important;background:#080c0d!important;display:none!important;align-items:stretch!important;justify-content:center!important;overflow:auto!important;padding:0!important;touch-action:auto!important}.full-player-overlay.is-open{display:flex!important}.full-player-main{width:100%!important;min-height:100dvh!important;max-width:none!important;background:#080c0d!important;padding:clamp(18px,4vw,48px) clamp(16px,5vw,72px) 40px!important;display:flex!important;flex-direction:column!important}.full-player-top{width:100%!important;display:grid!important;grid-template-columns:48px 1fr 48px!important;align-items:center!important;min-height:44px!important}.full-player-top-title{text-align:center!important;font-size:14px!important;font-weight:700!important}.full-player-close,.full-player-queue-button{width:42px!important;height:42px!important;border:0!important;border-radius:50%!important;background:#171d1e!important;color:#fff!important;cursor:pointer!important}.full-player-art-wrap{flex:1!important;min-height:0!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:clamp(18px,5vh,54px) 0!important}.full-player-art{display:block!important;width:min(62vh,70vw,560px)!important;height:min(62vh,70vw,560px)!important;max-width:100%!important;max-height:62vh!important;object-fit:cover!important;border-radius:12px!important;box-shadow:0 20px 70px #0008!important}.full-player-info{width:min(700px,100%)!important;margin:0 auto!important;display:flex!important;align-items:center!important;gap:12px!important}.full-player-text{flex:1!important;min-width:0!important}.full-player-title{font-size:clamp(18px,3vw,28px)!important;font-weight:800!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}.full-player-artist{font-size:13px!important;color:#899393!important;margin-top:5px!important}.full-player-favorite{width:42px!important;height:42px!important;border:1px solid #333!important;background:#151a1a!important;color:#fff!important;border-radius:50%!important}.full-player-progress-area{width:min(700px,100%)!important;margin:22px auto 0!important}.full-player-progress{width:100%!important;accent-color:var(--green)!important}.full-player-times{display:flex!important;justify-content:space-between!important;font-size:10px!important;color:#858f8f!important}.full-player-controls{width:min(500px,100%)!important;margin:20px auto 0!important;display:flex!important;justify-content:center!important;align-items:center!important;gap:36px!important}.full-player-control{width:48px!important;height:48px!important;border:0!important;background:transparent!important;color:#fff!important;border-radius:50%!important;font-size:22px!important;cursor:pointer!important}.full-player-play{width:66px!important;height:66px!important;background:#fff!important;color:#111!important;font-size:25px!important}.full-player-volume,.full-player-extra{width:min(500px,100%)!important;margin:18px auto 0!important}.full-player-extra{display:flex!important;justify-content:center!important;gap:10px!important}.full-player-extra button{background:#151a1a!important;border:1px solid #303636!important;color:#ddd!important;border-radius:999px!important;padding:8px 13px!important}.full-player-queue-screen{width:100%!important;min-height:100dvh!important;background:#080c0d!important;padding:20px!important}.full-player-queue-list{max-width:800px!important;margin:0 auto!important}.full-player-queue-item{display:flex!important;align-items:center!important;gap:12px!important;padding:10px!important;border-bottom:1px solid #222!important}.full-player-queue-item img{width:52px!important;height:52px!important;object-fit:cover!important;border-radius:7px!important}.queue-screen-header{display:flex!important;align-items:center!important;gap:15px!important;max-width:800px!important;margin:0 auto 15px!important}.queue-screen-back{border:0!important;background:#171d1e!important;color:#fff!important;border-radius:50%!important;width:40px!important;height:40px!important}
 @media(max-width:560px){.artist-result{min-height:54px!important}.artist-result img{width:40px!important;height:40px!important;min-width:40px!important;max-width:40px!important;min-height:40px!important;max-height:40px!important}.full-player-main{padding:12px 14px 26px!important}.full-player-art-wrap{padding:12px 0!important}.full-player-art{width:min(82vw,52vh)!important;height:min(82vw,52vh)!important;max-height:52vh!important}.full-player-title{font-size:19px!important}.full-player-controls{gap:24px!important;margin-top:14px!important}.full-player-control{width:44px!important;height:44px!important}.full-player-play{width:62px!important;height:62px!important}.full-player-volume{margin-top:10px!important}.full-player-extra{margin-top:10px!important}}
+
+/* =========================================================
+   プレイリスト・再生・Spotify保存
+   ========================================================= */
+#playlist{
+  width:100%;
+  margin:18px auto 0;
+  padding:16px;
+  background:#111617;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.16);
+}
+#playlist .playlist-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 12px;
+}
+#playlist .playlist-header h2{
+  margin:0;
+  color:#f5f7f7;
+  font-size:17px;
+  font-weight:800;
+  line-height:1.3;
+}
+.play-all-button,
+.spotify-save-button{
+  appearance:none;
+  border:0;
+  min-height:38px;
+  padding:0 16px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:transform .15s ease,filter .15s ease,background .15s ease;
+}
+.play-all-button{
+  background:#00e676;
+  color:#00150a;
+  box-shadow:0 5px 16px rgba(0,230,118,.16);
+}
+.spotify-save-button{
+  display:block;
+  margin:0 0 12px auto;
+  background:#1b2422;
+  color:#00e676;
+  border:1px solid rgba(0,230,118,.45);
+}
+.play-all-button:hover,
+.spotify-save-button:hover{
+  filter:brightness(1.08);
+  transform:translateY(-1px);
+}
+.play-all-button:active,
+.spotify-save-button:active{
+  transform:scale(.97);
+}
+#playlist .track-card{
+  position:relative;
+  display:grid;
+  grid-template-columns:56px minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  min-height:78px;
+  padding:10px 4px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+#playlist .track-card:last-child{border-bottom:0}
+#playlist .track-image{
+  width:56px!important;
+  height:56px!important;
+  min-width:56px!important;
+  max-width:56px!important;
+  object-fit:cover;
+  border-radius:8px;
+}
+#playlist .track-info{min-width:0}
+#playlist .track-title{
+  color:#f5f7f7;
+  font-size:13px;
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#playlist .track-artist{
+  margin-top:3px;
+  color:#7f8a8a;
+  font-size:10px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#playlist .track-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:5px;
+  flex-wrap:nowrap;
+}
+#playlist .track-actions button,
+#playlist .track-actions a{
+  width:34px;
+  height:34px;
+  min-width:34px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:9px;
+  font-size:14px;
+  cursor:pointer;
+  text-decoration:none;
+}
+#playlist .track-play-button{
+  background:#f4f7f7;
+  color:#101414;
+  border:0;
+  font-size:13px!important;
+}
+#playlist .preview-button,
+#playlist .favorite-button,
+#playlist .share-button{
+  background:#1c2222;
+  color:#dfe5e5;
+  border:1px solid rgba(255,255,255,.08);
+}
+#playlist .favorite-button.is-favorite,
+#playlist .favorite-button.active{
+  color:#ff4d72;
+}
+#playlist .spotify-button{
+  width:auto!important;
+  min-width:62px!important;
+  padding:0 10px!important;
+  border-radius:999px!important;
+  background:#00e676;
+  color:#00150a;
+  border:0;
+  font-size:10px!important;
+  font-weight:800;
+}
+#playlist .track-card.playing{
+  background:rgba(0,230,118,.055);
+  border-radius:10px;
+}
+#playlist .track-card.playing .track-title{
+  color:#00e676;
+}
+@media(max-width:700px){
+  #playlist{padding:12px;border-radius:14px}
+  #playlist .playlist-header{align-items:stretch;flex-direction:column}
+  #playlist .playlist-header h2{font-size:15px}
+  .play-all-button{width:100%}
+  .spotify-save-button{width:100%;margin:0 0 10px}
+  #playlist .track-card{
+    grid-template-columns:48px minmax(0,1fr);
+    gap:9px;
+    padding:9px 2px;
+  }
+  #playlist .track-image{
+    width:48px!important;height:48px!important;
+    min-width:48px!important;max-width:48px!important;
+  }
+  #playlist .track-actions{
+    grid-column:2;
+    justify-content:flex-start;
+    flex-wrap:wrap;
+  }
+  #playlist .track-actions button,
+  #playlist .track-actions a{
+    width:32px;height:32px;min-width:32px;
+  }
+  #playlist .spotify-button{
+    min-width:60px!important;
+  }
+}
+@media(max-width:390px){
+  #playlist .track-actions{gap:3px}
+  #playlist .track-actions button,
+  #playlist .track-actions a{width:30px;height:30px;min-width:30px;font-size:13px}
+  #playlist .spotify-button{min-width:56px!important;padding:0 7px!important;font-size:9px!important}
+}
