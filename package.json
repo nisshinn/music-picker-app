@@ -1,15 +1,18 @@
 {
   "name": "music-picker",
   "version": "1.0.0",
-  "description": "",
+  "description": "Discover music through mood, artist, genre with Spotify and Google Gemini AI",
   "main": "server.js",
   "scripts": {
-    "dev": "node server.js",
     "start": "node server.js",
-    "build": "echo 'Build complete'",
-    "lint": "node --check server.js"
+    "dev": "node --watch server.js"
   },
-  "keywords": [],
+  "keywords": [
+    "spotify",
+    "gemini",
+    "music-player",
+    "recommendation"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
