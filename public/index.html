@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Music Picker - Spotify × Gemini AI</title>
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
     <link rel="icon" type="image/png" href="/icon.png">
@@ -246,6 +246,21 @@
         </section>
     </section>
 
+    <section id="playlistDetailPage" class="page" aria-labelledby="playlistName">
+        <button id="playlistBack" class="detail-secondary" type="button">← ライブラリに戻る</button>
+        <header class="playlist-detail-header">
+            <h1 id="playlistName">プレイリスト</h1>
+            <p id="playlistDescription"></p>
+            <p id="playlistMeta"></p>
+            <div class="playlist-detail-actions">
+                <button id="playlistPlay" class="detail-play" type="button" disabled>▶ 再生</button>
+                <a id="playlistSpotifyLink" class="detail-secondary" target="_blank" rel="noopener noreferrer">Spotifyで開く ↗</a>
+                <button id="playlistRetry" class="detail-secondary" type="button" hidden>再読み込み</button>
+            </div>
+        </header>
+        <div id="playlistTracks" aria-live="polite"></div>
+    </section>
+
     <!-- 履歴 -->
     <section id="historyPage" class="page">
         <div class="page-header">
@@ -291,7 +306,7 @@
 </nav>
 
 <!-- Spotifyプレイヤーパネル（下部固定） -->
-<div id="playerPanel" class="player-panel" style="display:none;">
+<div id="playerPanel" class="player-panel" tabindex="0" aria-label="プレイヤーを開く" style="display:none;">
     <div class="player-main">
         <img id="playerImage" class="player-image" src="" alt="">
         <div class="player-info">
@@ -317,7 +332,7 @@
 </div>
 
 <!-- フルスクリーンプレイヤー（下部の再生バーをタップで開く） -->
-<div id="fullPlayer" class="full-player" aria-hidden="true" role="dialog" aria-label="フルスクリーンプレイヤー">
+<div id="fullPlayer" class="full-player" aria-hidden="true" role="dialog" aria-modal="true" aria-label="フルスクリーンプレイヤー">
     <div class="fp-main">
         <div class="fp-topbar">
             <button id="fpClose" class="fp-icon-button" type="button" aria-label="閉じる">×</button>
@@ -355,7 +370,8 @@
     <aside id="fpQueue" class="fp-queue" aria-label="再生リスト">
         <div class="fp-queue-header">
             <button id="fpQueueBack" class="fp-icon-button" type="button" aria-label="再生リストを閉じる">←</button>
-            <span>再生リスト</span>
+            <span>次に再生</span>
+            <button id="fpQueueRefresh" class="detail-secondary" type="button">更新</button>
         </div>
         <div id="fpQueueList" class="fp-queue-list"></div>
     </aside>

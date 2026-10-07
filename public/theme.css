@@ -463,3 +463,64 @@ body #settingsPage .settings-box .danger-button { color: var(--danger) !importan
   .fp-art { width: min(100%, 34vh); }
   .fp-body { gap: 8px; }
 }
+
+/* Keep the final action above both fixed controls, including phone safe areas. */
+body #app { padding-bottom: calc(230px + env(safe-area-inset-bottom, 0px)) !important; }
+html { scroll-padding-bottom: calc(230px + env(safe-area-inset-bottom, 0px)); }
+body .bottom-nav { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+body .player-panel { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+.player-main, .player-controls, .player-image { flex-shrink: 0; }
+.progress-container input, .volume-container input { min-width: 0; }
+.playlist-header, .spotify-box { flex-wrap: wrap; }
+button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+  outline: 3px solid var(--green); outline-offset: 3px;
+}
+#playlistDetailPage { max-width: 1080px; margin: 0 auto; }
+.playlist-detail-header { margin: 20px 0; overflow-wrap: anywhere; }
+.playlist-detail-header h1 { font-size: clamp(22px, 4vw, 32px); margin: 0 0 12px; }
+.playlist-detail-header p { color: var(--muted); line-height: 1.6; }
+.playlist-detail-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.detail-play, .detail-secondary {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: 10px 16px; border-radius: 24px;
+  border: 1px solid var(--border); background: var(--btn); color: var(--text);
+  font-size: 14px; text-decoration: none;
+}
+.detail-play { background: var(--solid); color: var(--solid-text); font-weight: 700; min-width: 110px; }
+.detail-play:disabled { opacity: .5; cursor: default !important; }
+[hidden] { display: none !important; }
+#fpQueueRefresh { margin-left: auto; }
+body #playlistList { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)) !important; gap: 12px !important; }
+body .spotify-playlist-card { display: flex; align-items: center; gap: 12px; padding: 12px !important; min-height: 92px !important; text-align: left; }
+body .spotify-playlist-image { float: none !important; flex: 0 0 64px; width: 64px !important; height: 64px !important; margin: 0 !important; }
+body .spotify-playlist-info { min-width: 0; min-height: 0 !important; padding-right: 12px !important; }
+body .spotify-playlist-name { font-size: 14px !important; line-height: 1.5 !important; overflow-wrap: anywhere; }
+body .spotify-playlist-count { font-size: 12px !important; }
+body #favoritesList, body #historyList { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)) !important; }
+.track-card { grid-template-columns: 52px minmax(0, 1fr); }
+.track-actions { grid-column: 2; flex-wrap: wrap; }
+.track-title, .track-artist { overflow-wrap: anywhere; }
+.track-play-button, .track-actions .favorite-button { min-width: 44px; min-height: 44px; }
+.track-actions .spotify-button { min-height: 44px; display: inline-flex; align-items: center; }
+.fp-queue { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+.fp-body { flex: 1 0 auto; padding: 12px 0; }
+.fp-icon-button { min-width: 44px; min-height: 44px; }
+
+@media (max-width: 900px) {
+  body #app { padding-top: calc(64px + env(safe-area-inset-top, 0px)) !important; }
+  body .menu-button { top: calc(10px + env(safe-area-inset-top, 0px)) !important; }
+  .artist-search, .big-search, .genre-select, .ai-mood-input textarea { font-size: 16px; }
+  body .player-panel .volume-container { display: none; }
+  .player-button { width: 40px; height: 40px; }
+  .player-main { gap: 8px; }
+  .player-controls { gap: 2px; }
+  .bottom-nav-link { font-size: 11px; }
+  .spotify-status { width: 100%; }
+}
+@media (max-width: 380px) {
+  body .player-panel { padding: 10px; }
+  .player-image { width: 36px; height: 36px; }
+  .player-title { font-size: 12px; }
+  .player-main { gap: 6px; }
+  .fp-queue { padding-left: 10px; padding-right: 10px; }
+}
