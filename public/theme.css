@@ -595,3 +595,6 @@ body #favoritesList, body #historyList { grid-template-columns: repeat(auto-fit,
   #playlistTracks .track-info { grid-column: 2; }
   #playlistTracks .track-actions { grid-column: 2; grid-row: 2; flex-wrap: wrap; gap: 8px; }
 }
+
+.playback-mode-help { color: var(--muted); font-size: 11px; line-height: 1.6; margin: 8px 0 0; }
+.fp-body > .playback-mode-help { max-width: 340px; text-align: center; }

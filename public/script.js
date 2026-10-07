@@ -5,7 +5,23 @@
 const LIBRARY_PLAYLISTS_KEY = "music_picker_playlists";
 
 let trackEndTimer = null;
-let trackChangeLock = false;
+let confirmationTimer = null;
+let transitionPromise = null;
+let playbackPending = false;
+let managedTrackConfirmed = false;
+let playbackStopped = false;
+let playOrder = [];
+let nextCycleOrder = null;
+let playbackWrite = Promise.resolve();
+let infiniteStarting = false;
+let orderCursor = 0;
+let infiniteMode = false;
+let infiniteRequestId = 0;
+let infiniteLoading = false;
+let infinitePage = 0;
+let infiniteRecent = [];
+let infiniteCatalog = [];
+let infiniteArtist = "";
 let playbackGeneration = 0;
 let selectedMood = "";
 let aiMoodText = "";
@@ -36,7 +52,6 @@ let playerClock = { position: 0, duration: 0, paused: true, ts: Date.now(), trac
 let isSeeking = false;
 let progressTimer = null;
 let endHandled = false;
-let contextMode = false; // Spotifyプレイリスト丸ごと再生中
 let playlistLoadId = 0;
 let playlistDetailLoadId = 0;
 let spotifyQueue = [];
@@ -444,10 +459,6 @@ async function makePlaylist() {
       throw new Error("条件に合う曲が見つかりませんでした。別の気分やアーティストをお試しください。");
     }
 
-    currentPlaylist = tracks;
-    currentTrackIndex = 0;
-    isPlaylistMode = true;
-
     displayPlaylist(tracks);
     showToast("🎵 新しいおすすめ5曲を作りました！");
   } catch (err) {
@@ -485,10 +496,7 @@ function displayPlaylist(playlist) {
   playAll.textContent = "▶ まとめて再生";
   playAll.style.cssText = "background:#00e676;color:#000;border:0;border-radius:999px;padding:6px 14px;font-weight:bold;cursor:pointer;";
   playAll.addEventListener("click", () => {
-    currentPlaylist = playlist;
-    currentTrackIndex = 0;
-    isPlaylistMode = true;
-    playTrack(playlist[0], 0, true);
+    startTrackList(playlist);
   });
   header.appendChild(playAll);
   container.appendChild(header);
@@ -514,17 +522,7 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   // 一覧の中の曲を押したら、その一覧を再生リストにして次/前の曲に進めるようにする
   const playFromCard = () => {
     if (onPlay) return onPlay();
-    if (queue && queue.length) {
-      currentPlaylist = queue;
-      currentTrackIndex = index;
-      isPlaylistMode = true;
-      playTrack(track, index, true);
-    } else {
-      currentPlaylist = [track];
-      currentTrackIndex = 0;
-      isPlaylistMode = false;
-      playTrack(track, 0, false);
-    }
+    startTrackList(queue?.length ? queue : [track], queue?.length ? index : 0);
   };
 
   const img = document.createElement("img");
@@ -615,42 +613,177 @@ async function getFreshSpotifyToken(force = false) {
   }
 }
 
+function shuffleIndices(indices) {
+  const result = [...indices];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+function rebuildRemainingOrder() {
+  nextCycleOrder = null;
+  const past = playOrder.slice(0, orderCursor + 1);
+  const remaining = playOrder.slice(orderCursor + 1);
+  playOrder = [...past, ...(appSettings.shuffle ? shuffleIndices(remaining) : remaining.sort((a, b) => a - b))];
+}
+
+function startTrackList(tracks, index = 0) {
+  if (!tracks?.length || !tracks[index]?.uri) return;
+  playbackGeneration++;
+  transitionPromise = null;
+  setInfiniteMode(false);
+  currentPlaylist = tracks.map(normalizeTrack);
+  playOrder = currentPlaylist.map((_, i) => i);
+  infinitePage = 0;
+  infiniteRecent = [];
+  infiniteCatalog = [];
+  infiniteArtist = "";
+  orderCursor = index;
+  rebuildRemainingOrder();
+  return playTrack(currentPlaylist[index], index, true);
+}
+
 async function playTrack(track, index = 0, playlistMode = false) {
   const requestId = ++playbackRequestId;
+  clearTimeout(trackEndTimer);
+  clearTimeout(confirmationTimer);
+  playbackPending = true;
+  managedTrackConfirmed = false;
+  playbackStopped = false;
   track = normalizeTrack(track);
-  if (!track || !track.uri) {
-    alert("この曲は再生できません。");
-    return;
-  }
-
+  if (!track?.uri) { playbackPending = false; return false; }
+  // Must run during the click gesture on mobile browsers.
+  spotifyPlayer?.activateElement?.().catch(() => {});
   spotifyToken = await getFreshSpotifyToken(false);
-  if (requestId !== playbackRequestId) return;
+  if (requestId !== playbackRequestId) return false;
   if (!spotifyToken) {
-    alert("SpotifyにログインするとWebブラウザ上でフル再生ができます。");
-    const loginBtn = document.getElementById("spotifyLoginButton");
-    loginBtn?.click();
-    return;
+    playbackPending = false;
+    playbackStopped = true;
+    spotifyPlayer?.pause().catch(() => {});
+    showToast("Spotifyにログインしてから再生してください");
+    return false;
+  }
+  if (!spotifyPlayer) setupSpotifyPlayer();
+  await waitForDevice();
+  if (requestId !== playbackRequestId) return false;
+  if (!spotifyPlayer || !spotifyDeviceId) {
+    playbackPending = false;
+    playbackStopped = true;
+    spotifyPlayer?.pause().catch(() => {});
+    showToast("このブラウザの再生準備ができていません。Spotifyに再ログインしてお試しください");
+    return false;
   }
 
-  if (!spotifyPlayer) setupSpotifyPlayer();
-
-  contextMode = false;
   localPlayback = true;
   queueRequestId++;
   endHandled = false;
   currentTrackData = track;
   currentTrackIndex = index;
   isPlaylistMode = playlistMode;
-
+  const cursor = playOrder.indexOf(index);
+  if (cursor >= 0) orderCursor = cursor;
   resetPlayerClock(track.id);
   renderQueue();
   showPlayerPanel();
   updatePlayerInfo(track);
   updateMediaSession(track);
+  // Send only the selected track. The app owns advancement, repeat and shuffle.
+  try { await spotifyPlayer.pause(); } catch {
+    if (requestId !== playbackRequestId) return false;
+    playbackPending = false;
+    playbackStopped = true;
+    showToast("再生の切り替えに失敗しました。もう一度お試しください");
+    return false;
+  }
+  if (requestId !== playbackRequestId) return false;
+  const success = await startPlayback({ uris: [track.uri], position_ms: 0 });
+  if (requestId !== playbackRequestId) return false;
+  playbackPending = false;
+  playbackStopped = !success;
+  if (success) {
+    saveToHistory([track]);
+    const state = await spotifyPlayer.getCurrentState().catch(() => null);
+    if (requestId === playbackRequestId && state) onSpotifyPlayerState(state);
+    if (requestId === playbackRequestId && !managedTrackConfirmed) {
+      confirmationTimer = setTimeout(() => {
+        if (requestId !== playbackRequestId || managedTrackConfirmed) return;
+        playbackStopped = true;
+        spotifyPlayer?.pause().catch(() => {});
+        setPlaybackIcon(true);
+        showToast("選んだ曲の再生を確認できませんでした。再生ボタンでもう一度お試しください");
+      }, 8000);
+    }
+  }
+  return success;
+}
 
-  await waitForDevice();
-  if (requestId !== playbackRequestId) return;
-  if (await startPlayback({ uris: [track.uri], position_ms: 0 })) saveToHistory([track]);
+// Stop Spotify autoplay (or its saved repeat mode) from changing the app's list.
+function onSpotifyPlayerState(state) {
+  if (!state) return;
+  const track = state.track_window?.current_track;
+  if (localPlayback) {
+    if (playbackPending) return;
+    if (playbackStopped || endHandled) {
+      if (!state.paused) spotifyPlayer?.pause().catch(() => {});
+      return;
+    }
+    const matches = track?.uri === currentTrackData?.uri || track?.linked_from?.uri === currentTrackData?.uri;
+    if (!matches) {
+      // The SDK may still report the old URI just after a successful play request.
+      if (!managedTrackConfirmed) return;
+      if (!state.paused) spotifyPlayer?.pause().catch(() => {});
+      finishManagedTrack();
+      return;
+    }
+    clearTimeout(confirmationTimer);
+    managedTrackConfirmed = true;
+    updatePlayerState(state);
+    return;
+  }
+  updatePlayerState(state);
+  if (track) {
+    currentTrackData = normalizeTrack(track);
+    showPlayerPanel();
+    updatePlayerInfo(currentTrackData);
+    updateMediaSession(currentTrackData);
+  }
+}
+
+function scheduleTrackEnd() {
+  clearTimeout(trackEndTimer);
+  if (!localPlayback || playbackPending || playbackStopped || playerClock.paused || !playerClock.duration || endHandled) return;
+  const generation = playbackGeneration;
+  const requestId = playbackRequestId;
+  trackEndTimer = setTimeout(() => {
+    if (generation === playbackGeneration && requestId === playbackRequestId && !isSeeking) finishManagedTrack();
+  }, Math.max(0, playerClock.duration - clockPosition()));
+}
+
+function finishManagedTrack() {
+  if (endHandled || playbackPending || playbackStopped) return;
+  endHandled = true;
+  clearTimeout(trackEndTimer);
+  const generation = playbackGeneration;
+  const requestId = playbackRequestId;
+  const pause = spotifyPlayer ? spotifyPlayer.pause() : Promise.resolve();
+  return pause.then(() => {
+    if (generation !== playbackGeneration || requestId !== playbackRequestId) return;
+    playerClock = { ...playerClock, paused: true, position: playerClock.duration, ts: Date.now() };
+    setPlaybackIcon(true);
+    renderProgress(playerClock.position);
+    return handleTrackEnded();
+  }).catch(() => {
+    if (generation !== playbackGeneration || requestId !== playbackRequestId) return;
+    playbackStopped = true;
+    showToast("再生を停止できませんでした。通信状況を確認してください");
+  });
+}
+
+function setPlaybackIcon(paused) {
+  const icon = paused ? "▶\uFE0E" : "⏸\uFE0E";
+  ["playPauseButton", "menuPlayPauseButton", "fpPlay"].forEach(id => setText(id, icon));
 }
 
 function resetPlayerClock(trackId = "") {
@@ -665,7 +798,15 @@ async function waitForDevice(timeout = 4000) {
   }
 }
 
-async function startPlayback(body) {
+function startPlayback(body) {
+  const requestId = playbackRequestId;
+  const operation = playbackWrite.then(() => sendPlayback(body, requestId));
+  playbackWrite = operation.catch(() => false);
+  return operation;
+}
+
+async function sendPlayback(body, requestId) {
+  if (requestId !== playbackRequestId) return false;
   const send = () =>
     fetch(`https://api.spotify.com/v1/me/player/play${spotifyDeviceId ? `?device_id=${encodeURIComponent(spotifyDeviceId)}` : ""}`, {
       method: "PUT",
@@ -679,6 +820,7 @@ async function startPlayback(body) {
     let res = await send();
     if (res.status === 401) {
       spotifyToken = await getFreshSpotifyToken(true);
+      if (requestId !== playbackRequestId) return false;
       res = await send();
     }
     if (!res.ok && res.status !== 204) {
@@ -715,20 +857,7 @@ function setupSpotifyPlayer() {
     showSpotifyStatus("✓ Spotify接続済み");
   });
 
-  spotifyPlayer.addListener("player_state_changed", (state) => {
-    if (!state) return;
-    updatePlayerState(state);
-    const curr = state.track_window?.current_track;
-    if (curr) {
-      showPlayerPanel();
-      const changed = currentTrackData?.uri !== curr.uri;
-      currentTrackData = normalizeTrack(curr);
-      if (changed) saveToHistory([currentTrackData]);
-      if (contextMode && document.getElementById("fullPlayer")?.classList.contains("queue-open")) refreshSpotifyQueue();
-      updatePlayerInfo(currentTrackData);
-      updateMediaSession(currentTrackData);
-    }
-  });
+  spotifyPlayer.addListener("player_state_changed", onSpotifyPlayerState);
 
   spotifyPlayer.addListener("not_ready", () => { spotifyDeviceId = ""; });
   ["initialization_error", "authentication_error", "account_error", "playback_error"].forEach((event) => {
@@ -753,7 +882,7 @@ function showPlayerPanel() {
 function updatePlayerVisibility() {
   const panel = document.getElementById("playerPanel");
   if (!panel) return;
-  panel.style.display = appSettings.alwaysShowPlayer || currentTrackData || contextMode ? "block" : "none";
+  panel.style.display = appSettings.alwaysShowPlayer || currentTrackData ? "block" : "none";
 }
 
 function setText(id, text) {
@@ -811,45 +940,20 @@ function renderProgress(pos) {
 }
 
 function updatePlayerState(state) {
-  if (contextMode) {
-    if (typeof state.shuffle === "boolean") appSettings.shuffle = state.shuffle;
-    if ([0, 1, 2].includes(state.repeat_mode)) appSettings.repeat = ["off", "all", "one"][state.repeat_mode];
-    const shuffle = document.getElementById("shuffleToggle");
-    if (shuffle) shuffle.checked = appSettings.shuffle;
-    const repeat = document.getElementById("repeatMode");
-    if (repeat) repeat.value = appSettings.repeat;
-    renderFpExtras();
-  }
   const before = playerClock;
   const expected = clockPosition(before);
   const curr = state.track_window?.current_track;
-
+  // Spotify may repeat the same URI without first emitting a paused state.
+  const restartedAtEnd = localPlayback && managedTrackConfirmed && !isSeeking && before.duration > 0 &&
+    before.trackId === curr?.id && expected >= before.duration - 1500 && state.position < 1000;
+  if (restartedAtEnd) { finishManagedTrack(); return; }
   playerClock = {
-    position: state.position,
-    duration: state.duration,
-    paused: state.paused,
-    ts: Date.now(),
-    trackId: curr?.id || "",
+    position: state.position, duration: state.duration, paused: state.paused,
+    ts: Date.now(), trackId: curr?.id || "",
   };
-
-  const icon = state.paused ? "▶\uFE0E" : "⏸\uFE0E"; // \uFE0E = 絵文字ではなく文字として表示
-  setText("playPauseButton", icon);
-  setText("menuPlayPauseButton", icon);
-  setText("fpPlay", icon);
+  setPlaybackIcon(state.paused);
   renderProgress(state.position);
-
-  // 曲が最後まで再生されて止まった場合 → 自動再生/リピート処理
-  const endedNaturally =
-    state.paused &&
-    state.position === 0 &&
-    before.duration > 0 &&
-    before.trackId === playerClock.trackId &&
-    expected >= before.duration - 3500;
-  if (endedNaturally && !endHandled) {
-    endHandled = true;
-    handleTrackEnded();
-  }
-  if (!state.paused) endHandled = false;
+  scheduleTrackEnd();
 }
 
 function startProgressTimer() {
@@ -863,7 +967,7 @@ function startProgressTimer() {
       spotifyPlayer
         .getCurrentState()
         .then((st) => {
-          if (st && !isSeeking) updatePlayerState(st);
+          if (st && !isSeeking) onSpotifyPlayerState(st);
         })
         .catch(() => {});
     }
@@ -875,6 +979,7 @@ function bindSeekBar(id) {
   if (!el) return;
   el.addEventListener("input", () => {
     isSeeking = true;
+    clearTimeout(trackEndTimer);
     const pos = Number(el.value);
     ["progressBar", "menuProgressBar", "fpProgress"].forEach((bid) => {
       const b = document.getElementById(bid);
@@ -892,7 +997,8 @@ function bindSeekBar(id) {
     renderProgress(pos);
     try {
       await spotifyPlayer?.seek(pos);
-    } catch {}
+      scheduleTrackEnd();
+    } catch { scheduleTrackEnd(); }
   });
 }
 
@@ -908,65 +1014,139 @@ function setVolume(value) {
   if (spotifyPlayer) spotifyPlayer.setVolume(v / 100).catch(() => {});
 }
 
-function togglePlay() {
-  if (spotifyPlayer && (currentTrackData || contextMode)) {
-    spotifyPlayer.togglePlay();
+async function togglePlay() {
+  if (infiniteLoading) { setInfiniteMode(false); return; }
+  if (playbackPending) return;
+  if (localPlayback && (playbackStopped || endHandled) && currentTrackData) {
+    return playTrack(currentTrackData, currentTrackIndex, isPlaylistMode);
+  }
+  if (spotifyPlayer && currentTrackData) {
+    try { await spotifyPlayer.togglePlay(); } catch { showToast("再生操作に失敗しました。通信状況を確認してください"); }
   } else if (currentPlaylist.length) {
-    playTrack(currentPlaylist[currentTrackIndex] || currentPlaylist[0], currentTrackIndex, isPlaylistMode);
+    return startTrackList(currentPlaylist);
   }
 }
 
-function playNext(auto = false) {
-  if (contextMode) {
-    spotifyPlayer?.nextTrack();
-    return;
+function playNext() {
+  if (!localPlayback || playbackPending || transitionPromise) return;
+  const generation = playbackGeneration;
+  const operation = advanceTrack(generation);
+  transitionPromise = operation;
+  const clear = () => { if (transitionPromise === operation) transitionPromise = null; };
+  operation.then(clear, clear);
+  return operation;
+}
+
+function getNextCycleOrder() {
+  if (!nextCycleOrder) {
+    const indices = currentPlaylist.map((_, index) => index);
+    nextCycleOrder = appSettings.shuffle ? shuffleIndices(indices) : indices;
   }
-  const n = currentPlaylist.length;
-  if (!n) return;
-  let idx;
-  if (appSettings.shuffle && n > 1) {
-    do {
-      idx = Math.floor(Math.random() * n);
-    } while (idx === currentTrackIndex);
-  } else {
-    idx = currentTrackIndex + 1;
+  return nextCycleOrder;
+}
+
+async function advanceTrack(generation) {
+  if (currentTrackIndex >= 0 && orderCursor + 1 < playOrder.length) {
+    const index = playOrder[orderCursor + 1];
+    return playTrack(currentPlaylist[index], index, true);
   }
-  if (idx >= n) {
-    if (appSettings.repeat === "all") idx = 0;
-    else return;
+  if (appSettings.repeat === "all" && currentPlaylist.length) {
+    playOrder = getNextCycleOrder();
+    nextCycleOrder = null;
+    orderCursor = 0;
+    return playTrack(currentPlaylist[playOrder[0]], playOrder[0], true);
   }
-  currentTrackIndex = idx;
-  playTrack(currentPlaylist[idx], idx, true);
+  if (infiniteMode) return playInfiniteTrack(generation);
+  playbackStopped = true;
+  clearTimeout(trackEndTimer);
+  try { await spotifyPlayer?.pause(); } catch { showToast("再生を停止できませんでした。通信状況を確認してください"); }
+  if (generation !== playbackGeneration) return;
+  playerClock = { ...playerClock, paused: true, ts: Date.now() };
+  setPlaybackIcon(true);
+  renderQueue();
 }
 
 function playPrevious() {
-  if (contextMode) {
-    spotifyPlayer?.previousTrack();
-    return;
+  if (!localPlayback || playbackPending) return;
+  playbackGeneration++;
+  setInfiniteMode(false);
+  if (clockPosition() > 3000 || orderCursor <= 0 || currentTrackIndex < 0) {
+    return playTrack(currentTrackData, currentTrackIndex, isPlaylistMode);
   }
-  // 3秒以上再生していたら曲の頭に戻す
-  if (clockPosition() > 3000 || currentTrackIndex <= 0) {
-    spotifyPlayer?.seek(0).catch(() => {});
-    playerClock = { ...playerClock, position: 0, ts: Date.now() };
-    renderProgress(0);
-    return;
-  }
-  currentTrackIndex--;
-  playTrack(currentPlaylist[currentTrackIndex], currentTrackIndex, true);
+  const index = playOrder[orderCursor - 1];
+  return playTrack(currentPlaylist[index], index, true);
 }
 
 function handleTrackEnded() {
-  if (contextMode) return; // プレイリスト丸ごと再生はSpotify側が次へ進める
-  if (appSettings.repeat === "one" && currentTrackData) {
-    playTrack(currentTrackData, currentTrackIndex, isPlaylistMode);
-    return;
+  if (appSettings.repeat === "one" && currentTrackData) return playTrack(currentTrackData, currentTrackIndex, isPlaylistMode);
+  if (!appSettings.autoplay) { playbackStopped = true; return; }
+  return playNext();
+}
+
+function setInfiniteMode(value) {
+  infiniteRequestId++;
+  infiniteLoading = false;
+  infiniteMode = !!value;
+  if (!infiniteMode && infiniteStarting && playbackPending) {
+    playbackRequestId++;
+    playbackPending = false;
+    playbackStopped = true;
+    spotifyPlayer?.pause().catch(() => {});
   }
-  if (!appSettings.autoplay) return;
-  if (currentPlaylist.length <= 1) {
-    if (appSettings.repeat === "all" && currentTrackData) playTrack(currentTrackData, currentTrackIndex, isPlaylistMode);
-    return;
+  if (infiniteMode) {
+    appSettings.autoplay = true;
+    saveAppSetting("autoplay", true);
+    const autoplay = document.getElementById("autoplayToggle");
+    if (autoplay) autoplay.checked = true;
+    setRepeat("off");
   }
-  playNext(true);
+  renderFpExtras();
+  renderQueue();
+}
+
+async function playInfiniteTrack(generation) {
+  const requestId = ++infiniteRequestId;
+  infiniteLoading = true;
+  renderQueue();
+  const isCurrent = () => infiniteMode && requestId === infiniteRequestId && generation === playbackGeneration;
+  try {
+    await spotifyPlayer?.pause();
+    if (!isCurrent()) return;
+    const artist = currentTrackData?.artists?.[0]?.name || getArtistText(currentTrackData) || getArtistText(currentPlaylist[0]);
+    if (!artist) throw new Error("次の曲を探すためのアーティスト情報がありません");
+    if (artist !== infiniteArtist) {
+      infiniteArtist = artist;
+      infinitePage = 0;
+      infiniteCatalog = [];
+    }
+    const query = `artist:"${artist.replace(/"/g, "")}"`;
+    const data = await spotifyRequest(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10&offset=${infinitePage * 10}`);
+    if (!isCurrent()) return;
+    infinitePage = data?.tracks?.next ? (infinitePage + 1) % 3 : 0;
+    const found = normalizeTracks(data?.tracks?.items || []).filter(t => t.uri?.startsWith("spotify:track:") && !t.is_local && t.is_playable !== false);
+    infiniteCatalog = [...new Map([...infiniteCatalog, ...found].map(t => [t.uri, t])).values()].slice(-100);
+    const excluded = new Set([...currentPlaylist.map(t => t.uri), currentTrackData?.uri]);
+    const available = infiniteCatalog.filter(t => !excluded.has(t.uri));
+    const fresh = available.filter(t => !infiniteRecent.slice(-10).includes(t.uri));
+    const candidates = fresh.length ? fresh : available;
+    if (!candidates.length) throw new Error("続けて再生できる別の曲が見つかりませんでした");
+    const track = candidates[Math.floor(Math.random() * candidates.length)];
+    infiniteRecent = [...infiniteRecent, track.uri].slice(-30);
+    infiniteLoading = false;
+    infiniteStarting = true;
+    return await playTrack(track, -1, false);
+  } catch (error) {
+    if (!isCurrent()) return;
+    setInfiniteMode(false);
+    playbackStopped = true;
+    showToast(error.status ? spotifyReadError(error) : error.message);
+  } finally {
+    if (generation === playbackGeneration) infiniteStarting = false;
+    if (requestId === infiniteRequestId && generation === playbackGeneration) {
+      infiniteLoading = false;
+      renderQueue();
+    }
+  }
 }
 
 function initPlayerControls() {
@@ -1328,9 +1508,9 @@ async function openSpotifyPlaylist(playlist) {
     setText("playlistMeta", `${items.length}曲・再生可能な曲 ${tracks.length}曲${playlist.owner?.display_name ? ` · ${playlist.owner.display_name}` : ""}`);
     box.innerHTML = "";
     if (!tracks.length) box.innerHTML = '<div class="empty-message">再生できる曲がありません。Spotifyで開いて確認できます。</div>';
-    tracks.forEach(({ track, position }, index) => box.appendChild(createTrackCard(track, index, null, () => playSpotifyPlaylist(playlist, position))));
+    tracks.forEach(({ track, position }, index) => box.appendChild(createTrackCard(track, index, null, () => playSpotifyPlaylist(playlist, position, tracks))));
     play.disabled = !tracks.length;
-    play.onclick = () => playSpotifyPlaylist(playlist, tracks[0].position);
+    play.onclick = () => playSpotifyPlaylist(playlist, tracks[0].position, tracks);
   } catch (error) {
     if (requestId !== playlistDetailLoadId) return;
     box.innerHTML = `<div class="empty-message" role="alert">${escapeHtml(spotifyReadError(error))}</div>`;
@@ -1339,41 +1519,14 @@ async function openSpotifyPlaylist(playlist) {
   }
 }
 
-async function playSpotifyPlaylist(p, position = 0) {
-  const requestId = ++playbackRequestId;
-  spotifyToken = await getFreshSpotifyToken(false);
-  if (requestId !== playbackRequestId) return;
-  if (!spotifyToken) {
-    showToast("Spotifyにログインすると再生できます");
-    return;
-  }
-  if (!spotifyPlayer) setupSpotifyPlayer();
-  contextMode = true;
-  localPlayback = false;
-  queueRequestId++;
-  spotifyQueue = [];
-  queueStatus = "再生待ちを読み込み中...";
-  endHandled = false;
-  isPlaylistMode = false;
-  currentPlaylist = [];
-  currentTrackData = null;
-  resetPlayerClock("");
-  renderQueue();
-  showPlayerPanel();
-  setNowPlaying(p.name || "プレイリスト", "プレイリスト", p.images?.[0]?.url || "");
-  await waitForDevice();
-  if (requestId !== playbackRequestId) return;
-  if (await startPlayback({ context_uri: p.uri || `spotify:playlist:${p.id}`, offset: { position }, position_ms: 0 })) {
-    showToast(`▶ ${p.name || "プレイリスト"} を再生します`);
-    refreshSpotifyQueue();
-  } else {
-    queueStatus = "再生を開始できませんでした。もう一度再生してください。";
-    renderQueue();
-  }
+function playSpotifyPlaylist(playlist, position = 0, entries = []) {
+  const index = entries.findIndex(entry => entry.position === position);
+  if (index < 0) { showToast("プレイリストを開き直してから再生してください"); return; }
+  return startTrackList(entries.map(entry => entry.track), index);
 }
 
 async function refreshSpotifyQueue() {
-  if (localPlayback && !contextMode) return renderQueue();
+  if (localPlayback) return renderQueue();
   const requestId = ++queueRequestId;
   if (!spotifyQueue.length) queueStatus = "再生待ちを読み込み中...";
   renderQueue();
@@ -1496,7 +1649,7 @@ function bindSettingToggle(id, key, onChange) {
 
 function initMenuSettings() {
   bindSettingToggle("animationToggle", "animation", applyAppSettings);
-  bindSettingToggle("autoplayToggle", "autoplay");
+  bindSettingToggle("autoplayToggle", "autoplay", value => { if (!value) setInfiniteMode(false); });
   const shuffle = document.getElementById("shuffleToggle");
   if (shuffle) {
     shuffle.checked = appSettings.shuffle;
@@ -1520,7 +1673,7 @@ function initMenuSettings() {
 }
 
 function updateMenuPlayerEmptyState() {
-  if (currentTrackData || contextMode) return;
+  if (currentTrackData) return;
   setText("menuPlayerTitle", "再生中の曲はありません");
   setText("menuPlayerArtist", "");
 }
@@ -1587,6 +1740,9 @@ function initFullPlayer() {
     if (currentTrackData) toggleFavorite(currentTrackData);
   });
   document.getElementById("fpShuffle")?.addEventListener("click", () => setShuffle(!appSettings.shuffle));
+  ["fpInfinite", "menuInfinite"].forEach(id => {
+    document.getElementById(id)?.addEventListener("click", () => setInfiniteMode(!infiniteMode));
+  });
   document.getElementById("fpRepeat")?.addEventListener("click", () => {
     const order = ["off", "all", "one"];
     setRepeat(order[(order.indexOf(appSettings.repeat) + 1) % order.length]);
@@ -1637,46 +1793,36 @@ function setPlayerBackgroundInert(inert) {
   });
 }
 
-async function setShuffle(value) {
-  if (contextMode) {
-    try {
-      await spotifyRequest(`https://api.spotify.com/v1/me/player/shuffle?state=${!!value}${spotifyDeviceId ? `&device_id=${encodeURIComponent(spotifyDeviceId)}` : ""}`, { method: "PUT" });
-      refreshSpotifyQueue();
-    } catch (error) {
-      const toggle = document.getElementById("shuffleToggle");
-      if (toggle) toggle.checked = appSettings.shuffle;
-      showToast("シャッフルを変更できませんでした。Spotifyの再生接続を確認してください");
-      return;
-    }
-  }
+function setShuffle(value) {
   saveAppSetting("shuffle", !!value);
-  const t = document.getElementById("shuffleToggle");
-  if (t) t.checked = !!value;
+  const toggle = document.getElementById("shuffleToggle");
+  if (toggle) toggle.checked = !!value;
+  rebuildRemainingOrder();
   renderFpExtras();
+  renderQueue();
 }
 
-async function setRepeat(mode) {
-  if (contextMode) {
-    try {
-      const state = { off: "off", all: "context", one: "track" }[mode];
-      await spotifyRequest(`https://api.spotify.com/v1/me/player/repeat?state=${state}${spotifyDeviceId ? `&device_id=${encodeURIComponent(spotifyDeviceId)}` : ""}`, { method: "PUT" });
-      refreshSpotifyQueue();
-    } catch (error) {
-      const select = document.getElementById("repeatMode");
-      if (select) select.value = appSettings.repeat;
-      showToast("リピートを変更できませんでした。Spotifyの再生接続を確認してください");
-      return;
-    }
-  }
+function setRepeat(mode) {
+  if (!["off", "all", "one"].includes(mode)) return;
   saveAppSetting("repeat", mode);
-  const sel = document.getElementById("repeatMode");
-  if (sel) sel.value = mode;
+  nextCycleOrder = null;
+  if (mode !== "off" && infiniteMode) setInfiniteMode(false);
+  const select = document.getElementById("repeatMode");
+  if (select) select.value = mode;
   renderFpExtras();
+  renderQueue();
 }
 
 function renderFpExtras() {
+  ["fpInfinite", "menuInfinite"].forEach(id => {
+    const button = document.getElementById(id);
+    if (!button) return;
+    button.textContent = `∞ 無限再生 ${infiniteMode ? "ON" : "OFF"}`;
+    button.classList.toggle("active", infiniteMode);
+    button.setAttribute("aria-pressed", String(infiniteMode));
+  });
   const sh = document.getElementById("fpShuffle");
-  if (sh) sh.classList.toggle("active", !!appSettings.shuffle);
+  if (sh) { sh.classList.toggle("active", !!appSettings.shuffle); sh.setAttribute("aria-pressed", String(!!appSettings.shuffle)); }
   const rp = document.getElementById("fpRepeat");
   if (rp) {
     const label = { off: "OFF", all: "全曲", one: "1曲" }[appSettings.repeat] || "OFF";
@@ -1690,14 +1836,18 @@ function renderQueue() {
   if (!box) return;
   box.innerHTML = "";
 
-  const remoteQueue = contextMode || !localPlayback;
-  const upcoming = remoteQueue ? spotifyQueue : currentPlaylist.slice(currentTrackIndex + 1);
+  const remoteQueue = !localPlayback;
+  let upcomingIndices = currentTrackIndex >= 0 ? playOrder.slice(orderCursor + 1) : [];
+  if (localPlayback && appSettings.repeat === "one" && currentTrackIndex >= 0) upcomingIndices = [currentTrackIndex];
+  else if (localPlayback && appSettings.repeat === "all" && !upcomingIndices.length) upcomingIndices = getNextCycleOrder();
+  const upcoming = remoteQueue ? spotifyQueue : upcomingIndices.map(index => currentPlaylist[index]);
   if (remoteQueue && queueStatus) {
     box.innerHTML = `<div class="empty-message" role="status">${escapeHtml(queueStatus)}</div>`;
     return;
   }
   if (!upcoming.length) {
-    box.innerHTML = '<div class="empty-message">次に再生する曲はありません</div>';
+    const message = infiniteLoading ? "次の曲を探しています..." : infiniteMode ? "選んだ曲の終了後に、アーティストの別の曲を探して続けます" : "次に再生する曲はありません";
+    box.innerHTML = `<div class="empty-message" role="status">${message}</div>`;
     return;
   }
   upcoming.forEach((raw, index) => {
@@ -1707,8 +1857,12 @@ function renderQueue() {
     if (!remoteQueue) {
       row.type = "button";
       row.setAttribute("aria-label", `${track.title}を再生`);
-      const position = currentTrackIndex + 1 + index;
-      row.addEventListener("click", () => playTrack(track, position, true));
+      const position = upcomingIndices[index];
+      row.addEventListener("click", () => {
+        playbackGeneration++;
+        setInfiniteMode(false);
+        playTrack(track, position, true);
+      });
     }
     row.innerHTML = `
       <img src="${escapeHtml(track.image)}" alt="" loading="lazy">

@@ -96,7 +96,7 @@
             </div>
         </div>
         <div class="menu-setting menu-setting-row">
-            <span>▶️ 自動再生</span>
+            <span>▶️ リストの次の曲へ進む</span>
             <label class="toggle-switch">
                 <input type="checkbox" id="autoplayToggle" checked>
                 <span class="toggle-slider"></span>
@@ -116,6 +116,10 @@
                 <option value="one">1曲</option>
                 <option value="all">全曲</option>
             </select>
+        </div>
+        <div class="menu-setting">
+            <button id="menuInfinite" class="fp-chip" type="button" aria-pressed="false">∞ 無限再生 OFF</button>
+            <p class="playback-mode-help">ONにすると、リスト終了後にアーティストの別の曲を探して続けます。</p>
         </div>
         <div class="menu-setting menu-setting-row">
             <span>🎚️ プレイヤーを常に表示</span>
@@ -379,7 +383,9 @@
             <div class="fp-extra">
                 <button id="fpShuffle" class="fp-chip" type="button">🔀 シャッフル</button>
                 <button id="fpRepeat" class="fp-chip" type="button">🔁 OFF</button>
+                <button id="fpInfinite" class="fp-chip" type="button" aria-pressed="false">∞ 無限再生 OFF</button>
             </div>
+            <p class="playback-mode-help">通常は選んだ曲だけを再生。無限再生は別の曲へ続けます。</p>
         </div>
     </div>
     <aside id="fpQueue" class="fp-queue" aria-label="再生リスト">
