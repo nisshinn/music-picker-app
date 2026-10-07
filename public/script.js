@@ -86,6 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initMenuSettings();
   initPlayerControls();
+  initFullPlayer();
   initSpotify();
   initSpotifyLoginButton();
   updateLibraryPage();
@@ -489,14 +490,29 @@ function displayPlaylist(playlist) {
 
   // 曲カード
   playlist.forEach((track, index) => {
-    container.appendChild(createTrackCard(track, index));
+    container.appendChild(createTrackCard(track, index, playlist));
   });
 }
 
-function createTrackCard(track, index) {
+function createTrackCard(track, index, queue = null) {
   track = normalizeTrack(track);
   const card = document.createElement("div");
   card.className = "track-card";
+
+  // 一覧の中の曲を押したら、その一覧を再生リストにして次/前の曲に進めるようにする
+  const playFromCard = () => {
+    if (queue && queue.length) {
+      currentPlaylist = queue;
+      currentTrackIndex = index;
+      isPlaylistMode = true;
+      playTrack(track, index, true);
+    } else {
+      currentPlaylist = [track];
+      currentTrackIndex = 0;
+      isPlaylistMode = false;
+      playTrack(track, 0, false);
+    }
+  };
 
   const img = document.createElement("img");
   img.className = "track-image";
@@ -529,10 +545,7 @@ function createTrackCard(track, index) {
   playBtn.textContent = "▶";
   playBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    currentPlaylist = [track];
-    currentTrackIndex = 0;
-    isPlaylistMode = false;
-    playTrack(track, 0, false);
+    playFromCard();
   });
 
   const favBtn = document.createElement("button");
@@ -562,10 +575,7 @@ function createTrackCard(track, index) {
   card.appendChild(actions);
 
   card.addEventListener("click", () => {
-    currentPlaylist = [track];
-    currentTrackIndex = 0;
-    isPlaylistMode = false;
-    playTrack(track, 0, false);
+    playFromCard();
   });
 
   return card;
@@ -614,6 +624,7 @@ async function playTrack(track, index = 0, playlistMode = false) {
   isPlaylistMode = playlistMode;
 
   resetPlayerClock(track.id);
+  renderQueue();
   showPlayerPanel();
   updatePlayerInfo(track);
   updateMediaSession(track);
@@ -719,20 +730,29 @@ function setText(id, text) {
   if (el) el.textContent = text;
 }
 
-function updatePlayerInfo(track) {
-  track = normalizeTrack(track);
-  if (!track) return;
-  const title = track.title || "曲名なし";
-  const artist = getArtistText(track);
-
+function setNowPlaying(title, artist, image) {
   setText("playerTitle", title);
   setText("playerArtist", artist);
   setText("menuPlayerTitle", title);
   setText("menuPlayerArtist", artist);
-  ["playerImage", "menuPlayerImage"].forEach((id) => {
+  setText("fpTitle", title);
+  setText("fpArtist", artist);
+  ["playerImage", "menuPlayerImage", "fpImage"].forEach((id) => {
     const img = document.getElementById(id);
-    if (img) img.src = track.image || "";
+    if (img) img.src = image || "";
   });
+}
+
+function updatePlayerInfo(track) {
+  track = normalizeTrack(track);
+  if (!track) return;
+  setNowPlaying(track.title || "曲名なし", getArtistText(track), track.image);
+
+  const fav = document.getElementById("fpFav");
+  if (fav) {
+    fav.dataset.uri = track.uri || "";
+    updateFavoriteButton(fav, { uri: track.uri });
+  }
 }
 
 function clockPosition(c = playerClock) {
@@ -743,7 +763,7 @@ function clockPosition(c = playerClock) {
 
 function renderProgress(pos) {
   const dur = playerClock.duration || 0;
-  ["progressBar", "menuProgressBar"].forEach((id) => {
+  ["progressBar", "menuProgressBar", "fpProgress"].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.max = dur;
@@ -755,6 +775,8 @@ function renderProgress(pos) {
   setText("menuCurrentTime", cur);
   setText("duration", total);
   setText("menuDuration", total);
+  setText("fpCurrent", cur);
+  setText("fpDuration", total);
 }
 
 function updatePlayerState(state) {
@@ -770,9 +792,10 @@ function updatePlayerState(state) {
     trackId: curr?.id || "",
   };
 
-  const icon = state.paused ? "▶" : "⏸";
+  const icon = state.paused ? "▶\uFE0E" : "⏸\uFE0E"; // \uFE0E = 絵文字ではなく文字として表示
   setText("playPauseButton", icon);
   setText("menuPlayPauseButton", icon);
+  setText("fpPlay", icon);
   renderProgress(state.position);
 
   // 曲が最後まで再生されて止まった場合 → 自動再生/リピート処理
@@ -813,13 +836,14 @@ function bindSeekBar(id) {
   el.addEventListener("input", () => {
     isSeeking = true;
     const pos = Number(el.value);
-    ["progressBar", "menuProgressBar"].forEach((bid) => {
+    ["progressBar", "menuProgressBar", "fpProgress"].forEach((bid) => {
       const b = document.getElementById(bid);
       if (b && b !== el) b.value = pos;
     });
     const t = formatTime(pos);
     setText("currentTime", t);
     setText("menuCurrentTime", t);
+    setText("fpCurrent", t);
   });
   el.addEventListener("change", async () => {
     const pos = Number(el.value);
@@ -835,7 +859,7 @@ function bindSeekBar(id) {
 function setVolume(value) {
   const v = Math.min(100, Math.max(0, Math.round(Number(value) || 0)));
   saveAppSetting("volume", v);
-  ["volumeBar", "menuVolumeBar"].forEach((id) => {
+  ["volumeBar", "menuVolumeBar", "fpVolume"].forEach((id) => {
     const el = document.getElementById(id);
     if (el && Number(el.value) !== v) el.value = v;
   });
@@ -906,17 +930,18 @@ function handleTrackEnded() {
 }
 
 function initPlayerControls() {
-  ["playPauseButton", "menuPlayPauseButton"].forEach((id) =>
+  ["playPauseButton", "menuPlayPauseButton", "fpPlay"].forEach((id) =>
     document.getElementById(id)?.addEventListener("click", togglePlay)
   );
-  ["nextButton", "menuNextButton"].forEach((id) =>
+  ["nextButton", "menuNextButton", "fpNext"].forEach((id) =>
     document.getElementById(id)?.addEventListener("click", () => playNext(false))
   );
-  ["previousButton", "menuPreviousButton"].forEach((id) =>
+  ["previousButton", "menuPreviousButton", "fpPrev"].forEach((id) =>
     document.getElementById(id)?.addEventListener("click", playPrevious)
   );
   bindSeekBar("progressBar");
   bindSeekBar("menuProgressBar");
+  bindSeekBar("fpProgress");
   startProgressTimer();
 }
 
@@ -1116,7 +1141,7 @@ function updateHistoryPage() {
     c.innerHTML = `<div class="empty-message">履歴はまだありません</div>`;
     return;
   }
-  hist.forEach((t, i) => c.appendChild(createTrackCard(t, i)));
+  hist.forEach((t, i) => c.appendChild(createTrackCard(t, i, hist)));
 }
 
 function updateLibraryPage() {
@@ -1128,7 +1153,7 @@ function updateLibraryPage() {
     f.innerHTML = `<div class="empty-message">お気に入りはまだありません</div>`;
     return;
   }
-  favs.forEach((t, i) => f.appendChild(createTrackCard(t, i)));
+  favs.forEach((t, i) => f.appendChild(createTrackCard(t, i, favs)));
 }
 
 async function loadSpotifyPlaylists() {
@@ -1225,16 +1250,9 @@ async function playSpotifyPlaylist(p) {
   isPlaylistMode = false;
   currentTrackData = null;
   resetPlayerClock("");
+  renderQueue();
   showPlayerPanel();
-  setText("playerTitle", p.name || "プレイリスト");
-  setText("playerArtist", "プレイリスト");
-  setText("menuPlayerTitle", p.name || "プレイリスト");
-  setText("menuPlayerArtist", "プレイリスト");
-  const cover = p.images?.[0]?.url || "";
-  ["playerImage", "menuPlayerImage"].forEach((id) => {
-    const img = document.getElementById(id);
-    if (img) img.src = cover;
-  });
+  setNowPlaying(p.name || "プレイリスト", "プレイリスト", p.images?.[0]?.url || "");
 
   await waitForDevice();
   await startPlayback({ context_uri: p.uri });
@@ -1292,7 +1310,7 @@ async function runSongSearch(query, box) {
       box.innerHTML = `<div class="empty-message">「${escapeHtml(query)}」に一致する曲が見つかりませんでした</div>`;
       return;
     }
-    tracks.forEach((t, i) => box.appendChild(createTrackCard(t, i)));
+    tracks.forEach((t, i) => box.appendChild(createTrackCard(t, i, tracks)));
   } catch (e) {
     if (reqId === searchRequestId) box.innerHTML = `<div class="empty-message">${escapeHtml(e.message)}</div>`;
   }
@@ -1347,21 +1365,22 @@ function bindSettingToggle(id, key, onChange) {
 function initMenuSettings() {
   bindSettingToggle("animationToggle", "animation", applyAppSettings);
   bindSettingToggle("autoplayToggle", "autoplay");
-  bindSettingToggle("shuffleToggle", "shuffle");
+  bindSettingToggle("shuffleToggle", "shuffle", renderFpExtras);
   bindSettingToggle("alwaysShowPlayerToggle", "alwaysShowPlayer", updatePlayerVisibility);
 
   const repeat = document.getElementById("repeatMode");
   if (repeat) {
     repeat.value = appSettings.repeat;
-    repeat.addEventListener("change", () => saveAppSetting("repeat", repeat.value));
+    repeat.addEventListener("change", () => setRepeat(repeat.value));
   }
 
   // 音量：下部プレイヤーとサイドメニューのスライダーを双方向で同期
-  ["volumeBar", "menuVolumeBar"].forEach((id) =>
+  ["volumeBar", "menuVolumeBar", "fpVolume"].forEach((id) =>
     document.getElementById(id)?.addEventListener("input", (e) => setVolume(e.target.value))
   );
   setVolume(appSettings.volume);
   updatePlayerVisibility();
+  renderFpExtras();
 }
 
 function updateMenuPlayerEmptyState() {
@@ -1392,5 +1411,118 @@ function initLogout() {
     spotifyDeviceId = "";
     spotifyPlayer?.disconnect();
     location.reload();
+  });
+}
+
+
+// -------------------------------------------------------------
+// Full Screen Player（下部の再生バーをタップで開く）
+// -------------------------------------------------------------
+function initFullPlayer() {
+  const fp = document.getElementById("fullPlayer");
+  if (!fp) return;
+
+  document.getElementById("playerPanel")?.addEventListener("click", (e) => {
+    if (e.target.closest("button, input, a")) return; // 操作ボタンはそのまま動かす
+    openFullPlayer();
+  });
+
+  document.getElementById("fpClose")?.addEventListener("click", closeFullPlayer);
+  document.getElementById("fpQueueButton")?.addEventListener("click", () => {
+    fp.classList.toggle("queue-open");
+    renderQueue();
+  });
+  document.getElementById("fpQueueBack")?.addEventListener("click", () => fp.classList.remove("queue-open"));
+
+  document.getElementById("fpFav")?.addEventListener("click", () => {
+    if (currentTrackData) toggleFavorite(currentTrackData);
+  });
+  document.getElementById("fpShuffle")?.addEventListener("click", () => setShuffle(!appSettings.shuffle));
+  document.getElementById("fpRepeat")?.addEventListener("click", () => {
+    const order = ["off", "all", "one"];
+    setRepeat(order[(order.indexOf(appSettings.repeat) + 1) % order.length]);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && fp.classList.contains("open")) closeFullPlayer();
+  });
+}
+
+function openFullPlayer() {
+  const fp = document.getElementById("fullPlayer");
+  if (!fp) return;
+  fp.classList.add("open");
+  fp.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+  renderFpExtras();
+  renderQueue();
+}
+
+function closeFullPlayer() {
+  const fp = document.getElementById("fullPlayer");
+  if (!fp) return;
+  fp.classList.remove("open", "queue-open");
+  fp.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
+
+function setShuffle(value) {
+  saveAppSetting("shuffle", !!value);
+  const t = document.getElementById("shuffleToggle");
+  if (t) t.checked = !!value;
+  renderFpExtras();
+}
+
+function setRepeat(mode) {
+  saveAppSetting("repeat", mode);
+  const sel = document.getElementById("repeatMode");
+  if (sel) sel.value = mode;
+  renderFpExtras();
+}
+
+function renderFpExtras() {
+  const sh = document.getElementById("fpShuffle");
+  if (sh) sh.classList.toggle("active", !!appSettings.shuffle);
+  const rp = document.getElementById("fpRepeat");
+  if (rp) {
+    const label = { off: "OFF", all: "全曲", one: "1曲" }[appSettings.repeat] || "OFF";
+    rp.textContent = `🔁 ${label}`;
+    rp.classList.toggle("active", appSettings.repeat !== "off");
+  }
+}
+
+function renderQueue() {
+  const box = document.getElementById("fpQueueList");
+  if (!box) return;
+  box.innerHTML = "";
+
+  if (contextMode) {
+    box.innerHTML = `<div class="empty-message">Spotifyのプレイリストを再生中です。曲順はSpotify側で管理されます。</div>`;
+    return;
+  }
+  if (!currentPlaylist.length) {
+    box.innerHTML = `<div class="empty-message">再生リストはまだありません</div>`;
+    return;
+  }
+
+  currentPlaylist.forEach((raw, i) => {
+    const t = normalizeTrack(raw);
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "fp-queue-item" + (i === currentTrackIndex ? " current" : "");
+    row.innerHTML = `
+      <img src="${escapeHtml(t.image)}" alt="">
+      <div class="fp-queue-info">
+        <div class="fp-queue-title">${escapeHtml(t.title)}</div>
+        <div class="fp-queue-artist">${escapeHtml(getArtistText(t))}</div>
+      </div>
+      <span class="fp-queue-marker">${i === currentTrackIndex ? "▶" : "▷"}</span>
+    `;
+    row.addEventListener("click", () => {
+      isPlaylistMode = true;
+      currentTrackIndex = i;
+      playTrack(t, i, true);
+    });
+    box.appendChild(row);
   });
 }

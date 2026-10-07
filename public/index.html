@@ -316,6 +316,51 @@
     </div>
 </div>
 
+<!-- フルスクリーンプレイヤー（下部の再生バーをタップで開く） -->
+<div id="fullPlayer" class="full-player" aria-hidden="true" role="dialog" aria-label="フルスクリーンプレイヤー">
+    <div class="fp-main">
+        <div class="fp-topbar">
+            <button id="fpClose" class="fp-icon-button" type="button" aria-label="閉じる">×</button>
+            <button id="fpQueueButton" class="fp-icon-button" type="button" aria-label="再生リスト">📋</button>
+        </div>
+        <div class="fp-body">
+            <img id="fpImage" class="fp-art" src="" alt="">
+            <div class="fp-meta">
+                <div class="fp-meta-text">
+                    <div id="fpTitle" class="fp-title">曲名</div>
+                    <div id="fpArtist" class="fp-artist">アーティスト</div>
+                </div>
+                <button id="fpFav" class="favorite-button fp-fav" type="button" aria-label="お気に入り">♡</button>
+            </div>
+            <div class="fp-progress">
+                <input type="range" id="fpProgress" min="0" max="0" value="0" step="100" aria-label="再生位置">
+                <div class="fp-times"><span id="fpCurrent">0:00</span><span id="fpDuration">0:00</span></div>
+            </div>
+            <div class="fp-controls">
+                <button id="fpPrev" class="fp-skip" type="button" aria-label="前の曲">⏮</button>
+                <button id="fpPlay" class="fp-play" type="button" aria-label="再生・一時停止">▶</button>
+                <button id="fpNext" class="fp-skip" type="button" aria-label="次の曲">⏭</button>
+            </div>
+            <div class="fp-volume">
+                <span>🔈</span>
+                <input type="range" id="fpVolume" min="0" max="100" value="50" aria-label="音量">
+                <span>🔊</span>
+            </div>
+            <div class="fp-extra">
+                <button id="fpShuffle" class="fp-chip" type="button">🔀 シャッフル</button>
+                <button id="fpRepeat" class="fp-chip" type="button">🔁 OFF</button>
+            </div>
+        </div>
+    </div>
+    <aside id="fpQueue" class="fp-queue" aria-label="再生リスト">
+        <div class="fp-queue-header">
+            <button id="fpQueueBack" class="fp-icon-button" type="button" aria-label="再生リストを閉じる">←</button>
+            <span>再生リスト</span>
+        </div>
+        <div id="fpQueueList" class="fp-queue-list"></div>
+    </aside>
+</div>
+
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 <script src="/script.js"></script>
 </body>
