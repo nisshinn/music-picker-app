@@ -317,12 +317,14 @@ app.get("/auth/login", (req, res) => {
       state: statePayload,
       scope: [
         "playlist-read-private",
+        "playlist-read-collaborative",
         "playlist-modify-private",
         "playlist-modify-public",
         "streaming",
         "user-read-email",
         "user-read-private",
         "user-read-playback-state",
+        "user-read-currently-playing",
         "user-modify-playback-state",
         "user-read-recently-played",
         "user-top-read",
@@ -360,12 +362,14 @@ app.get("/api/auth/spotify/url", (req, res) => {
     show_dialog: "true",
     scope: [
       "playlist-read-private",
+      "playlist-read-collaborative",
       "playlist-modify-private",
       "playlist-modify-public",
       "streaming",
       "user-read-email",
       "user-read-private",
       "user-read-playback-state",
+      "user-read-currently-playing",
       "user-modify-playback-state",
       "user-read-recently-played",
       "user-top-read",
@@ -675,7 +679,7 @@ app.get("/api/my-playlists/:playlistId/items", async (req, res) => {
   try {
     const accessToken = getUserAccessToken(req) || (await getValidSpotifyAccessToken());
     const data = await spotifyFetch(
-      `https://api.spotify.com/v1/playlists/${encodeURIComponent(req.params.playlistId)}/tracks?limit=50`,
+      `https://api.spotify.com/v1/playlists/${encodeURIComponent(req.params.playlistId)}/items?limit=50`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
     const tracks = (data.items || [])
@@ -719,7 +723,7 @@ app.post("/api/create-playlist", async (req, res) => {
       }),
     });
 
-    await spotifyFetch(`https://api.spotify.com/v1/playlists/${encodeURIComponent(playlist.id)}/tracks`, {
+    await spotifyFetch(`https://api.spotify.com/v1/playlists/${encodeURIComponent(playlist.id)}/items`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,

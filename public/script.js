@@ -38,6 +38,12 @@ let progressTimer = null;
 let endHandled = false;
 let contextMode = false; // Spotifyプレイリスト丸ごと再生中
 let playlistLoadId = 0;
+let playlistDetailLoadId = 0;
+let spotifyQueue = [];
+let queueStatus = "";
+let queueRequestId = 0;
+let localPlayback = false;
+let fullPlayerFocus = null;
 
 const APP_SETTINGS_DEFAULTS = {
   theme: "ocean",
@@ -91,6 +97,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initSpotifyLoginButton();
   updateLibraryPage();
   initLibraryAccordion();
+  document.getElementById("playlistBack")?.addEventListener("click", () => showPage("favoritesPage"));
+  document.getElementById("fpQueueRefresh")?.addEventListener("click", () => refreshSpotifyQueue());
   updateHistoryPage();
   updateMenuPlayerEmptyState();
 });
@@ -160,7 +168,7 @@ function initSpotifyLoginButton() {
   });
 
   window.addEventListener("message", (event) => {
-    if (event.data?.type === "SPOTIFY_AUTH_SUCCESS") {
+    if (event.origin === window.location.origin && event.data?.type === "SPOTIFY_AUTH_SUCCESS") {
       const token = event.data.tokens?.access_token;
       if (token) {
         localStorage.setItem("spotifyAccessToken", token);
@@ -168,6 +176,7 @@ function initSpotifyLoginButton() {
         showSpotifyStatus("✓ Spotify接続完了！");
         showToast("🎵 Spotifyにログインしました！");
         setupSpotifyPlayer();
+        loadSpotifyPlaylists();
       }
     }
   });
@@ -212,18 +221,22 @@ function initMenu() {
 }
 
 function showPage(pageId) {
+  if (!document.getElementById(pageId)) return;
+  if (pageId !== "playlistDetailPage") playlistDetailLoadId++;
+  const navPage = pageId === "playlistDetailPage" ? "favoritesPage" : pageId;
   document.querySelectorAll(".page").forEach((p) => p.classList.remove("active-page"));
   const page = document.getElementById(pageId);
   if (page) page.classList.add("active-page");
 
-  document.querySelectorAll(".menu-link").forEach((l) => l.classList.toggle("active", l.dataset.page === pageId));
-  document.querySelectorAll(".bottom-nav-link").forEach((l) => l.classList.toggle("active", l.dataset.page === pageId));
+  document.querySelectorAll(".menu-link").forEach((l) => l.classList.toggle("active", l.dataset.page === navPage));
+  document.querySelectorAll(".bottom-nav-link").forEach((l) => l.classList.toggle("active", l.dataset.page === navPage));
 
   if (pageId === "favoritesPage") {
     updateLibraryPage();
     loadSpotifyPlaylists();
   }
   if (pageId === "historyPage") updateHistoryPage();
+  window.scrollTo(0, 0);
 }
 
 // -------------------------------------------------------------
@@ -435,7 +448,6 @@ async function makePlaylist() {
     currentTrackIndex = 0;
     isPlaylistMode = true;
 
-    saveToHistory(tracks);
     displayPlaylist(tracks);
     showToast("🎵 新しいおすすめ5曲を作りました！");
   } catch (err) {
@@ -494,13 +506,14 @@ function displayPlaylist(playlist) {
   });
 }
 
-function createTrackCard(track, index, queue = null) {
+function createTrackCard(track, index, queue = null, onPlay = null) {
   track = normalizeTrack(track);
   const card = document.createElement("div");
   card.className = "track-card";
 
   // 一覧の中の曲を押したら、その一覧を再生リストにして次/前の曲に進めるようにする
   const playFromCard = () => {
+    if (onPlay) return onPlay();
     if (queue && queue.length) {
       currentPlaylist = queue;
       currentTrackIndex = index;
@@ -543,6 +556,8 @@ function createTrackCard(track, index, queue = null) {
   const playBtn = document.createElement("button");
   playBtn.className = "track-play-button";
   playBtn.textContent = "▶";
+  playBtn.type = "button";
+  playBtn.setAttribute("aria-label", `${track.title}を再生`);
   playBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     playFromCard();
@@ -601,6 +616,7 @@ async function getFreshSpotifyToken(force = false) {
 }
 
 async function playTrack(track, index = 0, playlistMode = false) {
+  const requestId = ++playbackRequestId;
   track = normalizeTrack(track);
   if (!track || !track.uri) {
     alert("この曲は再生できません。");
@@ -608,6 +624,7 @@ async function playTrack(track, index = 0, playlistMode = false) {
   }
 
   spotifyToken = await getFreshSpotifyToken(false);
+  if (requestId !== playbackRequestId) return;
   if (!spotifyToken) {
     alert("SpotifyにログインするとWebブラウザ上でフル再生ができます。");
     const loginBtn = document.getElementById("spotifyLoginButton");
@@ -618,6 +635,8 @@ async function playTrack(track, index = 0, playlistMode = false) {
   if (!spotifyPlayer) setupSpotifyPlayer();
 
   contextMode = false;
+  localPlayback = true;
+  queueRequestId++;
   endHandled = false;
   currentTrackData = track;
   currentTrackIndex = index;
@@ -630,7 +649,8 @@ async function playTrack(track, index = 0, playlistMode = false) {
   updateMediaSession(track);
 
   await waitForDevice();
-  await startPlayback({ uris: [track.uri], position_ms: 0 });
+  if (requestId !== playbackRequestId) return;
+  if (await startPlayback({ uris: [track.uri], position_ms: 0 })) saveToHistory([track]);
 }
 
 function resetPlayerClock(trackId = "") {
@@ -663,10 +683,14 @@ async function startPlayback(body) {
     }
     if (!res.ok && res.status !== 204) {
       console.warn("Spotify再生エラー:", res.status);
-      showToast(`再生できませんでした (${res.status})`);
+      showToast(`再生できませんでした (${res.status})。Spotifyの接続・再生デバイスを確認してください`);
+      return false;
     }
+    return true;
   } catch (err) {
     console.error("Play Track Error:", err);
+    showToast("再生できませんでした。通信状況を確認してください");
+    return false;
   }
 }
 
@@ -697,12 +721,19 @@ function setupSpotifyPlayer() {
     const curr = state.track_window?.current_track;
     if (curr) {
       showPlayerPanel();
+      const changed = currentTrackData?.uri !== curr.uri;
       currentTrackData = normalizeTrack(curr);
+      if (changed) saveToHistory([currentTrackData]);
+      if (contextMode && document.getElementById("fullPlayer")?.classList.contains("queue-open")) refreshSpotifyQueue();
       updatePlayerInfo(currentTrackData);
       updateMediaSession(currentTrackData);
     }
   });
 
+  spotifyPlayer.addListener("not_ready", () => { spotifyDeviceId = ""; });
+  ["initialization_error", "authentication_error", "account_error", "playback_error"].forEach((event) => {
+    spotifyPlayer.addListener(event, () => showToast("Spotifyの再生接続を確認してください。ブラウザ再生にはPremiumが必要です"));
+  });
   spotifyPlayer.connect();
 }
 
@@ -780,6 +811,15 @@ function renderProgress(pos) {
 }
 
 function updatePlayerState(state) {
+  if (contextMode) {
+    if (typeof state.shuffle === "boolean") appSettings.shuffle = state.shuffle;
+    if ([0, 1, 2].includes(state.repeat_mode)) appSettings.repeat = ["off", "all", "one"][state.repeat_mode];
+    const shuffle = document.getElementById("shuffleToggle");
+    if (shuffle) shuffle.checked = appSettings.shuffle;
+    const repeat = document.getElementById("repeatMode");
+    if (repeat) repeat.value = appSettings.repeat;
+    renderFpExtras();
+  }
   const before = playerClock;
   const expected = clockPosition(before);
   const curr = state.track_window?.current_track;
@@ -1172,24 +1212,7 @@ async function loadSpotifyPlaylists() {
   }
 
   try {
-    const all = [];
-    let url = "https://api.spotify.com/v1/me/playlists?limit=50";
-    let tok = token;
-    while (url && all.length < 200) {
-      let res = await fetch(url, { headers: { Authorization: `Bearer ${tok}` } });
-      if (res.status === 401) {
-        tok = await getFreshSpotifyToken(true);
-        res = await fetch(url, { headers: { Authorization: `Bearer ${tok}` } });
-      }
-      if (!res.ok) {
-        const err = new Error(`status ${res.status}`);
-        err.status = res.status;
-        throw err;
-      }
-      const data = await res.json();
-      all.push(...(data.items || []).filter(Boolean));
-      url = data.next;
-    }
+    const all = await fetchSpotifyPages("https://api.spotify.com/v1/me/playlists?limit=50", () => reqId !== playlistLoadId);
     if (reqId !== playlistLoadId) return;
     renderSpotifyPlaylists(all);
   } catch (e) {
@@ -1225,7 +1248,7 @@ function renderSpotifyPlaylists(list) {
       </div>
       <div class="spotify-playlist-arrow">›</div>
     `;
-    const play = () => playSpotifyPlaylist(p);
+    const play = () => openSpotifyPlaylist(p);
     card.addEventListener("click", play);
     card.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -1237,26 +1260,127 @@ function renderSpotifyPlaylists(list) {
   });
 }
 
-async function playSpotifyPlaylist(p) {
+// Spotify paging URLs are followed only on Spotify's API origin.
+async function spotifyRequest(url, options = {}) {
+  const target = new URL(url, "https://api.spotify.com/v1/");
+  if (target.origin !== "https://api.spotify.com" || !target.pathname.startsWith("/v1/")) throw new Error("Invalid Spotify URL");
+  let token = await getFreshSpotifyToken();
+  if (!token) throw Object.assign(new Error("Spotify login required"), { status: 401 });
+  const send = () => fetch(target.href, { ...options, headers: { ...options.headers, Authorization: `Bearer ${token}` } });
+  let response = await send();
+  if (response.status === 401) {
+    token = await getFreshSpotifyToken(true);
+    response = await send();
+  }
+  if (!response.ok) throw Object.assign(new Error(`Spotify ${response.status}`), { status: response.status });
+  return response.status === 204 ? null : response.json();
+}
+
+async function fetchSpotifyPages(url, cancelled = () => false) {
+  const items = [];
+  const visited = new Set();
+  while (url && !cancelled()) {
+    if (visited.has(url)) throw new Error("Repeated Spotify page");
+    visited.add(url);
+    const data = await spotifyRequest(url);
+    items.push(...(data?.items || []).filter(Boolean));
+    url = data?.next;
+  }
+  return items;
+}
+
+function spotifyReadError(error) {
+  if (error.status === 401) return "Spotifyにログインし直してください。";
+  if (error.status === 403) return "この内容へのアクセスが許可されていません。Spotifyの権限やプレイリストの共有設定を確認してください。";
+  if (error.status === 404) return "プレイリストが見つからないか、曲の取得に対応していません。Spotifyで開いて確認してください。";
+  if (error.status === 429) return "Spotifyへのアクセスが集中しています。時間をおいて再度お試しください。";
+  return "取得に失敗しました。通信状況を確認して再度お試しください。";
+}
+
+async function openSpotifyPlaylist(playlist) {
+  showPage("playlistDetailPage");
+  const requestId = ++playlistDetailLoadId;
+  const box = document.getElementById("playlistTracks");
+  const play = document.getElementById("playlistPlay");
+  const retry = document.getElementById("playlistRetry");
+  const link = document.getElementById("playlistSpotifyLink");
+  setText("playlistName", playlist.name || "プレイリスト");
+  setText("playlistDescription", playlist.description || "");
+  setText("playlistMeta", playlist.owner?.display_name || "");
+  link.href = `https://open.spotify.com/playlist/${encodeURIComponent(playlist.id)}`;
+  play.disabled = true;
+  play.onclick = null;
+  retry.hidden = true;
+  box.innerHTML = '<div class="empty-message" role="status">曲を読み込み中...</div>';
+  try {
+    const items = await fetchSpotifyPages(`https://api.spotify.com/v1/playlists/${encodeURIComponent(playlist.id)}/items?limit=50`, () => requestId !== playlistDetailLoadId);
+    if (requestId !== playlistDetailLoadId) return;
+    const tracks = items.map((entry, position) => ({ track: entry.item || entry.track, position }))
+      .filter(({ track }) => track?.type === "track" && !track.is_local && track.is_playable !== false && track.uri?.startsWith("spotify:track:"));
+    setText("playlistMeta", `${items.length}曲・再生可能な曲 ${tracks.length}曲${playlist.owner?.display_name ? ` · ${playlist.owner.display_name}` : ""}`);
+    box.innerHTML = "";
+    if (!tracks.length) box.innerHTML = '<div class="empty-message">再生できる曲がありません。Spotifyで開いて確認できます。</div>';
+    tracks.forEach(({ track, position }, index) => box.appendChild(createTrackCard(track, index, null, () => playSpotifyPlaylist(playlist, position))));
+    play.disabled = !tracks.length;
+    play.onclick = () => playSpotifyPlaylist(playlist, tracks[0].position);
+  } catch (error) {
+    if (requestId !== playlistDetailLoadId) return;
+    box.innerHTML = `<div class="empty-message" role="alert">${escapeHtml(spotifyReadError(error))}</div>`;
+    retry.hidden = false;
+    retry.onclick = () => openSpotifyPlaylist(playlist);
+  }
+}
+
+async function playSpotifyPlaylist(p, position = 0) {
+  const requestId = ++playbackRequestId;
   spotifyToken = await getFreshSpotifyToken(false);
+  if (requestId !== playbackRequestId) return;
   if (!spotifyToken) {
-    alert("SpotifyにログインするとWebブラウザ上でフル再生ができます。");
+    showToast("Spotifyにログインすると再生できます");
     return;
   }
   if (!spotifyPlayer) setupSpotifyPlayer();
-
   contextMode = true;
+  localPlayback = false;
+  queueRequestId++;
+  spotifyQueue = [];
+  queueStatus = "再生待ちを読み込み中...";
   endHandled = false;
   isPlaylistMode = false;
+  currentPlaylist = [];
   currentTrackData = null;
   resetPlayerClock("");
   renderQueue();
   showPlayerPanel();
   setNowPlaying(p.name || "プレイリスト", "プレイリスト", p.images?.[0]?.url || "");
-
   await waitForDevice();
-  await startPlayback({ context_uri: p.uri });
-  showToast(`▶ ${p.name || "プレイリスト"} を再生します`);
+  if (requestId !== playbackRequestId) return;
+  if (await startPlayback({ context_uri: p.uri || `spotify:playlist:${p.id}`, offset: { position }, position_ms: 0 })) {
+    showToast(`▶ ${p.name || "プレイリスト"} を再生します`);
+    refreshSpotifyQueue();
+  } else {
+    queueStatus = "再生を開始できませんでした。もう一度再生してください。";
+    renderQueue();
+  }
+}
+
+async function refreshSpotifyQueue() {
+  if (localPlayback && !contextMode) return renderQueue();
+  const requestId = ++queueRequestId;
+  if (!spotifyQueue.length) queueStatus = "再生待ちを読み込み中...";
+  renderQueue();
+  try {
+    const data = await spotifyRequest("https://api.spotify.com/v1/me/player/queue");
+    if (requestId !== queueRequestId || localPlayback) return;
+    spotifyQueue = (data?.queue || []).filter(Boolean);
+    queueStatus = "";
+    renderQueue();
+  } catch (error) {
+    if (requestId !== queueRequestId) return;
+    spotifyQueue = [];
+    queueStatus = spotifyReadError(error);
+    renderQueue();
+  }
 }
 
 // -------------------------------------------------------------
@@ -1365,7 +1489,11 @@ function bindSettingToggle(id, key, onChange) {
 function initMenuSettings() {
   bindSettingToggle("animationToggle", "animation", applyAppSettings);
   bindSettingToggle("autoplayToggle", "autoplay");
-  bindSettingToggle("shuffleToggle", "shuffle", renderFpExtras);
+  const shuffle = document.getElementById("shuffleToggle");
+  if (shuffle) {
+    shuffle.checked = appSettings.shuffle;
+    shuffle.addEventListener("change", () => setShuffle(shuffle.checked));
+  }
   bindSettingToggle("alwaysShowPlayerToggle", "alwaysShowPlayer", updatePlayerVisibility);
 
   const repeat = document.getElementById("repeatMode");
@@ -1427,12 +1555,25 @@ function initFullPlayer() {
     openFullPlayer();
   });
 
+  document.getElementById("playerPanel")?.addEventListener("keydown", (event) => {
+    if (event.target.id === "playerPanel" && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      openFullPlayer();
+    }
+  });
   document.getElementById("fpClose")?.addEventListener("click", closeFullPlayer);
   document.getElementById("fpQueueButton")?.addEventListener("click", () => {
     fp.classList.toggle("queue-open");
     renderQueue();
+    if (fp.classList.contains("queue-open")) {
+      document.getElementById("fpQueueBack")?.focus();
+      refreshSpotifyQueue();
+    }
   });
-  document.getElementById("fpQueueBack")?.addEventListener("click", () => fp.classList.remove("queue-open"));
+  document.getElementById("fpQueueBack")?.addEventListener("click", () => {
+    fp.classList.remove("queue-open");
+    document.getElementById("fpQueueButton")?.focus();
+  });
 
   document.getElementById("fpFav")?.addEventListener("click", () => {
     if (currentTrackData) toggleFavorite(currentTrackData);
@@ -1443,15 +1584,28 @@ function initFullPlayer() {
     setRepeat(order[(order.indexOf(appSettings.repeat) + 1) % order.length]);
   });
 
+  setInterval(() => {
+    if (!document.hidden && fp.classList.contains("open") && fp.classList.contains("queue-open")) refreshSpotifyQueue();
+  }, 10000);
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && fp.classList.contains("open")) closeFullPlayer();
+    if (!fp.classList.contains("open")) return;
+    if (e.key === "Escape") closeFullPlayer();
+    if (e.key === "Tab") {
+      const controls = [...fp.querySelectorAll("button, input, [tabindex='0']")].filter(el => !el.disabled && el.getClientRects().length);
+      const first = controls[0], last = controls[controls.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    }
   });
 }
 
 function openFullPlayer() {
   const fp = document.getElementById("fullPlayer");
   if (!fp) return;
+  fullPlayerFocus = document.activeElement;
   fp.classList.add("open");
+  document.getElementById("fpClose")?.focus();
+  setPlayerBackgroundInert(true);
   fp.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
   renderFpExtras();
@@ -1464,16 +1618,48 @@ function closeFullPlayer() {
   fp.classList.remove("open", "queue-open");
   fp.setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
+  setPlayerBackgroundInert(false);
+  fullPlayerFocus?.focus();
 }
 
-function setShuffle(value) {
+function setPlayerBackgroundInert(inert) {
+  ["app", "bottomNav", "sideMenu", "menuButton", "playerPanel"].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) element.inert = inert;
+  });
+}
+
+async function setShuffle(value) {
+  if (contextMode) {
+    try {
+      await spotifyRequest(`https://api.spotify.com/v1/me/player/shuffle?state=${!!value}${spotifyDeviceId ? `&device_id=${encodeURIComponent(spotifyDeviceId)}` : ""}`, { method: "PUT" });
+      refreshSpotifyQueue();
+    } catch (error) {
+      const toggle = document.getElementById("shuffleToggle");
+      if (toggle) toggle.checked = appSettings.shuffle;
+      showToast("シャッフルを変更できませんでした。Spotifyの再生接続を確認してください");
+      return;
+    }
+  }
   saveAppSetting("shuffle", !!value);
   const t = document.getElementById("shuffleToggle");
   if (t) t.checked = !!value;
   renderFpExtras();
 }
 
-function setRepeat(mode) {
+async function setRepeat(mode) {
+  if (contextMode) {
+    try {
+      const state = { off: "off", all: "context", one: "track" }[mode];
+      await spotifyRequest(`https://api.spotify.com/v1/me/player/repeat?state=${state}${spotifyDeviceId ? `&device_id=${encodeURIComponent(spotifyDeviceId)}` : ""}`, { method: "PUT" });
+      refreshSpotifyQueue();
+    } catch (error) {
+      const select = document.getElementById("repeatMode");
+      if (select) select.value = appSettings.repeat;
+      showToast("リピートを変更できませんでした。Spotifyの再生接続を確認してください");
+      return;
+    }
+  }
   saveAppSetting("repeat", mode);
   const sel = document.getElementById("repeatMode");
   if (sel) sel.value = mode;
@@ -1496,33 +1682,33 @@ function renderQueue() {
   if (!box) return;
   box.innerHTML = "";
 
-  if (contextMode) {
-    box.innerHTML = `<div class="empty-message">Spotifyのプレイリストを再生中です。曲順はSpotify側で管理されます。</div>`;
+  const remoteQueue = contextMode || !localPlayback;
+  const upcoming = remoteQueue ? spotifyQueue : currentPlaylist.slice(currentTrackIndex + 1);
+  if (remoteQueue && queueStatus) {
+    box.innerHTML = `<div class="empty-message" role="status">${escapeHtml(queueStatus)}</div>`;
     return;
   }
-  if (!currentPlaylist.length) {
-    box.innerHTML = `<div class="empty-message">再生リストはまだありません</div>`;
+  if (!upcoming.length) {
+    box.innerHTML = '<div class="empty-message">次に再生する曲はありません</div>';
     return;
   }
-
-  currentPlaylist.forEach((raw, i) => {
-    const t = normalizeTrack(raw);
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "fp-queue-item" + (i === currentTrackIndex ? " current" : "");
+  upcoming.forEach((raw, index) => {
+    const track = normalizeTrack(raw);
+    const row = document.createElement(remoteQueue ? "div" : "button");
+    row.className = "fp-queue-item";
+    if (!remoteQueue) {
+      row.type = "button";
+      row.setAttribute("aria-label", `${track.title}を再生`);
+      const position = currentTrackIndex + 1 + index;
+      row.addEventListener("click", () => playTrack(track, position, true));
+    }
     row.innerHTML = `
-      <img src="${escapeHtml(t.image)}" alt="">
+      <img src="${escapeHtml(track.image)}" alt="" loading="lazy">
       <div class="fp-queue-info">
-        <div class="fp-queue-title">${escapeHtml(t.title)}</div>
-        <div class="fp-queue-artist">${escapeHtml(getArtistText(t))}</div>
+        <div class="fp-queue-title">${escapeHtml(track.title)}</div>
+        <div class="fp-queue-artist">${escapeHtml(getArtistText(track) || track.show?.publisher || "")}</div>
       </div>
-      <span class="fp-queue-marker">${i === currentTrackIndex ? "▶" : "▷"}</span>
-    `;
-    row.addEventListener("click", () => {
-      isPlaylistMode = true;
-      currentTrackIndex = i;
-      playTrack(t, i, true);
-    });
+      <span class="fp-queue-marker">${index + 1}</span>`;
     box.appendChild(row);
   });
 }
