@@ -1305,6 +1305,14 @@ async function openSpotifyPlaylist(playlist) {
   const retry = document.getElementById("playlistRetry");
   const link = document.getElementById("playlistSpotifyLink");
   setText("playlistName", playlist.name || "プレイリスト");
+  const artwork = playlist.images?.[0]?.url || "";
+  ["playlistCover", "playlistBackdrop"].forEach((id) => {
+    const image = document.getElementById(id);
+    if (!image) return;
+    image.hidden = !artwork;
+    image.onerror = () => { image.hidden = true; };
+    if (artwork) image.src = artwork;
+  });
   setText("playlistDescription", playlist.description || "");
   setText("playlistMeta", playlist.owner?.display_name || "");
   link.href = `https://open.spotify.com/playlist/${encodeURIComponent(playlist.id)}`;
