@@ -31,6 +31,14 @@ let searchRequestId = 0;
 let playbackRequestId = 0;
 let volumeInitialized = false;
 
+// 再生状態の時計（Spotifyの状態変化は秒ごとには来ないため、自前で進める）
+let playerClock = { position: 0, duration: 0, paused: true, ts: Date.now(), trackId: "" };
+let isSeeking = false;
+let progressTimer = null;
+let endHandled = false;
+let contextMode = false; // Spotifyプレイリスト丸ごと再生中
+let playlistLoadId = 0;
+
 const APP_SETTINGS_DEFAULTS = {
   theme: "ocean",
   background: "default",
@@ -40,6 +48,7 @@ const APP_SETTINGS_DEFAULTS = {
   repeat: "off",
   alwaysShowPlayer: false,
   notifications: true,
+  volume: 50,
 };
 
 let appSettings = { ...APP_SETTINGS_DEFAULTS };
@@ -53,6 +62,7 @@ const STORAGE_KEYS = {
   repeat: "music_picker_repeat",
   alwaysShowPlayer: "music_picker_player_always_visible",
   notifications: "music_picker_notifications",
+  volume: "music_picker_volume",
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -85,12 +95,16 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function loadAppSettings() {
-  appSettings.theme = localStorage.getItem(STORAGE_KEYS.theme) || APP_SETTINGS_DEFAULTS.theme;
+  // ocean = ダークモードOFF(白) / night = ダークモードON(黒)。保存値が無ければOFF
+  appSettings.theme = localStorage.getItem(STORAGE_KEYS.theme) === "night" ? "night" : "ocean";
   appSettings.animation = localStorage.getItem(STORAGE_KEYS.animation) !== "false";
   appSettings.autoplay = localStorage.getItem(STORAGE_KEYS.autoplay) !== "false";
   appSettings.shuffle = localStorage.getItem(STORAGE_KEYS.shuffle) === "true";
   appSettings.repeat = localStorage.getItem(STORAGE_KEYS.repeat) || "off";
   appSettings.alwaysShowPlayer = localStorage.getItem(STORAGE_KEYS.alwaysShowPlayer) === "true";
+  const savedVolume = localStorage.getItem(STORAGE_KEYS.volume);
+  const vol = Number(savedVolume);
+  appSettings.volume = savedVolume !== null && Number.isFinite(vol) ? Math.min(100, Math.max(0, vol)) : APP_SETTINGS_DEFAULTS.volume;
 }
 
 function saveAppSetting(key, value) {
@@ -100,7 +114,10 @@ function saveAppSetting(key, value) {
 }
 
 function applyAppSettings() {
-  document.body.dataset.theme = appSettings.theme;
+  const theme = appSettings.theme === "night" ? "night" : "ocean";
+  document.documentElement.dataset.theme = theme;
+  document.body.dataset.theme = theme;
+  document.body.classList.toggle("no-animation", !appSettings.animation);
 }
 
 // -------------------------------------------------------------
@@ -201,7 +218,10 @@ function showPage(pageId) {
   document.querySelectorAll(".menu-link").forEach((l) => l.classList.toggle("active", l.dataset.page === pageId));
   document.querySelectorAll(".bottom-nav-link").forEach((l) => l.classList.toggle("active", l.dataset.page === pageId));
 
-  if (pageId === "favoritesPage") updateLibraryPage();
+  if (pageId === "favoritesPage") {
+    updateLibraryPage();
+    loadSpotifyPlaylists();
+  }
   if (pageId === "historyPage") updateHistoryPage();
 }
 
@@ -272,13 +292,13 @@ function initHome() {
         if (aiMoodResult) {
           const kw = (aiMoodAnalysis.keywords || []).join(" ・ ");
           aiMoodResult.innerHTML = `
-            <div style="font-weight:bold;color:#00e676;margin-top:8px;">✓ AI分析完了: ${escapeHtml(aiMoodAnalysis.summary)}</div>
-            <div style="font-size:11px;color:#a8b5b5;margin-top:3px;">エネルギー: ${aiMoodAnalysis.energy}/5 | 明るさ: ${aiMoodAnalysis.positivity}/5 ${kw ? `| タグ: ${escapeHtml(kw)}` : ""}</div>
+            <div class="ai-result-title">✓ AI分析完了: ${escapeHtml(aiMoodAnalysis.summary)}</div>
+            <div class="ai-result-meta">エネルギー: ${aiMoodAnalysis.energy}/5 | 明るさ: ${aiMoodAnalysis.positivity}/5 ${kw ? `| タグ: ${escapeHtml(kw)}` : ""}</div>
           `;
         }
         showToast("🤖 気分をAIが分析しました");
       } catch (e) {
-        if (aiMoodResult) aiMoodResult.innerHTML = `<div style="color:#ff5252;font-size:11px;margin-top:6px;">${escapeHtml(e.message)}</div>`;
+        if (aiMoodResult) aiMoodResult.innerHTML = `<div class="ai-result-error">${escapeHtml(e.message)}</div>`;
       } finally {
         aiMoodButton.disabled = false;
         aiMoodButton.textContent = "🤖 AIに気分を分析してもらう";
@@ -295,49 +315,58 @@ function initHome() {
 function initArtistSearch() {
   const input = document.getElementById("artistSearch");
   const results = document.getElementById("artistResults");
-  const selected = document.getElementById("selectedArtist");
   if (!input || !results) return;
 
-  input.addEventListener("input", async () => {
+  let artistReq = 0;
+  let debounce = null;
+
+  input.addEventListener("input", () => {
+    clearTimeout(debounce);
     const keyword = input.value.trim();
     if (!keyword) {
+      artistReq++;
       results.innerHTML = "";
       return;
     }
-    try {
-      const res = await fetch(`/api/artists?q=${encodeURIComponent(keyword)}`);
-      const artists = await res.json();
-      results.innerHTML = "";
-      if (!Array.isArray(artists) || !artists.length) {
-        results.innerHTML = `<div style="padding:8px;font-size:11px;color:#888;">見つかりませんでした</div>`;
-        return;
-      }
-      artists.forEach((a) => {
-        const item = document.createElement("div");
-        item.style.cssText = "display:flex;align-items:center;gap:8px;padding:6px;cursor:pointer;border-bottom:1px solid #222;";
-        item.innerHTML = `
-          ${a.image ? `<img src="${a.image}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">` : ""}
-          <span style="font-size:12px;">${escapeHtml(a.name)}</span>
-        `;
-        item.addEventListener("click", () => {
-          selectedArtistId = a.id;
-          selectedArtistName = a.name;
-          selectedArtistImage = a.image;
-          results.innerHTML = "";
-          input.value = "";
-          if (selected) {
-            selected.style.display = "flex";
-            selected.style.cssText = "display:flex;align-items:center;gap:8px;margin-top:8px;padding:6px 10px;background:#18221e;border:1px solid #00e676;border-radius:8px;";
-            selected.innerHTML = `
-              <span style="font-size:12px;color:#00e676;font-weight:bold;">✓ 選択中: ${escapeHtml(a.name)}</span>
-              <button type="button" style="margin-left:auto;background:none;border:none;color:#aaa;cursor:pointer;" onclick="clearSelectedArtist()">×</button>
-            `;
-          }
+    debounce = setTimeout(async () => {
+      const reqId = ++artistReq;
+      try {
+        const res = await fetch(`/api/artists?q=${encodeURIComponent(keyword)}`);
+        const artists = await res.json();
+        if (reqId !== artistReq) return;
+        results.innerHTML = "";
+        if (!Array.isArray(artists) || !artists.length) {
+          results.innerHTML = `<div class="artist-result empty">見つかりませんでした</div>`;
+          return;
+        }
+        artists.forEach((a) => {
+          const item = document.createElement("div");
+          item.className = "artist-result";
+          item.innerHTML = `${a.image ? `<img src="${escapeHtml(a.image)}" alt="">` : ""}<span>${escapeHtml(a.name)}</span>`;
+          item.addEventListener("click", () => {
+            selectedArtistId = a.id;
+            selectedArtistName = a.name;
+            selectedArtistImage = a.image || "";
+            results.innerHTML = "";
+            input.value = "";
+            renderSelectedArtist();
+          });
+          results.appendChild(item);
         });
-        results.appendChild(item);
-      });
-    } catch {}
+      } catch {}
+    }, 250);
   });
+}
+
+function renderSelectedArtist() {
+  const s = document.getElementById("selectedArtist");
+  if (!s) return;
+  s.style.display = "flex";
+  s.innerHTML = `
+    ${selectedArtistImage ? `<img src="${escapeHtml(selectedArtistImage)}" alt="">` : ""}
+    <span class="selected-artist-name">✓ 選択中: ${escapeHtml(selectedArtistName)}</span>
+    <button type="button" class="selected-artist-clear" aria-label="選択を解除" onclick="clearSelectedArtist()">×</button>
+  `;
 }
 
 window.clearSelectedArtist = function () {
@@ -473,7 +502,9 @@ function createTrackCard(track, index) {
   img.className = "track-image";
   img.src = track.image || "";
   img.alt = track.title || "";
-  img.onerror = () => (img.style.display = "none");
+  // 画像が無い曲でもカードの列幅が崩れないよう、非表示ではなく透明にする
+  img.onerror = () => (img.style.visibility = "hidden");
+  if (!track.image) img.style.visibility = "hidden";
 
   const info = document.createElement("div");
   info.className = "track-info";
@@ -506,11 +537,12 @@ function createTrackCard(track, index) {
 
   const favBtn = document.createElement("button");
   favBtn.className = "favorite-button";
+  favBtn.type = "button";
+  favBtn.dataset.uri = track.uri || "";
   updateFavoriteButton(favBtn, track);
   favBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    toggleFavorite(track);
-    updateFavoriteButton(favBtn, track);
+    toggleFavorite(track); // 内部で全画面のハートとライブラリを更新
   });
 
   const spotLink = document.createElement("a");
@@ -575,26 +607,52 @@ async function playTrack(track, index = 0, playlistMode = false) {
 
   if (!spotifyPlayer) setupSpotifyPlayer();
 
+  contextMode = false;
+  endHandled = false;
   currentTrackData = track;
   currentTrackIndex = index;
   isPlaylistMode = playlistMode;
 
+  resetPlayerClock(track.id);
   showPlayerPanel();
   updatePlayerInfo(track);
   updateMediaSession(track);
 
-  try {
-    const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${encodeURIComponent(spotifyDeviceId)}`, {
+  await waitForDevice();
+  await startPlayback({ uris: [track.uri], position_ms: 0 });
+}
+
+function resetPlayerClock(trackId = "") {
+  playerClock = { position: 0, duration: 0, paused: true, ts: Date.now(), trackId };
+  renderProgress(0);
+}
+
+async function waitForDevice(timeout = 4000) {
+  const start = Date.now();
+  while (!spotifyDeviceId && Date.now() - start < timeout) {
+    await new Promise((r) => setTimeout(r, 200));
+  }
+}
+
+async function startPlayback(body) {
+  const send = () =>
+    fetch(`https://api.spotify.com/v1/me/player/play${spotifyDeviceId ? `?device_id=${encodeURIComponent(spotifyDeviceId)}` : ""}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${spotifyToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ uris: [track.uri], position_ms: 0 }),
+      body: JSON.stringify(body),
     });
-
+  try {
+    let res = await send();
+    if (res.status === 401) {
+      spotifyToken = await getFreshSpotifyToken(true);
+      res = await send();
+    }
     if (!res.ok && res.status !== 204) {
       console.warn("Spotify再生エラー:", res.status);
+      showToast(`再生できませんでした (${res.status})`);
     }
   } catch (err) {
     console.error("Play Track Error:", err);
@@ -613,11 +671,12 @@ function setupSpotifyPlayer() {
       const t = (await getFreshSpotifyToken(false)) || localStorage.getItem("spotifyAccessToken") || "";
       cb(t);
     },
-    volume: 0.5,
+    volume: appSettings.volume / 100,
   });
 
   spotifyPlayer.addListener("ready", ({ device_id }) => {
     spotifyDeviceId = device_id;
+    spotifyPlayer.setVolume(appSettings.volume / 100).catch(() => {});
     showSpotifyStatus("✓ Spotify接続済み");
   });
 
@@ -626,6 +685,7 @@ function setupSpotifyPlayer() {
     updatePlayerState(state);
     const curr = state.track_window?.current_track;
     if (curr) {
+      showPlayerPanel();
       currentTrackData = normalizeTrack(curr);
       updatePlayerInfo(currentTrackData);
       updateMediaSession(currentTrackData);
@@ -648,49 +708,216 @@ function showPlayerPanel() {
   if (panel) panel.style.display = "block";
 }
 
+function updatePlayerVisibility() {
+  const panel = document.getElementById("playerPanel");
+  if (!panel) return;
+  panel.style.display = appSettings.alwaysShowPlayer || currentTrackData || contextMode ? "block" : "none";
+}
+
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
 function updatePlayerInfo(track) {
   track = normalizeTrack(track);
   if (!track) return;
-  const title = document.getElementById("playerTitle");
-  const artist = document.getElementById("playerArtist");
-  const img = document.getElementById("playerImage");
+  const title = track.title || "曲名なし";
+  const artist = getArtistText(track);
 
-  if (title) title.textContent = track.title || "曲名なし";
-  if (artist) artist.textContent = getArtistText(track);
-  if (img) img.src = track.image || "";
+  setText("playerTitle", title);
+  setText("playerArtist", artist);
+  setText("menuPlayerTitle", title);
+  setText("menuPlayerArtist", artist);
+  ["playerImage", "menuPlayerImage"].forEach((id) => {
+    const img = document.getElementById(id);
+    if (img) img.src = track.image || "";
+  });
+}
+
+function clockPosition(c = playerClock) {
+  if (c.paused) return c.position;
+  const pos = c.position + (Date.now() - c.ts);
+  return c.duration ? Math.min(c.duration, pos) : pos;
+}
+
+function renderProgress(pos) {
+  const dur = playerClock.duration || 0;
+  ["progressBar", "menuProgressBar"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.max = dur;
+    if (!isSeeking) el.value = pos;
+  });
+  const cur = formatTime(pos);
+  const total = formatTime(dur);
+  setText("currentTime", cur);
+  setText("menuCurrentTime", cur);
+  setText("duration", total);
+  setText("menuDuration", total);
 }
 
 function updatePlayerState(state) {
-  const btn = document.getElementById("playPauseButton");
-  if (btn) btn.textContent = state.paused ? "▶" : "⏸";
+  const before = playerClock;
+  const expected = clockPosition(before);
+  const curr = state.track_window?.current_track;
 
-  const prog = document.getElementById("progressBar");
-  if (prog && state.duration > 0) {
-    prog.max = state.duration;
-    prog.value = state.position;
+  playerClock = {
+    position: state.position,
+    duration: state.duration,
+    paused: state.paused,
+    ts: Date.now(),
+    trackId: curr?.id || "",
+  };
+
+  const icon = state.paused ? "▶" : "⏸";
+  setText("playPauseButton", icon);
+  setText("menuPlayPauseButton", icon);
+  renderProgress(state.position);
+
+  // 曲が最後まで再生されて止まった場合 → 自動再生/リピート処理
+  const endedNaturally =
+    state.paused &&
+    state.position === 0 &&
+    before.duration > 0 &&
+    before.trackId === playerClock.trackId &&
+    expected >= before.duration - 3500;
+  if (endedNaturally && !endHandled) {
+    endHandled = true;
+    handleTrackEnded();
   }
-  const cur = document.getElementById("currentTime");
-  const dur = document.getElementById("duration");
-  if (cur) cur.textContent = formatTime(state.position);
-  if (dur) dur.textContent = formatTime(state.duration);
+  if (!state.paused) endHandled = false;
+}
+
+function startProgressTimer() {
+  if (progressTimer) return;
+  let tick = 0;
+  progressTimer = setInterval(() => {
+    if (isSeeking || playerClock.paused || !playerClock.duration) return;
+    renderProgress(clockPosition());
+    // 5秒ごとにSpotify本体の位置と合わせてズレを補正
+    if (++tick % 20 === 0 && spotifyPlayer) {
+      spotifyPlayer
+        .getCurrentState()
+        .then((st) => {
+          if (st && !isSeeking) updatePlayerState(st);
+        })
+        .catch(() => {});
+    }
+  }, 250);
+}
+
+function bindSeekBar(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener("input", () => {
+    isSeeking = true;
+    const pos = Number(el.value);
+    ["progressBar", "menuProgressBar"].forEach((bid) => {
+      const b = document.getElementById(bid);
+      if (b && b !== el) b.value = pos;
+    });
+    const t = formatTime(pos);
+    setText("currentTime", t);
+    setText("menuCurrentTime", t);
+  });
+  el.addEventListener("change", async () => {
+    const pos = Number(el.value);
+    isSeeking = false;
+    playerClock = { ...playerClock, position: pos, ts: Date.now() };
+    renderProgress(pos);
+    try {
+      await spotifyPlayer?.seek(pos);
+    } catch {}
+  });
+}
+
+function setVolume(value) {
+  const v = Math.min(100, Math.max(0, Math.round(Number(value) || 0)));
+  saveAppSetting("volume", v);
+  ["volumeBar", "menuVolumeBar"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && Number(el.value) !== v) el.value = v;
+  });
+  setText("volumeValue", `${v}%`);
+  setText("menuVolumeValue", `${v}%`);
+  if (spotifyPlayer) spotifyPlayer.setVolume(v / 100).catch(() => {});
+}
+
+function togglePlay() {
+  if (spotifyPlayer && (currentTrackData || contextMode)) {
+    spotifyPlayer.togglePlay();
+  } else if (currentPlaylist.length) {
+    playTrack(currentPlaylist[currentTrackIndex] || currentPlaylist[0], currentTrackIndex, isPlaylistMode);
+  }
+}
+
+function playNext(auto = false) {
+  if (contextMode) {
+    spotifyPlayer?.nextTrack();
+    return;
+  }
+  const n = currentPlaylist.length;
+  if (!n) return;
+  let idx;
+  if (appSettings.shuffle && n > 1) {
+    do {
+      idx = Math.floor(Math.random() * n);
+    } while (idx === currentTrackIndex);
+  } else {
+    idx = currentTrackIndex + 1;
+  }
+  if (idx >= n) {
+    if (appSettings.repeat === "all") idx = 0;
+    else return;
+  }
+  currentTrackIndex = idx;
+  playTrack(currentPlaylist[idx], idx, true);
+}
+
+function playPrevious() {
+  if (contextMode) {
+    spotifyPlayer?.previousTrack();
+    return;
+  }
+  // 3秒以上再生していたら曲の頭に戻す
+  if (clockPosition() > 3000 || currentTrackIndex <= 0) {
+    spotifyPlayer?.seek(0).catch(() => {});
+    playerClock = { ...playerClock, position: 0, ts: Date.now() };
+    renderProgress(0);
+    return;
+  }
+  currentTrackIndex--;
+  playTrack(currentPlaylist[currentTrackIndex], currentTrackIndex, true);
+}
+
+function handleTrackEnded() {
+  if (contextMode) return; // プレイリスト丸ごと再生はSpotify側が次へ進める
+  if (appSettings.repeat === "one" && currentTrackData) {
+    playTrack(currentTrackData, currentTrackIndex, isPlaylistMode);
+    return;
+  }
+  if (!appSettings.autoplay) return;
+  if (currentPlaylist.length <= 1) {
+    if (appSettings.repeat === "all" && currentTrackData) playTrack(currentTrackData, currentTrackIndex, isPlaylistMode);
+    return;
+  }
+  playNext(true);
 }
 
 function initPlayerControls() {
-  document.getElementById("playPauseButton")?.addEventListener("click", () => {
-    spotifyPlayer?.togglePlay();
-  });
-  document.getElementById("nextButton")?.addEventListener("click", () => {
-    if (currentPlaylist.length > currentTrackIndex + 1) {
-      currentTrackIndex++;
-      playTrack(currentPlaylist[currentTrackIndex], currentTrackIndex, true);
-    }
-  });
-  document.getElementById("previousButton")?.addEventListener("click", () => {
-    if (currentTrackIndex > 0) {
-      currentTrackIndex--;
-      playTrack(currentPlaylist[currentTrackIndex], currentTrackIndex, true);
-    }
-  });
+  ["playPauseButton", "menuPlayPauseButton"].forEach((id) =>
+    document.getElementById(id)?.addEventListener("click", togglePlay)
+  );
+  ["nextButton", "menuNextButton"].forEach((id) =>
+    document.getElementById(id)?.addEventListener("click", () => playNext(false))
+  );
+  ["previousButton", "menuPreviousButton"].forEach((id) =>
+    document.getElementById(id)?.addEventListener("click", playPrevious)
+  );
+  bindSeekBar("progressBar");
+  bindSeekBar("menuProgressBar");
+  startProgressTimer();
 }
 
 function formatTime(ms) {
@@ -782,7 +1009,7 @@ function openSpotifySaveModal(playlist) {
         <button class="spotify-cancel-button" onclick="document.getElementById('spotifySaveModal').remove()">キャンセル</button>
         <button class="spotify-confirm-button" id="confirmSaveSpotify">🎵 保存する</button>
       </div>
-      <div id="spotifySaveStatus" style="font-size:11px;color:#00e676;margin-top:8px;"></div>
+      <div id="spotifySaveStatus" class="spotify-save-status"></div>
     </div>
   `;
   document.body.appendChild(modal);
@@ -803,11 +1030,12 @@ function openSpotifySaveModal(playlist) {
       if (!res.ok) throw new Error(data.error || "保存に失敗しました。");
 
       if (status) {
-        status.innerHTML = `✓ 保存完了！ <a href="${data.spotifyUrl}" target="_blank" style="color:#00e676;text-decoration:underline;">Spotifyで開く</a>`;
+        status.innerHTML = `✓ 保存完了！ <a href="${data.spotifyUrl}" target="_blank" class="spotify-save-link">Spotifyで開く</a>`;
       }
       showToast("🎵 Spotifyに保存しました！");
+      loadSpotifyPlaylists();
     } catch (e) {
-      if (status) status.innerHTML = `<span style="color:#ff5252;">${escapeHtml(e.message)}</span>`;
+      if (status) status.innerHTML = `<span class="ai-result-error">${escapeHtml(e.message)}</span>`;
     }
   });
 }
@@ -836,6 +1064,7 @@ function getFavorites() {
 }
 
 function toggleFavorite(track) {
+  if (!track?.uri) return;
   let favs = getFavorites();
   const exists = favs.some((t) => t.uri === track.uri);
   if (exists) {
@@ -846,12 +1075,21 @@ function toggleFavorite(track) {
     showToast("❤️ お気に入りに追加しました");
   }
   localStorage.setItem("music_picker_favorites", JSON.stringify(favs));
+  refreshFavoriteViews();
 }
 
 function updateFavoriteButton(btn, track) {
-  const exists = getFavorites().some((t) => t.uri === track.uri);
+  const uri = track?.uri || btn.dataset.uri;
+  const exists = getFavorites().some((t) => t.uri === uri);
   btn.textContent = exists ? "❤️" : "♡";
   btn.classList.toggle("favorite-active", exists);
+  btn.setAttribute("aria-label", exists ? "お気に入りから削除" : "お気に入りに追加");
+}
+
+// 画面上のすべてのハートとライブラリのお気に入り一覧を同期
+function refreshFavoriteViews() {
+  document.querySelectorAll(".favorite-button").forEach((btn) => updateFavoriteButton(btn, { uri: btn.dataset.uri }));
+  updateLibraryPage();
 }
 
 function saveToHistory(tracks) {
@@ -875,7 +1113,7 @@ function updateHistoryPage() {
   } catch {}
   c.innerHTML = "";
   if (!hist.length) {
-    c.innerHTML = `<div style="padding:14px;color:#888;font-size:12px;">履歴はまだありません</div>`;
+    c.innerHTML = `<div class="empty-message">履歴はまだありません</div>`;
     return;
   }
   hist.forEach((t, i) => c.appendChild(createTrackCard(t, i)));
@@ -883,23 +1121,266 @@ function updateHistoryPage() {
 
 function updateLibraryPage() {
   const f = document.getElementById("favoritesList");
-  if (f) {
-    const favs = getFavorites();
-    f.innerHTML = "";
-    if (!favs.length) {
-      f.innerHTML = `<div style="padding:14px;color:#888;font-size:12px;">お気に入りはまだありません</div>`;
-    } else {
-      favs.forEach((t, i) => f.appendChild(createTrackCard(t, i)));
+  if (!f) return;
+  const favs = getFavorites();
+  f.innerHTML = "";
+  if (!favs.length) {
+    f.innerHTML = `<div class="empty-message">お気に入りはまだありません</div>`;
+    return;
+  }
+  favs.forEach((t, i) => f.appendChild(createTrackCard(t, i)));
+}
+
+async function loadSpotifyPlaylists() {
+  const box = document.getElementById("playlistList");
+  if (!box) return;
+  const reqId = ++playlistLoadId;
+
+  const token = await getFreshSpotifyToken(false);
+  if (reqId !== playlistLoadId) return;
+  if (!token) {
+    box.innerHTML = `<div class="empty-message">Spotifyにログインするとプレイリストが表示されます</div>`;
+    return;
+  }
+  if (!box.querySelector(".spotify-playlist-card")) {
+    box.innerHTML = `<div class="empty-message">🔄 読み込み中...</div>`;
+  }
+
+  try {
+    const all = [];
+    let url = "https://api.spotify.com/v1/me/playlists?limit=50";
+    let tok = token;
+    while (url && all.length < 200) {
+      let res = await fetch(url, { headers: { Authorization: `Bearer ${tok}` } });
+      if (res.status === 401) {
+        tok = await getFreshSpotifyToken(true);
+        res = await fetch(url, { headers: { Authorization: `Bearer ${tok}` } });
+      }
+      if (!res.ok) {
+        const err = new Error(`status ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      const data = await res.json();
+      all.push(...(data.items || []).filter(Boolean));
+      url = data.next;
     }
+    if (reqId !== playlistLoadId) return;
+    renderSpotifyPlaylists(all);
+  } catch (e) {
+    if (reqId !== playlistLoadId) return;
+    const msg =
+      e.status === 401 || e.status === 403
+        ? "プレイリストを取得できませんでした。Spotifyにログインし直してください"
+        : "プレイリストの取得に失敗しました。時間をおいて再度お試しください";
+    box.innerHTML = `<div class="empty-message">${msg}</div>`;
   }
 }
 
-function initSearch() {}
-function initSettings() {}
-function initTheme() {}
-function initMenuSettings() {}
-function initLibraryAccordion() {}
-function updateMenuPlayerEmptyState() {}
+function renderSpotifyPlaylists(list) {
+  const box = document.getElementById("playlistList");
+  if (!box) return;
+  box.innerHTML = "";
+  if (!list.length) {
+    box.innerHTML = `<div class="empty-message">プレイリストはまだありません</div>`;
+    return;
+  }
+  list.forEach((p) => {
+    const count = p.tracks?.total ?? p.items?.total;
+    const img = p.images?.[1]?.url || p.images?.[0]?.url || "";
+    const card = document.createElement("div");
+    card.className = "spotify-playlist-card";
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.innerHTML = `
+      <div class="spotify-playlist-image">${img ? `<img src="${escapeHtml(img)}" alt="" loading="lazy">` : ""}</div>
+      <div class="spotify-playlist-info">
+        <div class="spotify-playlist-name">${escapeHtml(p.name)}</div>
+        <div class="spotify-playlist-count">${count != null ? `${count}曲` : ""}</div>
+      </div>
+      <div class="spotify-playlist-arrow">›</div>
+    `;
+    const play = () => playSpotifyPlaylist(p);
+    card.addEventListener("click", play);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        play();
+      }
+    });
+    box.appendChild(card);
+  });
+}
+
+async function playSpotifyPlaylist(p) {
+  spotifyToken = await getFreshSpotifyToken(false);
+  if (!spotifyToken) {
+    alert("SpotifyにログインするとWebブラウザ上でフル再生ができます。");
+    return;
+  }
+  if (!spotifyPlayer) setupSpotifyPlayer();
+
+  contextMode = true;
+  endHandled = false;
+  isPlaylistMode = false;
+  currentTrackData = null;
+  resetPlayerClock("");
+  showPlayerPanel();
+  setText("playerTitle", p.name || "プレイリスト");
+  setText("playerArtist", "プレイリスト");
+  setText("menuPlayerTitle", p.name || "プレイリスト");
+  setText("menuPlayerArtist", "プレイリスト");
+  const cover = p.images?.[0]?.url || "";
+  ["playerImage", "menuPlayerImage"].forEach((id) => {
+    const img = document.getElementById(id);
+    if (img) img.src = cover;
+  });
+
+  await waitForDevice();
+  await startPlayback({ context_uri: p.uri });
+  showToast(`▶ ${p.name || "プレイリスト"} を再生します`);
+}
+
+// -------------------------------------------------------------
+// Search (Spotify catalog)
+// -------------------------------------------------------------
+function initSearch() {
+  [
+    ["songSearchInput", "songSearchButton"],
+    ["musicSearchInput", "musicSearchButton"],
+  ].forEach(([inputId, btnId]) => {
+    const input = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
+    const box = document.getElementById("searchResults");
+    if (!input || !btn || !box) return;
+    const run = () => runSongSearch(input.value.trim(), box);
+    btn.addEventListener("click", run);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.isComposing) {
+        e.preventDefault();
+        run();
+      }
+    });
+  });
+}
+
+async function runSongSearch(query, box) {
+  if (!query) {
+    box.innerHTML = `<div class="empty-message">曲名やアーティスト名を入力してください</div>`;
+    return;
+  }
+  const reqId = ++searchRequestId;
+  box.innerHTML = `<div class="empty-message">🔄 検索中...</div>`;
+
+  const token = await getFreshSpotifyToken(false);
+  if (reqId !== searchRequestId) return;
+  if (!token) {
+    box.innerHTML = `<div class="empty-message">Spotifyにログインすると検索できます</div>`;
+    return;
+  }
+
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (reqId !== searchRequestId) return;
+    if (!res.ok) throw new Error(`検索に失敗しました (${res.status})`);
+    const data = await res.json();
+    const tracks = normalizeTracks(data.tracks?.items || []);
+    box.innerHTML = "";
+    if (!tracks.length) {
+      box.innerHTML = `<div class="empty-message">「${escapeHtml(query)}」に一致する曲が見つかりませんでした</div>`;
+      return;
+    }
+    tracks.forEach((t, i) => box.appendChild(createTrackCard(t, i)));
+  } catch (e) {
+    if (reqId === searchRequestId) box.innerHTML = `<div class="empty-message">${escapeHtml(e.message)}</div>`;
+  }
+}
+
+// -------------------------------------------------------------
+// Settings / Theme / Menu
+// -------------------------------------------------------------
+function initSettings() {
+  const bind = (ids, fn) => ids.forEach((id) => document.getElementById(id)?.addEventListener("click", fn));
+
+  bind(["clearFavorites", "clearFavoritesButton"], () => {
+    if (!confirm("お気に入りを全部削除しますか？")) return;
+    localStorage.removeItem("music_picker_favorites");
+    refreshFavoriteViews();
+    showToast("お気に入りを削除しました");
+  });
+  bind(["clearHistory", "clearHistoryButton"], () => {
+    if (!confirm("履歴を全部削除しますか？")) return;
+    localStorage.removeItem("music_picker_history");
+    updateHistoryPage();
+    showToast("履歴を削除しました");
+  });
+
+  // 別タブでの変更も反映
+  window.addEventListener("storage", (e) => {
+    if (e.key === "music_picker_favorites") refreshFavoriteViews();
+    if (e.key === "music_picker_history") updateHistoryPage();
+  });
+}
+
+function initTheme() {
+  const toggle = document.getElementById("darkModeToggle");
+  if (!toggle) return;
+  toggle.checked = appSettings.theme === "night"; // ONのときだけ黒背景
+  toggle.addEventListener("change", () => {
+    saveAppSetting("theme", toggle.checked ? "night" : "ocean");
+    applyAppSettings();
+  });
+}
+
+function bindSettingToggle(id, key, onChange) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.checked = !!appSettings[key];
+  el.addEventListener("change", () => {
+    saveAppSetting(key, el.checked);
+    onChange?.(el.checked);
+  });
+}
+
+function initMenuSettings() {
+  bindSettingToggle("animationToggle", "animation", applyAppSettings);
+  bindSettingToggle("autoplayToggle", "autoplay");
+  bindSettingToggle("shuffleToggle", "shuffle");
+  bindSettingToggle("alwaysShowPlayerToggle", "alwaysShowPlayer", updatePlayerVisibility);
+
+  const repeat = document.getElementById("repeatMode");
+  if (repeat) {
+    repeat.value = appSettings.repeat;
+    repeat.addEventListener("change", () => saveAppSetting("repeat", repeat.value));
+  }
+
+  // 音量：下部プレイヤーとサイドメニューのスライダーを双方向で同期
+  ["volumeBar", "menuVolumeBar"].forEach((id) =>
+    document.getElementById(id)?.addEventListener("input", (e) => setVolume(e.target.value))
+  );
+  setVolume(appSettings.volume);
+  updatePlayerVisibility();
+}
+
+function updateMenuPlayerEmptyState() {
+  if (currentTrackData || contextMode) return;
+  setText("menuPlayerTitle", "再生中の曲はありません");
+  setText("menuPlayerArtist", "");
+}
+
+function initLibraryAccordion() {
+  document.querySelectorAll(".library-section-header").forEach((header) => {
+    header.addEventListener("click", () => {
+      const section = header.closest(".library-section");
+      if (!section) return;
+      const collapsed = section.classList.toggle("collapsed");
+      header.setAttribute("aria-expanded", String(!collapsed));
+      if (!collapsed && header.dataset.target === "playlistsContent") loadSpotifyPlaylists();
+    });
+  });
+}
 function initLogout() {
   document.getElementById("logoutButton")?.addEventListener("click", async () => {
     if (!confirm("Spotifyからログアウトしますか？")) return;

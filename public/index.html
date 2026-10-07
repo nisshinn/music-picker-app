@@ -11,6 +11,12 @@
     <meta name="apple-mobile-web-app-title" content="Music Picker">
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="/ui-fix.css">
+    <link rel="stylesheet" href="/theme.css">
+    <script>
+        // 初回描画前にテーマを適用（ちらつき防止）。ocean=ライト(ダークモードOFF) / night=ダーク
+        try { document.documentElement.dataset.theme = localStorage.getItem("music_picker_theme") === "night" ? "night" : "ocean"; }
+        catch (e) { document.documentElement.dataset.theme = "ocean"; }
+    </script>
 </head>
 <body>
 

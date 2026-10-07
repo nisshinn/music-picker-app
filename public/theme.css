@@ -1,330 +1,354 @@
 /* =========================================================
-   theme.css — ダークモード切替 + NOW PLAYING + プレイリスト修正
+   theme.css — ライト/ダーク切替 + 各コンポーネントの配色
+   ocean = ダークモードOFF（白背景） / night = ダークモードON（黒背景）
+   style.css / ui-fix.css より後に読み込むこと
    ========================================================= */
 
-/* ===== テーマ変数 ===== */
-/* night = ダークモード ON（現在の色を維持） */
-body[data-theme="night"] {
-  --th-bg: #0b0f10;
-  --th-panel: #111617;
-  --th-panel2: #171d1e;
-  --th-card: #151a1a;
-  --th-input: #0e1415;
-  --th-border: rgba(255,255,255,.08);
-  --th-border2: rgba(255,255,255,.06);
-  --th-text: #f4f7f7;
-  --th-muted: #7f8a8a;
-  --th-hover: #202525;
-  --th-divider: #252a2a;
-  --th-btn: #1c2222;
-  --th-green: #00e676;
-  --th-green-text: #00150a;
-  --th-overlay: #080c0d;
-  --th-shadow: rgba(0,0,0,.16);
+/* ===== カラー変数 ===== */
+:root,
+:root[data-theme="night"] {
+  color-scheme: dark;
+  --bg: #0b0f10;
+  --panel: #111617;
+  --panel2: #171d1e;
+  --card: #151a1b;
+  --input: #0e1415;
+  --sidebar: #182022;
+  --border: rgba(255,255,255,.10);
+  --text: #f4f7f7;
+  --muted: #8a9595;
+  --sub: #aeb8b8;
+  --hover: #222b2c;
+  --green: #00e676;
+  --accent-text: #00e676;
+  --accent-soft: rgba(0,230,118,.12);
+  --solid: #00e676;
+  --solid-text: #00150a;
+  --btn: #252b2b;
+  --toggle-off: #3a4546;
+  --shadow: rgba(0,0,0,.45);
+  --panel-shadow: none;
+  --reason-bg: rgba(0,230,118,.06);
+  --reason-text: #9ec2b1;
+  --tag-bg: #1e2727;
+  --tag-text: #a8b5b5;
+  --note-bg: linear-gradient(135deg, rgba(0,230,118,.10), rgba(20,40,30,.30));
+  --note-text: #d5f5e3;
+  --note-border: rgba(0,230,118,.30);
+  --danger: #ff6b6b;
 }
 
-/* ocean = ダークモード OFF（ライト） */
-body[data-theme="ocean"] {
-  --th-bg: #eef2f3;
-  --th-panel: #ffffff;
-  --th-panel2: #f5f8f8;
-  --th-card: #f0f4f5;
-  --th-input: #ffffff;
-  --th-border: rgba(0,0,0,.1);
-  --th-border2: rgba(0,0,0,.06);
-  --th-text: #1a2424;
-  --th-muted: #6b7878;
-  --th-hover: #e3e9e9;
-  --th-divider: #dce2e2;
-  --th-btn: #e8eded;
-  --th-green: #00b95d;
-  --th-green-text: #ffffff;
-  --th-overlay: #f4f7f7;
-  --th-shadow: rgba(0,0,0,.08);
+:root[data-theme="ocean"] {
+  color-scheme: light;
+  --bg: #e9eef0;
+  --panel: #ffffff;
+  --panel2: #f4f7f8;
+  --card: #f3f6f7;
+  --input: #ffffff;
+  --sidebar: #ffffff;
+  --border: rgba(0,0,0,.14);
+  --text: #162022;
+  --muted: #5a6769;
+  --sub: #3a4749;
+  --hover: #e3eaec;
+  --green: #00a152;
+  --accent-text: #00703a;
+  --accent-soft: rgba(0,161,82,.12);
+  --solid: #00873f;
+  --solid-text: #ffffff;
+  --btn: #e3eaec;
+  --toggle-off: #aab5b7;
+  --shadow: rgba(20,40,45,.20);
+  --panel-shadow: 0 1px 3px rgba(20,40,45,.10);
+  --reason-bg: rgba(0,161,82,.09);
+  --reason-text: #14603d;
+  --tag-bg: #e3eaec;
+  --tag-text: #3a4749;
+  --note-bg: linear-gradient(135deg, rgba(0,161,82,.12), rgba(0,161,82,.04));
+  --note-text: #17382a;
+  --note-border: rgba(0,161,82,.35);
+  --danger: #c62828;
 }
 
-/* ===== 全体背景・文字色 ===== */
-body[data-theme="ocean"] { background: var(--th-bg) !important; color: var(--th-text) !important; }
-body[data-theme="night"] { background: var(--th-bg) !important; color: var(--th-text) !important; }
-
-/* ===== サイドメニュー ===== */
-body[data-theme="ocean"] .side-menu,
-body[data-theme="night"] .side-menu { background: var(--th-panel) !important; border-right-color: var(--th-border) !important; }
-
-body[data-theme="ocean"] .side-menu .menu-link,
-body[data-theme="night"] .side-menu .menu-link { color: var(--th-muted) !important; }
-body[data-theme="ocean"] .side-menu .menu-link:hover,
-body[data-theme="night"] .side-menu .menu-link:hover { background: var(--th-hover) !important; color: var(--th-green) !important; }
-body[data-theme="ocean"] .side-menu .menu-link.active,
-body[data-theme="night"] .side-menu .menu-link.active { background: rgba(0,185,93,.12) !important; color: var(--th-green) !important; }
-
-body[data-theme="ocean"] .side-menu .menu-section-title,
-body[data-theme="night"] .side-menu .menu-section-title { color: var(--th-muted) !important; }
-
-body[data-theme="ocean"] .side-menu .menu-section,
-body[data-theme="night"] .side-menu .menu-section { border-top-color: var(--th-divider) !important; }
-
-body[data-theme="ocean"] .side-menu .menu-preference-button,
-body[data-theme="night"] .side-menu .menu-preference-button { color: var(--th-muted) !important; }
-body[data-theme="ocean"] .side-menu .menu-preference-button:hover,
-body[data-theme="night"] .side-menu .menu-preference-button:hover { background: var(--th-hover) !important; color: var(--th-green) !important; }
-
-body[data-theme="ocean"] .side-menu .menu-select,
-body[data-theme="night"] .side-menu .menu-select { background: var(--th-input) !important; color: var(--th-text) !important; border-color: var(--th-border) !important; }
-
-/* ===== パネル・カード ===== */
-body[data-theme="ocean"] .picker-box,
-body[data-theme="ocean"] .content-box,
-body[data-theme="ocean"] .library-section,
-body[data-theme="night"] .picker-box,
-body[data-theme="night"] .content-box,
-body[data-theme="night"] .library-section {
-  background: var(--th-panel) !important;
-  border-color: var(--th-border) !important;
+/* ===== 全体 ===== */
+html, body { background: var(--bg) !important; color: var(--text) !important; }
+body { transition: background-color .2s ease, color .2s ease; }
+body.no-animation *, body.no-animation *::before, body.no-animation *::after {
+  transition: none !important;
+  animation: none !important;
 }
+::placeholder { color: var(--muted); opacity: .85; }
 
-body[data-theme="ocean"] .moods button,
-body[data-theme="night"] .moods button { background: var(--th-card) !important; border-color: var(--th-border) !important; color: var(--th-text) !important; }
-body[data-theme="ocean"] .moods button.selected,
-body[data-theme="ocean"] .moods button.active,
-body[data-theme="night"] .moods button.selected,
-body[data-theme="night"] .moods button.active { border-color: var(--th-green) !important; background: rgba(0,185,93,.12) !important; }
+body .page-header h1, body .main-header h1 { color: var(--text); }
+body .page-header p, body .main-header p { color: var(--muted); }
 
-body[data-theme="ocean"] .ai-mood-input,
-body[data-theme="night"] .ai-mood-input { background: var(--th-card) !important; border-color: var(--th-border) !important; }
-body[data-theme="ocean"] .ai-mood-input textarea,
-body[data-theme="night"] .ai-mood-input textarea { background: var(--th-input) !important; border-color: var(--th-border) !important; color: var(--th-text) !important; }
-body[data-theme="ocean"] .ai-mood-input p,
-body[data-theme="night"] .ai-mood-input p { color: var(--th-muted) !important; }
+/* ===== パネル ===== */
+body .picker-box,
+body .content-box,
+body .library-section {
+  background: var(--panel) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--panel-shadow);
+}
+body .picker-box h2 { color: var(--text); }
+body .picker-box p { color: var(--muted); }
+body .spotify-box { background: var(--panel); border-color: var(--border); box-shadow: var(--panel-shadow); }
+body .spotify-status { color: var(--muted); }
 
-body[data-theme="ocean"] .artist-search,
-body[data-theme="ocean"] .big-search,
-body[data-theme="ocean"] .genre-select,
-body[data-theme="night"] .artist-search,
-body[data-theme="night"] .big-search,
-body[data-theme="night"] .genre-select { background: var(--th-input) !important; border-color: var(--th-border) !important; color: var(--th-text) !important; }
+/* ===== 入力 ===== */
+body .artist-search,
+body .big-search,
+body .genre-select,
+body .ai-mood-input textarea {
+  background: var(--input);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+body .genre-select option { background: var(--input); color: var(--text); }
 
-body[data-theme="ocean"] .make-playlist-button,
-body[data-theme="ocean"] .ai-mood-button,
-body[data-theme="night"] .make-playlist-button,
-body[data-theme="night"] .ai-mood-button { background: var(--th-green) !important; color: var(--th-green-text) !important; }
+/* ===== 気分 ===== */
+body .moods button { background: var(--card); border-color: var(--border); color: var(--text); }
+body .moods button:hover { background: var(--hover); }
+body .moods button.selected,
+body .moods button.active {
+  border-color: var(--green);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+body .ai-mood-input { background: var(--card); border-color: var(--border); }
+body .ai-mood-input label { color: var(--text); }
+body .ai-mood-input p { color: var(--muted); }
+body .ai-mood-divider { color: var(--muted); }
+body .ai-mood-button,
+body .make-playlist-button { background: var(--solid); color: var(--solid-text); }
+body .ai-mood-button:disabled,
+body .make-playlist-button:disabled { opacity: .6; cursor: wait !important; }
 
-/* ===== アーティスト検索結果 ===== */
-body[data-theme="ocean"] .artist-result,
-body[data-theme="night"] .artist-result { background: var(--th-card) !important; border-color: var(--th-border2) !important; }
-body[data-theme="ocean"] .artist-result:hover,
-body[data-theme="night"] .artist-result:hover { background: var(--th-hover) !important; }
+.ai-result-title { font-weight: 700; color: var(--accent-text); margin-top: 8px; }
+.ai-result-meta  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.ai-result-error { font-size: 11px; color: var(--danger); margin-top: 6px; }
+.loading { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.empty-message { padding: 14px; color: var(--muted); font-size: 12px; }
+.track-list > .empty-message,
+.search-results > .empty-message { grid-column: 1 / -1; }
 
-/* ===== プレイリスト ===== */
-/* 空の時は非表示 */
+/* ===== アーティスト検索 / 選択中 ===== */
+.artist-results { margin-top: 6px; }
+.artist-result {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; cursor: pointer; font-size: 12px;
+  color: var(--text); border-bottom: 1px solid var(--border); border-radius: 8px;
+}
+.artist-result:hover { background: var(--hover); }
+.artist-result.empty { cursor: default; color: var(--muted); }
+.artist-result.empty:hover { background: transparent; }
+.artist-result img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; }
+
+.selected-artist {
+  align-items: center; gap: 8px; margin-top: 8px; padding: 5px 10px;
+  background: var(--accent-soft); border: 1px solid var(--green); border-radius: 8px;
+}
+.selected-artist img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex: none; }
+.selected-artist-name {
+  font-size: 12px; font-weight: 700; color: var(--accent-text);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.selected-artist-clear {
+  margin-left: auto; background: none; border: 0; color: var(--muted);
+  font-size: 16px; line-height: 1; padding: 2px 4px;
+}
+.selected-artist-clear:hover { color: var(--text); }
+
+/* ===== おすすめ結果 / 曲カード ===== */
+body .ai-curator-note { background: var(--note-bg); border-color: var(--note-border); color: var(--note-text); }
+body .ai-curator-note-title { color: var(--accent-text); }
+body .track-card { background: var(--card); border-color: var(--border); }
+body .track-card:hover { background: var(--hover); }
+.track-info { min-width: 0; }
+body .track-title { color: var(--text); }
+body .track-artist { color: var(--muted); }
+body .track-reason { background: var(--reason-bg); color: var(--reason-text); border-left-color: var(--green); }
+body .track-tag { background: var(--tag-bg); color: var(--tag-text); border-color: var(--border); }
+body .track-play-button { background: var(--solid); color: var(--solid-text); }
+body .favorite-button { color: var(--muted); }
+body .favorite-button.favorite-active { color: #e91e63; }
 #playlist:empty { display: none !important; }
 
-body[data-theme="ocean"] #playlist,
-body[data-theme="night"] #playlist {
-  background: var(--th-panel) !important;
-  border-color: var(--th-border) !important;
-  box-shadow: 0 10px 30px var(--th-shadow) !important;
+/* ===== 検索ページ ===== */
+#searchPage .content-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
 }
-
-body[data-theme="ocean"] #playlist .playlist-header h2,
-body[data-theme="night"] #playlist .playlist-header h2 { color: var(--th-text) !important; }
-
-body[data-theme="ocean"] #playlist .track-card,
-body[data-theme="night"] #playlist .track-card { border-bottom-color: var(--th-border2) !important; }
-body[data-theme="ocean"] #playlist .track-title,
-body[data-theme="night"] #playlist .track-title { color: var(--th-text) !important; }
-body[data-theme="ocean"] #playlist .track-artist,
-body[data-theme="night"] #playlist .track-artist { color: var(--th-muted) !important; }
-body[data-theme="ocean"] #playlist .track-play-button,
-body[data-theme="night"] #playlist .track-play-button { background: var(--th-text) !important; color: var(--th-bg) !important; }
-body[data-theme="ocean"] #playlist .preview-button,
-body[data-theme="ocean"] #playlist .favorite-button,
-body[data-theme="ocean"] #playlist .share-button,
-body[data-theme="night"] #playlist .preview-button,
-body[data-theme="night"] #playlist .favorite-button,
-body[data-theme="night"] #playlist .share-button { background: var(--th-btn) !important; border-color: var(--th-border) !important; color: var(--th-text) !important; }
-body[data-theme="ocean"] #playlist .spotify-button,
-body[data-theme="night"] #playlist .spotify-button { background: var(--th-green) !important; color: var(--th-green-text) !important; }
-body[data-theme="ocean"] #playlist .track-card.playing,
-body[data-theme="night"] #playlist .track-card.playing { background: rgba(0,185,93,.06) !important; }
-body[data-theme="ocean"] #playlist .track-card.playing .track-title,
-body[data-theme="night"] #playlist .track-card.playing .track-title { color: var(--th-green) !important; }
-
-body[data-theme="ocean"] .spotify-save-button,
-body[data-theme="night"] .spotify-save-button { background: var(--th-card) !important; color: var(--th-green) !important; border-color: var(--th-green) !important; }
-
-/* ===== プレイヤーパネル（下部固定） ===== */
-body[data-theme="ocean"] .player-panel,
-body[data-theme="night"] .player-panel {
-  background: var(--th-panel) !important;
-  border-color: var(--th-border) !important;
-  box-shadow: 0 10px 35px var(--th-shadow) !important;
+#searchPage .search-results { grid-column: 1 / -1; display: grid; gap: 6px; }
+.search-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  white-space: nowrap; padding: 0 20px; min-height: 42px;
+  border: 0; border-radius: 10px;
+  background: var(--solid); color: var(--solid-text);
+  font-weight: 800; font-size: 14px;
+  transition: opacity .15s ease, transform .1s ease;
 }
-body[data-theme="ocean"] .player-panel .player-title,
-body[data-theme="night"] .player-panel .player-title { color: var(--th-text) !important; }
-body[data-theme="ocean"] .player-panel .player-artist,
-body[data-theme="night"] .player-panel .player-artist { color: var(--th-muted) !important; }
-body[data-theme="ocean"] .player-panel .player-button,
-body[data-theme="night"] .player-panel .player-button { background: var(--th-btn) !important; color: var(--th-text) !important; }
-body[data-theme="ocean"] .player-panel .play-button,
-body[data-theme="night"] .player-panel .play-button { background: var(--th-text) !important; color: var(--th-bg) !important; }
-
-/* ===== 下部ナビ ===== */
-body[data-theme="ocean"] .bottom-nav,
-body[data-theme="night"] .bottom-nav {
-  background: var(--th-panel) !important;
-  border-color: var(--th-border) !important;
-}
-body[data-theme="ocean"] .bottom-nav-link,
-body[data-theme="night"] .bottom-nav-link { color: var(--th-muted) !important; }
-body[data-theme="ocean"] .bottom-nav-link.active,
-body[data-theme="night"] .bottom-nav-link.active { color: var(--th-green) !important; background: rgba(0,185,93,.12) !important; }
+.search-button:hover { opacity: .9; }
+.search-button:active { transform: scale(.97); }
+.search-button:disabled { opacity: .6; }
 
 /* ===== ライブラリ ===== */
-body[data-theme="ocean"] .library-section-header,
-body[data-theme="night"] .library-section-header { background: var(--th-card) !important; color: var(--th-text) !important; border-color: var(--th-border2) !important; }
-body[data-theme="ocean"] .library-section-header:hover,
-body[data-theme="night"] .library-section-header:hover { background: var(--th-hover) !important; color: var(--th-green) !important; }
-
-body[data-theme="ocean"] .spotify-playlist-card,
-body[data-theme="ocean"] .library-playlist-card,
-body[data-theme="night"] .spotify-playlist-card,
-body[data-theme="night"] .library-playlist-card { background: var(--th-card) !important; border-color: var(--th-border2) !important; }
-body[data-theme="ocean"] .spotify-playlist-card:hover,
-body[data-theme="ocean"] .library-playlist-card:hover,
-body[data-theme="night"] .spotify-playlist-card:hover,
-body[data-theme="night"] .library-playlist-card:hover { background: var(--th-hover) !important; }
-body[data-theme="ocean"] .spotify-playlist-count,
-body[data-theme="ocean"] .library-playlist-meta,
-body[data-theme="night"] .spotify-playlist-count,
-body[data-theme="night"] .library-playlist-meta { color: var(--th-muted) !important; }
-
-/* ===== フルプレイヤー ===== */
-body[data-theme="ocean"] .full-player-overlay,
-body[data-theme="night"] .full-player-overlay { background: var(--th-overlay) !important; }
-body[data-theme="ocean"] .full-player-main,
-body[data-theme="night"] .full-player-main { background: var(--th-overlay) !important; }
-body[data-theme="ocean"] .full-player-close,
-body[data-theme="ocean"] .full-player-queue-button,
-body[data-theme="night"] .full-player-close,
-body[data-theme="night"] .full-player-queue-button { background: var(--th-panel2) !important; }
-body[data-theme="ocean"] .full-player-artist,
-body[data-theme="night"] .full-player-artist { color: var(--th-muted) !important; }
-body[data-theme="ocean"] .full-player-favorite,
-body[data-theme="night"] .full-player-favorite { background: var(--th-card) !important; border-color: var(--th-border) !important; }
-body[data-theme="ocean"] .full-player-extra button,
-body[data-theme="night"] .full-player-extra button { background: var(--th-card) !important; border-color: var(--th-divider) !important; color: var(--th-text) !important; }
-body[data-theme="ocean"] .full-player-queue-item,
-body[data-theme="night"] .full-player-queue-item { border-bottom-color: var(--th-divider) !important; }
-body[data-theme="ocean"] .full-player-queue-screen,
-body[data-theme="night"] .full-player-queue-screen { background: var(--th-overlay) !important; }
-body[data-theme="ocean"] .queue-screen-back,
-body[data-theme="night"] .queue-screen-back { background: var(--th-panel2) !important; }
-
-/* =========================================================
-   NOW PLAYING（サイドメニュー内）
-   ========================================================= */
-.now-playing-section {
-  margin-bottom: 4px;
+body .library-section-header {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
+body .library-section-header:hover { background: var(--hover) !important; color: var(--accent-text) !important; }
+.library-arrow { font-size: 12px; color: var(--muted); transition: transform .2s ease; }
+.library-section.collapsed .library-arrow { transform: rotate(-90deg); }
+.library-section.collapsed .library-section-content { display: none !important; }
 
+body .spotify-playlist-card { background: var(--card) !important; border-color: var(--border) !important; }
+body .spotify-playlist-card:hover { background: var(--hover) !important; border-color: var(--green) !important; }
+.spotify-playlist-image { background: var(--hover); }
+body .spotify-playlist-name {
+  color: var(--text);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+body .spotify-playlist-count { color: var(--muted) !important; }
+.spotify-playlist-arrow { position: absolute; top: 50%; transform: translateY(-50%); color: var(--muted); }
+
+/* ===== 下部プレイヤー ===== */
+body .player-panel { background: var(--panel); border-color: var(--border); box-shadow: 0 10px 35px var(--shadow); }
+body .player-title { color: var(--text); }
+body .player-artist { color: var(--muted); }
+body .player-button { background: var(--btn); color: var(--text); }
+body .player-button:hover { filter: brightness(1.08); }
+body .play-button { background: var(--text) !important; color: var(--bg) !important; }
+body .progress-container, body .volume-container { color: var(--muted); }
+.progress-container { font-size: 10px; }
+.progress-container span { min-width: 30px; text-align: center; font-variant-numeric: tabular-nums; }
+#volumeValue { min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ===== 下部ナビ ===== */
+body .bottom-nav { background: var(--panel); border-color: var(--border); box-shadow: 0 6px 24px var(--shadow); }
+body .bottom-nav-link { color: var(--muted); }
+body .bottom-nav-link.active { color: var(--accent-text); background: var(--accent-soft); }
+
+/* ===== サイドメニュー ===== */
+body .menu-button { color: var(--sub); }
+body .side-menu .menu-section { border-top-color: var(--border); }
+body .side-menu .menu-section-title { color: var(--muted) !important; }
+body .side-menu .menu-link { color: var(--sub) !important; }
+body .side-menu .menu-link:hover { background: var(--hover) !important; color: var(--accent-text) !important; }
+body .side-menu .menu-link.active { background: var(--accent-soft) !important; color: var(--accent-text) !important; }
+body .side-menu .menu-setting,
+body .side-menu .menu-setting-row { color: var(--sub) !important; }
+body .side-menu .menu-setting .menu-setting-row { padding: 0 !important; }
+.menu-setting-label { font-size: 12px; margin-bottom: 6px; }
+body .side-menu .menu-select {
+  width: 100%; padding: 7px 8px; border-radius: 8px;
+  background: var(--input) !important; color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+.menu-volume { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.menu-volume input[type="range"] { flex: 1; min-width: 0; }
+#menuVolumeValue { min-width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ===== NOW PLAYING（サイドメニュー内） ===== */
+.now-playing-section { margin-bottom: 4px; }
 .menu-player {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px;
-  background: var(--th-card);
-  border: 1px solid var(--th-border2);
-  border-radius: 12px;
+  display: flex; flex-direction: column; gap: 8px; padding: 10px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
 }
-
-.menu-player-image {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 10px;
-  display: block;
-}
-.menu-player-image[src=""],
-.menu-player-image:not([src]) {
-  display: none;
-}
-
-.menu-player-info {
-  min-width: 0;
-}
-
+.menu-player-image { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; display: block; }
+.menu-player-image[src=""], .menu-player-image:not([src]) { display: none; }
+.menu-player-info { min-width: 0; display: flex; flex-direction: column-reverse; gap: 3px; }
 .menu-player-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--th-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 13px; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
 .menu-player-artist {
-  font-size: 10px;
-  color: var(--th-muted);
-  margin-top: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 11px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.menu-player-progress { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+.menu-player-progress span { min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
+.menu-player-progress input[type="range"] { flex: 1; min-width: 0; }
+.menu-player-controls { display: flex; align-items: center; justify-content: center; gap: 12px; }
+body .side-menu .menu-player-button {
+  width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--btn) !important; color: var(--text) !important;
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: 14px; line-height: 1;
+  transition: transform .1s ease, filter .15s ease;
+}
+body .side-menu .menu-player-button:hover { filter: brightness(1.08); }
+body .side-menu .menu-player-button:active { transform: scale(.94); }
+body .side-menu .menu-play-button {
+  width: 46px; height: 46px; font-size: 17px;
+  background: var(--solid) !important; color: var(--solid-text) !important;
+  box-shadow: none;
 }
 
-.menu-player-progress {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 9px;
-  color: var(--th-muted);
+/* ===== トグルスイッチ ===== */
+.toggle-switch { position: relative; display: inline-block; width: 42px; height: 24px; flex: none; }
+.toggle-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; border-radius: 999px;
+  background: var(--toggle-off); transition: background-color .2s ease; cursor: pointer;
 }
-
-.menu-player-progress input[type="range"] {
-  flex: 1;
-  accent-color: var(--th-green);
-  min-width: 0;
+.toggle-slider::before {
+  content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px;
+  border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35);
+  transition: transform .2s ease;
 }
-
-.menu-player-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.menu-player-button {
-  width: 34px;
-  height: 34px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--th-btn);
-  color: var(--th-text);
-  cursor: pointer;
-  font-size: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.menu-play-button {
-  width: 42px;
-  height: 42px;
-  background: var(--th-green) !important;
-  color: var(--th-green-text) !important;
-  font-size: 16px;
-}
+.toggle-switch input:checked + .toggle-slider { background: var(--solid); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+.toggle-switch input:focus-visible + .toggle-slider { outline: 2px solid var(--green); outline-offset: 2px; }
 
 /* ===== 設定ページ ===== */
-body[data-theme="ocean"] #settingsPage .settings-box,
-body[data-theme="night"] #settingsPage .settings-box { background: var(--th-panel) !important; }
-
-/* ===== トグルスイッチの色は両テーマ共通 ===== */
-.menu-setting-row input[type="checkbox"]:checked,
-.toggle-switch input[type="checkbox"]:checked {
-  background: #00b95d;
-  border-color: var(--th-green);
+body #settingsPage .settings-box { background: var(--panel) !important; }
+body #settingsPage .settings-box button {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  min-height: 38px !important;
+  padding: 8px 14px !important;
+  font-size: 12px !important;
 }
+body #settingsPage .settings-box button:hover { background: var(--hover) !important; }
+body #settingsPage .settings-box .danger-button { color: var(--danger) !important; }
 
-/* ===== range スライダー ===== */
-input[type="range"] { accent-color: var(--th-green); }
+/* ===== Spotify保存モーダル ===== */
+.spotify-save-modal {
+  position: fixed; inset: 0; z-index: 20000; padding: 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.6);
+}
+.spotify-save-box {
+  position: relative; width: min(420px, 100%); padding: 20px;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: 0 20px 50px var(--shadow);
+}
+.spotify-save-box h2 { margin: 0 0 8px; font-size: 17px; }
+.spotify-save-box p { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+.spotify-save-box input[type="text"] {
+  width: 100%; padding: 10px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--input); color: var(--text);
+}
+.spotify-public-options { display: flex; gap: 16px; margin: 12px 0; font-size: 12px; }
+.spotify-save-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.spotify-cancel-button, .spotify-confirm-button { border: 0; border-radius: 999px; padding: 9px 16px; font-weight: 700; }
+.spotify-cancel-button { background: var(--btn); color: var(--text); }
+.spotify-confirm-button { background: #1DB954; color: #000; }
+.spotify-save-close { position: absolute; top: 8px; right: 12px; background: none; border: 0; font-size: 22px; color: var(--muted); }
+.spotify-save-status { font-size: 11px; color: var(--accent-text); margin-top: 8px; }
+.spotify-save-link { color: var(--accent-text); text-decoration: underline; }
+
+/* ===== 小さな調整 ===== */
+.player-image[src=""], .player-image:not([src]) { visibility: hidden; }
+@media (max-width: 600px) {
+  /* 音量はサイドメニュー側（同期済み）で調整できるので、狭い画面では下部プレイヤーから隠す */
+  body .player-panel .volume-container { display: none; }
+}
