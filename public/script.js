@@ -261,7 +261,168 @@ function showPage(pageId) {
 // -------------------------------------------------------------
 // Home Screen (Mood, Artist, Genre, Gemini AI integration)
 // -------------------------------------------------------------
+const SELECTION_PRESETS_KEY = "music_picker_selection_presets";
+const EXCLUDE_RECENT_KEY = "music_picker_exclude_recent";
+const PRESET_MOODS = ["楽しい", "テンション高い", "落ち着きたい", "しんみり"];
+let excludeRecent = false;
+let moodAnalysisRequestId = 0;
+let artistSearchRequestId = 0;
+let artistSearchTimer = null;
+
+function readSelectionPresets() {
+  try {
+    const value = JSON.parse(localStorage.getItem(SELECTION_PRESETS_KEY) || "[]");
+    if (!Array.isArray(value)) return [];
+    return value.filter((p) => p && typeof p.id === "string" && typeof p.name === "string" && p.name.trim())
+      .slice(0, 20).map((p) => ({
+        id: p.id.slice(0, 100), name: p.name.slice(0, 40),
+        mood: PRESET_MOODS.includes(p.mood) ? p.mood : "",
+        freeMood: typeof p.freeMood === "string" ? p.freeMood.slice(0, 300) : "",
+        artistId: typeof p.artistId === "string" ? p.artistId.slice(0, 100) : "",
+        artistName: typeof p.artistName === "string" ? p.artistName.slice(0, 200) : "",
+        genre: typeof p.genre === "string" ? p.genre.slice(0, 80) : "all",
+        excludeRecent: p.excludeRecent === true,
+      }));
+  } catch { return []; }
+}
+
+function presetStatus(message) {
+  setText("presetStatus", message);
+}
+
+function renderSelectionPresets(selectedId = "") {
+  const select = document.getElementById("savedPreset");
+  if (!select) return;
+  const presets = readSelectionPresets();
+  select.innerHTML = "";
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = presets.length ? "保存した条件を選択" : "保存した条件はありません";
+  select.appendChild(placeholder);
+  presets.forEach((preset) => {
+    const option = document.createElement("option");
+    option.value = preset.id;
+    option.textContent = preset.name;
+    select.appendChild(option);
+  });
+  select.value = presets.some((p) => p.id === selectedId) ? selectedId : "";
+  updatePresetActions();
+}
+
+function updatePresetActions() {
+  const selected = !!document.getElementById("savedPreset")?.value;
+  for (const id of ["loadPreset", "deletePreset"]) {
+    const button = document.getElementById(id);
+    if (button) button.disabled = !selected;
+  }
+}
+
+function saveSelectionPreset() {
+  const name = document.getElementById("presetName").value.trim().slice(0, 40);
+  if (!name) { presetStatus("保存する名前を入力してください。"); return; }
+  if (!aiMoodText && !selectedMood) { presetStatus("気分を選ぶか入力してから保存してください。"); return; }
+  const presets = readSelectionPresets();
+  const existing = presets.findIndex((p) => p.name === name);
+  if (existing < 0 && presets.length >= 20) { presetStatus("保存できる条件は20件までです。不要な条件を削除してください。"); return; }
+  const preset = {
+    id: existing >= 0 ? presets[existing].id : Date.now().toString(36) + Math.random().toString(36).slice(2, 10),
+    name, mood: aiMoodText ? "" : selectedMood, freeMood: aiMoodText,
+    artistId: selectedArtistId, artistName: selectedArtistName, genre: selectedGenre, excludeRecent,
+  };
+  if (existing >= 0) presets[existing] = preset;
+  else presets.push(preset);
+  try {
+    localStorage.setItem(SELECTION_PRESETS_KEY, JSON.stringify(presets));
+    renderSelectionPresets(preset.id);
+    presetStatus(`「${name}」を${existing >= 0 ? "上書き" : "保存"}しました。`);
+  } catch { presetStatus("保存できませんでした。ブラウザの保存容量・設定を確認してください。"); }
+}
+
+function resetMoodAnalysis() {
+  moodAnalysisRequestId++;
+  aiMoodAnalysis = null;
+  setText("aiMoodResult", "");
+  const button = document.getElementById("aiMoodButton");
+  if (button) { button.disabled = false; button.textContent = "気分を分析"; }
+}
+
+function applySelectionPreset(preset) {
+  resetMoodAnalysis();
+  aiMoodText = preset.freeMood || "";
+  selectedMood = aiMoodText ? "" : preset.mood;
+  document.getElementById("freeMoodInput").value = aiMoodText;
+  document.querySelectorAll(".moods button").forEach((button) => {
+    const selected = button.dataset.mood === selectedMood;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  artistSearchRequestId++;
+  clearTimeout(artistSearchTimer);
+  document.getElementById("artistSearch").value = "";
+  document.getElementById("artistResults").innerHTML = "";
+  selectedArtistId = preset.artistId;
+  selectedArtistName = preset.artistName;
+  selectedArtistImage = "";
+  if (selectedArtistId) renderSelectedArtist();
+  else window.clearSelectedArtist();
+  const genre = document.getElementById("genre");
+  setSelectedGenre(Array.from(genre.options).some((o) => o.value === preset.genre) ? preset.genre : "all");
+  excludeRecent = preset.excludeRecent;
+  document.getElementById("excludeRecent").checked = excludeRecent;
+  updateExclusionHint();
+  try { localStorage.setItem(EXCLUDE_RECENT_KEY, String(excludeRecent)); } catch {}
+  document.getElementById("presetName").value = preset.name;
+  presetStatus(`「${preset.name}」を呼び出しました。「5曲を選ぶ」で選曲できます。`);
+}
+
+function updateExclusionHint() {
+  setText("selectionHint", excludeRecent
+    ? "再生履歴の直近50曲を除いて、5曲を選びます。"
+    : "気分を選ぶか入力して、「5曲を選ぶ」を押してください。");
+}
+
+function initSelectionPresets() {
+  try { excludeRecent = localStorage.getItem(EXCLUDE_RECENT_KEY) === "true"; } catch {}
+  const checkbox = document.getElementById("excludeRecent");
+  if (checkbox) {
+    checkbox.checked = excludeRecent;
+    updateExclusionHint();
+    checkbox.addEventListener("change", () => {
+      excludeRecent = checkbox.checked;
+      updateExclusionHint();
+      try { localStorage.setItem(EXCLUDE_RECENT_KEY, String(excludeRecent)); } catch {}
+    });
+  }
+  renderSelectionPresets();
+  document.getElementById("savedPreset")?.addEventListener("change", updatePresetActions);
+  document.getElementById("savePreset")?.addEventListener("click", saveSelectionPreset);
+  document.getElementById("loadPreset")?.addEventListener("click", () => {
+    const preset = readSelectionPresets().find((p) => p.id === document.getElementById("savedPreset").value);
+    if (preset) applySelectionPreset(preset);
+  });
+  document.getElementById("deletePreset")?.addEventListener("click", () => {
+    const id = document.getElementById("savedPreset").value;
+    if (!id) return;
+    try {
+      localStorage.setItem(SELECTION_PRESETS_KEY, JSON.stringify(readSelectionPresets().filter((p) => p.id !== id)));
+      renderSelectionPresets();
+      presetStatus("保存した条件を削除しました。");
+    } catch { presetStatus("削除できませんでした。ブラウザの保存設定を確認してください。"); }
+  });
+}
+
+function getRecentTrackUris() {
+  if (!excludeRecent) return [];
+  try {
+    const history = JSON.parse(localStorage.getItem("music_picker_history") || "[]");
+    if (!Array.isArray(history)) return [];
+    return [...new Set(history.slice(0, 50).flatMap((t) => [t?.uri || (t?.id ? `spotify:track:${t.id}` : ""), t?.linked_from?.uri])
+      .filter((uri) => typeof uri === "string" && /^spotify:track:[a-zA-Z0-9]+$/.test(uri)))];
+  } catch { return []; }
+}
+
 function initHome() {
+  initSelectionPresets();
   document.getElementById("homePlaylistRefresh")?.addEventListener("click", () => {
     if (spotifyPlaylistCache.length) renderHomePlaylists();
     else loadSpotifyPlaylists();
@@ -276,7 +437,7 @@ function initHome() {
       const freeInput = document.getElementById("freeMoodInput");
       if (freeInput) freeInput.value = "";
       aiMoodText = "";
-      aiMoodAnalysis = null;
+      resetMoodAnalysis();
     });
   });
 
@@ -295,10 +456,9 @@ function initHome() {
   if (freeMoodInput) {
     freeMoodInput.addEventListener("input", () => {
       aiMoodText = freeMoodInput.value.trim();
-      if (aiMoodText) {
-        moodButtons.forEach((b) => { b.classList.remove("selected"); b.setAttribute("aria-pressed", "false"); });
-        selectedMood = "";
-      }
+      resetMoodAnalysis();
+      moodButtons.forEach((b) => { b.classList.remove("selected"); b.setAttribute("aria-pressed", "false"); });
+      selectedMood = "";
     });
   }
 
@@ -311,6 +471,7 @@ function initHome() {
         return;
       }
       aiMoodText = text;
+      const analysisRequestId = ++moodAnalysisRequestId;
       aiMoodButton.disabled = true;
       aiMoodButton.textContent = "🤖 AIが分析中...";
       if (aiMoodResult) aiMoodResult.innerHTML = `<div class="loading">気分を分析しています...</div>`;
@@ -322,6 +483,7 @@ function initHome() {
           body: JSON.stringify({ text }),
         });
         const data = await res.json();
+        if (analysisRequestId !== moodAnalysisRequestId) return;
         if (!res.ok || !data.analysis) throw new Error(data.error || "分析に失敗しました。");
 
         aiMoodAnalysis = data.analysis;
@@ -336,10 +498,13 @@ function initHome() {
         }
         showToast("🤖 気分をAIが分析しました");
       } catch (e) {
+        if (analysisRequestId !== moodAnalysisRequestId) return;
         if (aiMoodResult) aiMoodResult.innerHTML = `<div class="ai-result-error">${escapeHtml(e.message)}</div>`;
       } finally {
-        aiMoodButton.disabled = false;
-        aiMoodButton.textContent = "気分を分析";
+        if (analysisRequestId === moodAnalysisRequestId) {
+          aiMoodButton.disabled = false;
+          aiMoodButton.textContent = "気分を分析";
+        }
       }
     });
   }
@@ -377,23 +542,20 @@ function initArtistSearch() {
   const results = document.getElementById("artistResults");
   if (!input || !results) return;
 
-  let artistReq = 0;
-  let debounce = null;
 
   input.addEventListener("input", () => {
-    clearTimeout(debounce);
+    clearTimeout(artistSearchTimer);
+    const reqId = ++artistSearchRequestId;
     const keyword = input.value.trim();
     if (!keyword) {
-      artistReq++;
       results.innerHTML = "";
       return;
     }
-    debounce = setTimeout(async () => {
-      const reqId = ++artistReq;
+    artistSearchTimer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/artists?q=${encodeURIComponent(keyword)}`);
         const artists = await res.json();
-        if (reqId !== artistReq) return;
+        if (reqId !== artistSearchRequestId) return;
         results.innerHTML = "";
         if (!Array.isArray(artists) || !artists.length) {
           results.innerHTML = `<div class="artist-result empty">見つかりませんでした</div>`;
@@ -451,6 +613,9 @@ async function makePlaylist() {
     return;
   }
 
+  const excludedTrackUris = getRecentTrackUris();
+  const excluded = new Set(excludedTrackUris);
+  const shouldExclude = excludeRecent;
   const btn = document.getElementById("makePlaylist");
   if (btn) {
     btn.disabled = true;
@@ -472,6 +637,7 @@ async function makePlaylist() {
           artistId: selectedArtistId,
           artistName: selectedArtistName,
           genre: selectedGenre !== "all" ? selectedGenre : "",
+          excludedTrackUris,
         }),
       });
 
@@ -482,10 +648,16 @@ async function makePlaylist() {
     } else if (selectedArtistId) {
       // 2. Direct artist catalogue query
       const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(selectedArtistId)}&mood=${encodeURIComponent(text)}`);
-      tracks = await res.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "選曲に失敗しました。");
+      tracks = data;
     }
 
-    tracks = normalizeTracks(tracks).slice(0, 5);
+    tracks = normalizeTracks(tracks).filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
+    tracks = [...new Map(tracks.map((t) => [t.uri, t])).values()].slice(0, 5);
+    if (shouldExclude && tracks.length < 5) {
+      throw new Error("最近聴いた曲を除くと5曲そろいませんでした。アーティスト・ジャンルを変えるか、「最近聴いた曲を除外」をオフにしてください。");
+    }
 
     if (tracks.length === 0) {
       throw new Error("条件に合う曲が見つかりませんでした。別の気分やアーティストをお試しください。");
