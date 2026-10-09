@@ -261,8 +261,9 @@ function initHome() {
   const moodButtons = document.querySelectorAll(".moods button");
   moodButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      moodButtons.forEach((b) => b.classList.remove("selected"));
+      moodButtons.forEach((b) => { b.classList.remove("selected"); b.setAttribute("aria-pressed", "false"); });
       btn.classList.add("selected");
+      btn.setAttribute("aria-pressed", "true");
       selectedMood = btn.dataset.mood || btn.textContent.trim();
       const freeInput = document.getElementById("freeMoodInput");
       if (freeInput) freeInput.value = "";
@@ -287,7 +288,7 @@ function initHome() {
     freeMoodInput.addEventListener("input", () => {
       aiMoodText = freeMoodInput.value.trim();
       if (aiMoodText) {
-        moodButtons.forEach((b) => b.classList.remove("selected"));
+        moodButtons.forEach((b) => { b.classList.remove("selected"); b.setAttribute("aria-pressed", "false"); });
         selectedMood = "";
       }
     });
@@ -330,7 +331,7 @@ function initHome() {
         if (aiMoodResult) aiMoodResult.innerHTML = `<div class="ai-result-error">${escapeHtml(e.message)}</div>`;
       } finally {
         aiMoodButton.disabled = false;
-        aiMoodButton.textContent = "🤖 AIに気分を分析してもらう";
+        aiMoodButton.textContent = "気分を分析";
       }
     });
   }
@@ -369,7 +370,8 @@ function initArtistSearch() {
           return;
         }
         artists.forEach((a) => {
-          const item = document.createElement("div");
+          const item = document.createElement("button");
+          item.type = "button";
           item.className = "artist-result";
           item.innerHTML = `${a.image ? `<img src="${escapeHtml(a.image)}" alt="">` : ""}<span>${escapeHtml(a.name)}</span>`;
           item.addEventListener("click", () => {
@@ -422,7 +424,7 @@ async function makePlaylist() {
   const btn = document.getElementById("makePlaylist");
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "🎵 Gemini AIが曲を厳選中...";
+    btn.textContent = "選曲中...";
   }
 
   try {
@@ -466,7 +468,7 @@ async function makePlaylist() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = "🎵 おすすめ5曲を選ぶ";
+      btn.textContent = "5曲を選ぶ";
     }
   }
 }
