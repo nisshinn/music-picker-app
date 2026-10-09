@@ -203,41 +203,17 @@
                 <div id="selectedArtist" class="selected-artist" style="display:none;"></div>
                 <p id="homeArtistHint" class="home-field-hint">検索結果から選択。指定しない場合はおまかせ。</p>
                 <label for="genre">ジャンル</label>
-                <select id="genre" class="genre-select">
+                <select id="genre" class="genre-select" aria-describedby="selectedGenreHint">
                     <option value="all">おまかせ</option>
-                    <optgroup label="ポップ・ロック">
-                        <option value="j-pop">J-Pop</option>
-                        <option value="pop">Pop</option>
-                        <option value="k-pop">K-Pop</option>
-                        <option value="rock">Rock</option>
-                        <option value="indie">Indie</option>
-                        <option value="alternative">Alternative</option>
-                        <option value="punk">Punk</option>
-                        <option value="metal">Metal</option>
-                    </optgroup>
-                    <optgroup label="グルーヴ・ダンス">
-                        <option value="hip-hop">Hip-Hop</option>
-                        <option value="r-n-b">R&B</option>
-                        <option value="soul">Soul</option>
-                        <option value="funk">Funk</option>
-                        <option value="electronic">Electronic</option>
-                        <option value="house">House</option>
-                        <option value="techno">Techno</option>
-                        <option value="disco">Disco</option>
-                    </optgroup>
-                    <optgroup label="落ち着いた音楽・その他">
-                        <option value="jazz">Jazz</option>
-                        <option value="classical">クラシック</option>
-                        <option value="acoustic">アコースティック</option>
-                        <option value="ambient">Ambient</option>
-                        <option value="lo-fi">Lo-fi</option>
-                        <option value="folk">Folk</option>
-                        <option value="country">Country</option>
-                        <option value="reggae">Reggae</option>
-                        <option value="blues">Blues</option>
-                        <option value="anime">Anime</option>
-                    </optgroup>
+                    <option value="j-pop">J-Pop</option>
+                    <option value="pop">Pop</option>
+                    <option value="k-pop">K-Pop</option>
+                    <option value="rock">Rock</option>
+                    <option value="hip-hop">Hip-Hop</option>
+                    <option value="r-n-b">R&amp;B</option>
+                    <option value="advanced" disabled hidden>詳細設定で選択中</option>
                 </select>
+                <p id="selectedGenreHint" class="home-field-hint">その他のジャンルは詳細設定で選べます。</p>
             </section>
         </div>
         <details class="selection-presets">
@@ -259,6 +235,15 @@
         <div class="home-advanced">
             <button id="advancedToggle" class="advanced-toggle" type="button" aria-expanded="false" aria-controls="advancedSettings">詳細設定 <span aria-hidden="true">＋</span></button>
             <div id="advancedSettings" class="advanced-settings" hidden>
+                <fieldset class="genre-group recording-setting">
+                    <legend>曲のバージョン</legend>
+                    <div class="genre-options">
+                        <label class="genre-option"><input type="radio" name="recordingVersion" value="all" checked><span>指定なし</span></label>
+                        <label class="genre-option"><input type="radio" name="recordingVersion" value="studio"><span>通常版のみ</span></label>
+                        <label class="genre-option"><input type="radio" name="recordingVersion" value="live"><span>ライブ版のみ</span></label>
+                    </div>
+                    <p class="setting-hint">曲名・アルバム名のライブ表記で判定します。表記のないライブ音源は判別できない場合があります。</p>
+                </fieldset>
                 <div class="exclude-recent-setting">
                     <label><input id="excludeRecent" type="checkbox" aria-describedby="excludeRecentHint">最近聴いた曲を除外</label>
                     <p id="excludeRecentHint">このアプリで再生した直近50曲を、今回の5曲から除きます。このブラウザの履歴が対象です。</p>
@@ -453,13 +438,24 @@
 
 <!-- フルスクリーンプレイヤー（下部の再生バーをタップで開く） -->
 <div id="fullPlayer" class="full-player" aria-hidden="true" role="dialog" aria-modal="true" aria-label="フルスクリーンプレイヤー">
+    <img id="fpBackdrop" class="fp-backdrop" alt="" aria-hidden="true">
     <div class="fp-main">
         <div class="fp-topbar">
-            <button id="fpClose" class="fp-icon-button" type="button" aria-label="閉じる">×</button>
-            <button id="fpQueueButton" class="fp-icon-button" type="button" aria-label="再生リスト">📋</button>
+            <button id="fpClose" class="fp-icon-button" type="button" aria-label="閉じる">⌄</button>
+            <span class="fp-now-label">再生中</span>
+            <button id="fpQueueButton" class="fp-icon-button" type="button" aria-label="再生リスト" aria-expanded="false" aria-controls="fpQueue">☷</button>
         </div>
         <div class="fp-body">
             <img id="fpImage" class="fp-art" src="" alt="">
+            <section id="fpLyrics" class="fp-lyrics" aria-label="歌詞" hidden>
+                <p id="fpLyricsStatus" class="fp-lyrics-status" role="status"></p>
+                <div id="fpLyricsLines" class="fp-lyrics-lines" tabindex="0" aria-label="歌詞をスクロール"></div>
+                <div class="fp-lyrics-footer">
+                    <a href="https://lrclib.net/" target="_blank" rel="noopener noreferrer">歌詞：LRCLIB ↗</a>
+                    <button id="fpLyricsFollow" class="fp-chip" type="button" hidden>再生位置に戻る</button>
+                    <button id="fpLyricsRetry" class="fp-chip" type="button" hidden>再読み込み</button>
+                </div>
+            </section>
             <div class="fp-meta">
                 <div class="fp-meta-text">
                     <div id="fpTitle" class="fp-title">曲名</div>
@@ -472,9 +468,9 @@
                 <div class="fp-times"><span id="fpCurrent">0:00</span><span id="fpDuration">0:00</span></div>
             </div>
             <div class="fp-controls">
-                <button id="fpPrev" class="fp-skip" type="button" aria-label="前の曲">⏮</button>
+                <button id="fpPrev" class="fp-skip" type="button" aria-label="前の曲"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M3 4h3v16H3zM21 4v16L7 12z"/></svg></button>
                 <button id="fpPlay" class="fp-play" type="button" aria-label="再生・一時停止">▶</button>
-                <button id="fpNext" class="fp-skip" type="button" aria-label="次の曲">⏭</button>
+                <button id="fpNext" class="fp-skip" type="button" aria-label="次の曲"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M18 4h3v16h-3zM3 4l14 8L3 20z"/></svg></button>
             </div>
             <div class="fp-volume">
                 <span>🔈</span>
@@ -482,8 +478,9 @@
                 <span>🔊</span>
             </div>
             <div class="fp-extra">
-                <button id="fpShuffle" class="fp-chip" type="button">🔀 シャッフル</button>
-                <button id="fpRepeat" class="fp-chip" type="button">🔁 OFF</button>
+                <button id="fpLyricsButton" class="fp-chip" type="button" aria-pressed="false" aria-controls="fpLyrics">歌詞</button>
+                <button id="fpShuffle" class="fp-chip" type="button">⇄ シャッフル</button>
+                <button id="fpRepeat" class="fp-chip" type="button">↻ OFF</button>
                 <button id="fpInfinite" class="fp-chip" type="button" aria-pressed="false">∞ 無限再生 OFF</button>
             </div>
             <p class="playback-mode-help">通常は選んだ曲だけを再生。無限再生は別の曲へ続けます。</p>

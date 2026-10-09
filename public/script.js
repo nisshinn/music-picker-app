@@ -265,6 +265,7 @@ const SELECTION_PRESETS_KEY = "music_picker_selection_presets";
 const EXCLUDE_RECENT_KEY = "music_picker_exclude_recent";
 const PRESET_MOODS = ["楽しい", "テンション高い", "落ち着きたい", "しんみり"];
 let excludeRecent = false;
+let recordingVersion = "all";
 let moodAnalysisRequestId = 0;
 let artistSearchRequestId = 0;
 let artistSearchTimer = null;
@@ -282,6 +283,7 @@ function readSelectionPresets() {
         artistName: typeof p.artistName === "string" ? p.artistName.slice(0, 200) : "",
         genre: typeof p.genre === "string" ? p.genre.slice(0, 80) : "all",
         excludeRecent: p.excludeRecent === true,
+        recordingVersion: ["studio", "live"].includes(p.recordingVersion) ? p.recordingVersion : "all",
       }));
   } catch { return []; }
 }
@@ -327,7 +329,7 @@ function saveSelectionPreset() {
   const preset = {
     id: existing >= 0 ? presets[existing].id : Date.now().toString(36) + Math.random().toString(36).slice(2, 10),
     name, mood: aiMoodText ? "" : selectedMood, freeMood: aiMoodText,
-    artistId: selectedArtistId, artistName: selectedArtistName, genre: selectedGenre, excludeRecent,
+    artistId: selectedArtistId, artistName: selectedArtistName, genre: selectedGenre, excludeRecent, recordingVersion,
   };
   if (existing >= 0) presets[existing] = preset;
   else presets.push(preset);
@@ -365,8 +367,10 @@ function applySelectionPreset(preset) {
   selectedArtistImage = "";
   if (selectedArtistId) renderSelectedArtist();
   else window.clearSelectedArtist();
-  const genre = document.getElementById("genre");
-  setSelectedGenre(Array.from(genre.options).some((o) => o.value === preset.genre) ? preset.genre : "all");
+  const genres = [...document.querySelectorAll('input[name="detailedGenre"]')];
+  setSelectedGenre(genres.some((o) => o.value === preset.genre) ? preset.genre : "all");
+  recordingVersion = ["studio", "live"].includes(preset.recordingVersion) ? preset.recordingVersion : "all";
+  document.querySelectorAll('input[name="recordingVersion"]').forEach(input => { input.checked = input.value === recordingVersion; });
   excludeRecent = preset.excludeRecent;
   document.getElementById("excludeRecent").checked = excludeRecent;
   updateExclusionHint();
@@ -379,6 +383,8 @@ function updateExclusionHint() {
   setText("selectionHint", excludeRecent
     ? "再生履歴の直近50曲を除いて、5曲を選びます。"
     : "気分を選ぶか入力して、「5曲を選ぶ」を押してください。");
+  const hint = document.getElementById("selectionHint");
+  if (hint && recordingVersion !== "all") hint.textContent += recordingVersion === "live" ? " ライブ版のみが対象です。" : " 通常版のみが対象です。";
 }
 
 function initSelectionPresets() {
@@ -423,6 +429,9 @@ function getRecentTrackUris() {
 
 function initHome() {
   initSelectionPresets();
+  document.querySelectorAll('input[name="recordingVersion"]').forEach(input => {
+    input.addEventListener("change", () => { recordingVersion = input.value; updateExclusionHint(); });
+  });
   document.getElementById("homePlaylistRefresh")?.addEventListener("click", () => {
     if (spotifyPlaylistCache.length) renderHomePlaylists();
     else loadSpotifyPlaylists();
@@ -531,7 +540,10 @@ function initHome() {
 function setSelectedGenre(value) {
   selectedGenre = value;
   const select = document.getElementById("genre");
-  if (select) select.value = value;
+  const basic = ["all", "j-pop", "pop", "k-pop", "rock", "hip-hop", "r-n-b"].includes(value);
+  if (select) select.value = basic ? value : "advanced";
+  const chosen = [...document.querySelectorAll('input[name="detailedGenre"]')].find(input => input.value === value);
+  setText("selectedGenreHint", basic ? "その他のジャンルは詳細設定で選べます。" : `選択中：${chosen?.nextElementSibling?.textContent || value}（詳細設定で変更）`);
   document.querySelectorAll('input[name="detailedGenre"]').forEach((input) => {
     input.checked = input.value === value;
   });
@@ -616,6 +628,7 @@ async function makePlaylist() {
   const excludedTrackUris = getRecentTrackUris();
   const excluded = new Set(excludedTrackUris);
   const shouldExclude = excludeRecent;
+  const version = recordingVersion;
   const btn = document.getElementById("makePlaylist");
   if (btn) {
     btn.disabled = true;
@@ -638,6 +651,7 @@ async function makePlaylist() {
           artistName: selectedArtistName,
           genre: selectedGenre !== "all" ? selectedGenre : "",
           excludedTrackUris,
+          recordingVersion: version,
         }),
       });
 
@@ -647,7 +661,7 @@ async function makePlaylist() {
       aiCuratorNote = data.curatorNote || "";
     } else if (selectedArtistId) {
       // 2. Direct artist catalogue query
-      const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(selectedArtistId)}&mood=${encodeURIComponent(text)}`);
+      const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(selectedArtistId)}&mood=${encodeURIComponent(text)}&recordingVersion=${encodeURIComponent(version)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "選曲に失敗しました。");
       tracks = data;
@@ -655,6 +669,9 @@ async function makePlaylist() {
 
     tracks = normalizeTracks(tracks).filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
     tracks = [...new Map(tracks.map((t) => [t.uri, t])).values()].slice(0, 5);
+    if (version !== "all" && tracks.length < 5) {
+      throw new Error("指定したバージョンで5曲そろいませんでした。アーティスト・ジャンルを変えるか、曲のバージョンを「指定なし」にしてください。");
+    }
     if (shouldExclude && tracks.length < 5) {
       throw new Error("最近聴いた曲を除くと5曲そろいませんでした。アーティスト・ジャンルを変えるか、「最近聴いた曲を除外」をオフにしてください。");
     }
@@ -1100,7 +1117,7 @@ function setNowPlaying(title, artist, image) {
   setText("menuPlayerArtist", artist);
   setText("fpTitle", title);
   setText("fpArtist", artist);
-  ["playerImage", "menuPlayerImage", "fpImage"].forEach((id) => {
+  ["playerImage", "menuPlayerImage", "fpImage", "fpBackdrop"].forEach((id) => {
     const img = document.getElementById(id);
     if (img) img.src = image || "";
   });
@@ -1110,6 +1127,8 @@ function updatePlayerInfo(track) {
   track = normalizeTrack(track);
   if (!track) return;
   setNowPlaying(track.title || "曲名なし", getArtistText(track), track.image);
+
+  refreshLyricsForTrack(track);
 
   const fav = document.getElementById("fpFav");
   if (fav) {
@@ -1140,6 +1159,7 @@ function renderProgress(pos) {
   setText("menuDuration", total);
   setText("fpCurrent", cur);
   setText("fpDuration", total);
+  syncLyrics(pos);
 }
 
 function updatePlayerState(state) {
@@ -1955,9 +1975,11 @@ function initFullPlayer() {
       openFullPlayer();
     }
   });
+  initLyrics();
   document.getElementById("fpClose")?.addEventListener("click", closeFullPlayer);
   document.getElementById("fpQueueButton")?.addEventListener("click", () => {
-    fp.classList.toggle("queue-open");
+    const queueOpen = fp.classList.toggle("queue-open");
+    document.getElementById("fpQueueButton")?.setAttribute("aria-expanded", String(queueOpen));
     renderQueue();
     if (fp.classList.contains("queue-open")) {
       document.getElementById("fpQueueBack")?.focus();
@@ -1966,6 +1988,7 @@ function initFullPlayer() {
   });
   document.getElementById("fpQueueBack")?.addEventListener("click", () => {
     fp.classList.remove("queue-open");
+    document.getElementById("fpQueueButton")?.setAttribute("aria-expanded", "false");
     document.getElementById("fpQueueButton")?.focus();
   });
 
@@ -1988,7 +2011,7 @@ function initFullPlayer() {
     if (!fp.classList.contains("open")) return;
     if (e.key === "Escape") closeFullPlayer();
     if (e.key === "Tab") {
-      const controls = [...fp.querySelectorAll("button, input, [tabindex='0']")].filter(el => !el.disabled && el.getClientRects().length);
+      const controls = [...fp.querySelectorAll("button, input, a[href], [tabindex='0']")].filter(el => !el.disabled && el.getClientRects().length);
       const first = controls[0], last = controls[controls.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
       if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
@@ -2013,6 +2036,8 @@ function closeFullPlayer() {
   const fp = document.getElementById("fullPlayer");
   if (!fp) return;
   fp.classList.remove("open", "queue-open");
+  document.getElementById("fpQueueButton")?.setAttribute("aria-expanded", "false");
+  setLyricsOpen(false);
   fp.setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
   setPlayerBackgroundInert(false);
@@ -2059,7 +2084,7 @@ function renderFpExtras() {
   const rp = document.getElementById("fpRepeat");
   if (rp) {
     const label = { off: "OFF", all: "全曲", one: "1曲" }[appSettings.repeat] || "OFF";
-    rp.textContent = `🔁 ${label}`;
+    rp.textContent = `↻ ${label}`;
     rp.classList.toggle("active", appSettings.repeat !== "off");
   }
 }
@@ -2105,5 +2130,151 @@ function renderQueue() {
       </div>
       <span class="fp-queue-marker">${index + 1}</span>`;
     box.appendChild(row);
+  });
+}
+
+// Lyrics use the same clock as the seek bar; no separate timer can drift.
+let lyricsOpen = false;
+let lyricsTrack = null;
+let lyricsKey = "";
+let lyricsRequestId = 0;
+let lyricsController = null;
+let lyricsLines = [];
+let lyricsActiveIndex = -1;
+let lyricsFollowing = true;
+
+function parseSyncedLyrics(lrc) {
+  const offset = Number(String(lrc).match(/\[offset:([+-]?\d+)\]/i)?.[1] || 0);
+  const lines = [];
+  for (const line of String(lrc || "").split(/\r?\n/)) {
+    const stamps = [...line.matchAll(/\[(\d{1,3}):([0-5]\d)(?:[.:](\d{1,3}))?\]/g)];
+    const text = line.replace(/\[[^\]]*\]/g, "").trim();
+    for (const stamp of stamps) {
+      const time = Number(stamp[1]) * 60000 + Number(stamp[2]) * 1000 + Number((stamp[3] || "").padEnd(3, "0")) - offset;
+      lines.push({ time: Math.max(0, time), text });
+    }
+  }
+  return lines.sort((a, b) => a.time - b.time).slice(0, 2000);
+}
+
+function refreshLyricsForTrack(track) {
+  lyricsTrack = track;
+  const key = JSON.stringify([track?.uri, track?.title || track?.name, track?.artists?.[0]?.name || track?.artist, track?.album?.name, track?.duration_ms]);
+  if (key === lyricsKey) return;
+  lyricsKey = key;
+  lyricsRequestId++;
+  lyricsController?.abort();
+  lyricsLines = [];
+  lyricsActiveIndex = -1;
+  if (lyricsOpen) loadLyrics();
+}
+
+function setLyricsOpen(open) {
+  lyricsOpen = open;
+  const main = document.querySelector(".fp-main");
+  if (main) main.scrollTop = 0;
+  document.getElementById("fullPlayer")?.classList.toggle("lyrics-open", open);
+  const panel = document.getElementById("fpLyrics");
+  if (panel) panel.hidden = !open;
+  const button = document.getElementById("fpLyricsButton");
+  button?.setAttribute("aria-pressed", String(open));
+  button?.classList.toggle("active", open);
+  if (open) {
+    refreshLyricsForTrack(currentTrackData);
+    // refresh may have already started this request for a new track.
+    if (!lyricsController) loadLyrics();
+  } else {
+    lyricsRequestId++;
+    lyricsController?.abort();
+    lyricsController = null;
+  }
+}
+
+async function loadLyrics() {
+  lyricsController?.abort();
+  const requestId = ++lyricsRequestId;
+  const controller = new AbortController();
+  lyricsController = controller;
+  const track = lyricsTrack;
+  const container = document.getElementById("fpLyricsLines");
+  container.replaceChildren();
+  container.scrollTop = 0;
+  lyricsLines = [];
+  lyricsActiveIndex = -1;
+  lyricsFollowing = true;
+  document.getElementById("fpLyricsFollow").hidden = true;
+  document.getElementById("fpLyricsRetry").hidden = true;
+  if (!track?.album?.name || !track?.duration_ms) {
+    setText("fpLyricsStatus", track ? "この曲の情報では歌詞を取得できません。" : "曲を再生すると歌詞を表示できます。");
+    lyricsController = null;
+    return;
+  }
+  setText("fpLyricsStatus", "歌詞を読み込み中…");
+  try {
+    const params = new URLSearchParams({ title: track.title || track.name || "", artist: track.artists?.[0]?.name || getArtistText(track), album: track.album.name, duration: String(track.duration_ms / 1000) });
+    const res = await fetch(`/api/lyrics?${params}`, { signal: controller.signal });
+    const data = await res.json();
+    if (requestId !== lyricsRequestId || !lyricsOpen) return;
+    if (!res.ok) throw new Error(data.error || "歌詞を取得できませんでした。");
+    if (data.status !== "found") {
+      setText("fpLyricsStatus", data.status === "instrumental" ? "インストゥルメンタルのため歌詞はありません。" : "この曲の歌詞はまだ見つかりません。別の曲でもお試しください。");
+      return;
+    }
+    lyricsLines = parseSyncedLyrics(data.syncedLyrics);
+    const synced = lyricsLines.some(line => line.text);
+    if (!synced) lyricsLines = [];
+    container.classList.toggle("plain-lyrics", !synced);
+    setText("fpLyricsStatus", synced ? "再生に合わせて歌詞が進みます" : "この曲は歌詞の時間情報がないため、全文を表示します。");
+    const display = synced ? lyricsLines : String(data.plainLyrics || "").split(/\r?\n/).map(text => ({ text }));
+    display.forEach(line => {
+      const element = document.createElement("p");
+      element.className = "fp-lyric-line";
+      element.textContent = line.text || "♪";
+      container.appendChild(element);
+    });
+    syncLyrics(clockPosition());
+  } catch (error) {
+    if (requestId !== lyricsRequestId || error.name === "AbortError") return;
+    setText("fpLyricsStatus", error.message || "歌詞を取得できませんでした。");
+    document.getElementById("fpLyricsRetry").hidden = false;
+  } finally {
+    if (requestId === lyricsRequestId) lyricsController = null;
+  }
+}
+
+function syncLyrics(position, force = false) {
+  if (!lyricsOpen || !lyricsLines.length) return;
+  let index = -1;
+  for (let i = 0; i < lyricsLines.length && lyricsLines[i].time <= position; i++) index = i;
+  if (index === lyricsActiveIndex && !force) return;
+  lyricsActiveIndex = index;
+  const container = document.getElementById("fpLyricsLines");
+  [...container.children].forEach((el, i) => {
+    el.classList.toggle("current", i === index);
+    if (i === index) el.setAttribute("aria-current", "true");
+    else el.removeAttribute("aria-current");
+  });
+  const line = container.children[index];
+  if (line && lyricsFollowing) container.scrollTo({ top: line.offsetTop - container.offsetTop - container.clientHeight * .35, behavior: "auto" });
+}
+
+function initLyrics() {
+  document.getElementById("fpLyricsButton")?.addEventListener("click", () => setLyricsOpen(!lyricsOpen));
+  document.getElementById("fpLyricsRetry")?.addEventListener("click", loadLyrics);
+  document.getElementById("fpLyricsFollow")?.addEventListener("click", () => {
+    lyricsFollowing = true;
+    document.getElementById("fpLyricsFollow").hidden = true;
+    syncLyrics(clockPosition(), true);
+    document.getElementById("fpLyricsLines").focus();
+  });
+  const manual = () => {
+    if (!lyricsLines.length) return;
+    lyricsFollowing = false;
+    document.getElementById("fpLyricsFollow").hidden = false;
+  };
+  const lines = document.getElementById("fpLyricsLines");
+  ["wheel", "touchstart", "pointerdown"].forEach(event => lines?.addEventListener(event, manual, { passive: true }));
+  lines?.addEventListener("keydown", event => {
+    if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(event.key)) manual();
   });
 }
