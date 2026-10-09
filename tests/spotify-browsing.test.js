@@ -350,3 +350,87 @@ test('missing playback confirmation stops safely instead of allowing unrelated a
   assert.equal(run('playbackStopped'), true);
   assert.match(run('window.messages.at(-1)'), /再生を確認できません/);
 });
+
+test('Home samples unique saved playlists without mutating the library, including late pages', async () => {
+  const { run, elements } = app(async (url) => response(url.includes('offset=50')
+    ? { items: [{ id: 'last', name: 'Last page' }], next: null }
+    : { items: Array.from({ length: 50 }, (_, i) => ({ id: String(i) })), next: 'https://api.spotify.com/v1/me/playlists?offset=50' }));
+  run('createSpotifyPlaylistCard = (playlist, sourcePage) => ({ playlist, sourcePage }); let firstRandom = true; Math.random = () => { if(firstRandom) {firstRandom=false;return 0;}return .999; };');
+  await run('loadSpotifyPlaylists()');
+  const shown = elements.get('homePlaylists').children;
+  assert.equal(shown.length, 4);
+  assert.equal(shown[0].playlist.id, 'last');
+  assert.equal(shown[0].sourcePage, 'homePage');
+  assert.equal(elements.get('playlistList').children.length, 51);
+  assert.equal(run('spotifyPlaylistCache[0].id'), '0');
+  const sampled = run('samplePlaylists([null,{id:"a"},{id:"a"},{id:"b"},{}])');
+  assert.deepEqual(Array.from(sampled, p => p.id).sort(), ['a', 'b']);
+});
+
+test('late playlist errors cannot clear a newer Home/library response', async () => {
+  let rejectOld;
+  const { run, elements } = app(async () => new Promise((resolve, reject) => { rejectOld = reject; }));
+  const old = run('loadSpotifyPlaylists()');
+  await new Promise(resolve => setImmediate(resolve));
+  run('fetchSpotifyPages = async () => [{id:"new",name:"New account list"}];');
+  await run('loadSpotifyPlaylists()');
+  rejectOld(Error('late error'));
+  await old;
+  assert.equal(run('spotifyPlaylistCache[0].id'), 'new');
+  assert.equal(elements.get('homePlaylists').children.length, 1);
+  run('getFreshSpotifyToken = async () => "";');
+  await run('loadSpotifyPlaylists()');
+  assert.equal(run('spotifyPlaylistCache.length'), 0);
+  assert.match(elements.get('homePlaylists').innerHTML, /ログイン/);
+  assert.equal(elements.get('playlistList').children.length, 0);
+});
+
+test('saved Home cards browse without starting playback and remember the return page', async () => {
+  const { run, elements } = app(async () => response({ items: [{ item: track('song') }] }));
+  run('spotifyPlaylistCache = [{id:"mine",name:"My playlist"}];createTrackCard = (track) => ({track});renderHomePlaylists();');
+  await elements.get('homePlaylists').children[0].click();
+  assert.equal(run('playlistSourcePage'), 'homePage');
+  assert.equal(run('currentPlaylist.length'), 0);
+  assert.equal(elements.get('playlistTracks').children.length, 1);
+});
+
+test('preset mood with an artist and explicit genre sends all conditions to the curator', async () => {
+  let payload;
+  const { run } = app(async (url, options) => {
+    assert.equal(url, '/api/gemini/recommend-from-mood');
+    payload = JSON.parse(options.body);
+    return response({ tracks: ['a','b','c','d','e'].map(track) });
+  });
+  run('selectedMood="落ち着きたい"; selectedArtistId="artist"; selectedArtistName="Artist"; setSelectedGenre("jazz"); displayPlaylist=()=>{}; showToast=()=>{};');
+  await run('makePlaylist()');
+  assert.equal(payload.genre, 'jazz');
+  assert.equal(payload.artistId, 'artist');
+  assert.equal(payload.text, '落ち着きたい');
+});
+
+test('curator applies an explicit genre to artist catalogue queries and ranking', async () => {
+  const routes = new Map();
+  const expressApp = { set() {}, use() {}, listen() {}, get() {}, post(path, handler) { routes.set(path, handler); } };
+  const express = Object.assign(() => expressApp, { json: () => {}, static: () => {} });
+  const context = vm.createContext({
+    console: { log() {}, error() {} }, process: { env: {} }, Buffer, URLSearchParams,
+    require(name) {
+      if (name === 'express') return express;
+      if (name === 'dotenv') return { config() {} };
+      if (name === '@google/genai') return {};
+      return require(name);
+    },
+  });
+  vm.runInContext(fs.readFileSync('server.js', 'utf8'), context);
+  vm.runInContext(`getSpotifyToken=async()=>"test";get80Tracks=async(token,query)=>{globalThis.catalogQuery=query;return Array.from({length:5},(_,i)=>({id:String(i),uri:'spotify:track:'+i,name:'Song '+i,artists:[{id:'artist',name:'Artist'}]}));};generateContentWithRetry=async(prompt)=>{globalThis.rankPrompt=prompt;return JSON.stringify({selected:[0,1,2,3,4].map(index=>({index}))});};`, context);
+  let body;
+  await routes.get('/api/gemini/recommend-from-mood')({ body: { text: '静か', artistId: 'artist', artistName: 'Artist', genre: 'jazz', analysis: { mood: 'calm' } } }, { json(value) { body = value; }, status() { return this; } });
+  assert.equal(context.catalogQuery, 'artist:"Artist" genre:"jazz"');
+  assert.match(context.rankPrompt, /希望ジャンル: jazz/);
+  assert.equal(body.tracks.length, 5);
+  vm.runInContext(`globalThis.searchQueries=[];searchSpotifyTracks=async(token,query)=>{searchQueries.push(query);return {tracks:{items:Array.from({length:5},(_,i)=>({id:String(i),uri:'spotify:track:'+i,name:'Song '+i}))}};};`, context);
+  await routes.get('/api/gemini/recommend-from-mood')({ body: { text: '静か', genre: 'jazz', analysis: { keywords: ['calm'], searchQueries: ['night'] } } }, { json(value) { body = value; }, status() { return this; } });
+  assert.equal(context.searchQueries.length, 2);
+  assert.ok(context.searchQueries.every(q => q.includes('genre:"jazz"')));
+  assert.equal(body.tracks.length, 5);
+});

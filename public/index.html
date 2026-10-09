@@ -10,9 +10,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Music Picker">
     <link rel="stylesheet" href="/style.css">
-    <link rel="stylesheet" href="/ui-fix.css">
-    <link rel="stylesheet" href="/theme.css">
-    <link rel="stylesheet" href="/home-preview.css">
     <script>
         // 初回描画前にテーマを適用（ちらつき防止）。ocean=ライト(ダークモードOFF) / night=ダーク
         try { document.documentElement.dataset.theme = localStorage.getItem("music_picker_theme") === "night" ? "night" : "ocean"; }
@@ -60,9 +57,9 @@
     <section class="menu-section">
         <h3 class="menu-section-title" data-label="ミュージック">📱 ページ</h3>
         <button class="menu-link active" data-label="ホーム" data-page="homePage">🏠 ホーム</button>
-        <button class="menu-link" data-label="検索" data-page="searchPage">🔎 曲を検索</button>
+        <button class="menu-link" data-label="検索" data-page="searchPage">曲を検索</button>
         <button class="menu-link" data-label="ライブラリ" data-page="favoritesPage">❤️ お気に入り</button>
-        <button class="menu-link" data-label="履歴" data-page="historyPage">📜 履歴</button>
+        <button class="menu-link" data-label="履歴" data-page="historyPage">履歴</button>
     </section>
 
     <!-- アプリをカスタマイズ -->
@@ -152,6 +149,14 @@
             </section>
         </header>
 
+        <section class="home-library" aria-labelledby="homeLibraryHeading">
+            <div class="home-library-heading">
+                <div><h2 id="homeLibraryHeading">あなたのプレイリスト</h2><p>Spotifyに保存したプレイリストからランダムに表示。</p></div>
+                <button id="homePlaylistRefresh" class="text-button" type="button" disabled>別のプレイリスト</button>
+            </div>
+            <div id="homePlaylists" class="home-playlists" aria-live="polite"></div>
+        </section>
+
         <section class="picker-box home-moods" aria-labelledby="homeMoodHeading">
             <div class="home-section-heading">
                 <h2 id="homeMoodHeading">気分を選ぶ</h2>
@@ -159,22 +164,18 @@
             </div>
             <div class="moods">
                 <button type="button" data-mood="楽しい" aria-pressed="false">
-                    <span class="mood-art mood-art-happy" aria-hidden="true"><span>FEEL<br>GOOD</span><i></i></span>
                     <span class="mood-name">楽しい<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
                     <span class="mood-caption">明るい曲を聴きたい</span>
                 </button>
                 <button type="button" data-mood="テンション高い" aria-pressed="false">
-                    <span class="mood-art mood-art-energy" aria-hidden="true"><span>TURN<br>IT UP.</span><i></i></span>
                     <span class="mood-name">気分を上げたい<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
                     <span class="mood-caption">元気が出る曲を聴きたい</span>
                 </button>
                 <button type="button" data-mood="落ち着きたい" aria-pressed="false">
-                    <span class="mood-art mood-art-calm" aria-hidden="true"><span>SLOW<br>DOWN</span><i></i></span>
                     <span class="mood-name">落ち着きたい<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
                     <span class="mood-caption">ゆったりした曲を聴きたい</span>
                 </button>
                 <button type="button" data-mood="しんみり" aria-pressed="false">
-                    <span class="mood-art mood-art-night" aria-hidden="true"><span>LATE<br>NIGHT</span><i></i></span>
                     <span class="mood-name">しんみり<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
                     <span class="mood-caption">静かに曲に浸りたい</span>
                 </button>
@@ -204,11 +205,81 @@
                 <label for="genre">ジャンル</label>
                 <select id="genre" class="genre-select">
                     <option value="all">おまかせ</option>
-                    <option value="j-pop">J-Pop</option><option value="rock">Rock</option>
-                    <option value="pop">Pop</option><option value="hip-hop">Hip-Hop</option>
-                    <option value="electronic">Electronic</option><option value="anime">Anime</option>
+                    <optgroup label="ポップ・ロック">
+                        <option value="j-pop">J-Pop</option>
+                        <option value="pop">Pop</option>
+                        <option value="k-pop">K-Pop</option>
+                        <option value="rock">Rock</option>
+                        <option value="indie">Indie</option>
+                        <option value="alternative">Alternative</option>
+                        <option value="punk">Punk</option>
+                        <option value="metal">Metal</option>
+                    </optgroup>
+                    <optgroup label="グルーヴ・ダンス">
+                        <option value="hip-hop">Hip-Hop</option>
+                        <option value="r-n-b">R&B</option>
+                        <option value="soul">Soul</option>
+                        <option value="funk">Funk</option>
+                        <option value="electronic">Electronic</option>
+                        <option value="house">House</option>
+                        <option value="techno">Techno</option>
+                        <option value="disco">Disco</option>
+                    </optgroup>
+                    <optgroup label="落ち着いた音楽・その他">
+                        <option value="jazz">Jazz</option>
+                        <option value="classical">クラシック</option>
+                        <option value="acoustic">アコースティック</option>
+                        <option value="ambient">Ambient</option>
+                        <option value="lo-fi">Lo-fi</option>
+                        <option value="folk">Folk</option>
+                        <option value="country">Country</option>
+                        <option value="reggae">Reggae</option>
+                        <option value="blues">Blues</option>
+                        <option value="anime">Anime</option>
+                    </optgroup>
                 </select>
             </section>
+        </div>
+        <div class="home-advanced">
+            <button id="advancedToggle" class="advanced-toggle" type="button" aria-expanded="false" aria-controls="advancedSettings">詳細設定 <span aria-hidden="true">＋</span></button>
+            <div id="advancedSettings" class="advanced-settings" hidden>
+                <div class="advanced-heading">
+                    <div><h2>ジャンルを詳しく選ぶ</h2><p>ジャンルを1つ選んで、選曲の範囲を絞れます。</p></div>
+                    <button id="resetGenre" class="text-button" type="button">おまかせに戻す</button>
+                </div>
+                <fieldset class="genre-group"><legend>ポップ・ロック</legend><div class="genre-options">
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="j-pop"><span>J-Pop</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="pop"><span>Pop</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="k-pop"><span>K-Pop</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="rock"><span>Rock</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="indie"><span>Indie</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="alternative"><span>Alternative</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="punk"><span>Punk</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="metal"><span>Metal</span></label>
+                </div></fieldset>
+                <fieldset class="genre-group"><legend>グルーヴ・ダンス</legend><div class="genre-options">
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="hip-hop"><span>Hip-Hop</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="r-n-b"><span>R&B</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="soul"><span>Soul</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="funk"><span>Funk</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="electronic"><span>Electronic</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="house"><span>House</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="techno"><span>Techno</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="disco"><span>Disco</span></label>
+                </div></fieldset>
+                <fieldset class="genre-group"><legend>落ち着いた音楽・その他</legend><div class="genre-options">
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="jazz"><span>Jazz</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="classical"><span>クラシック</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="acoustic"><span>アコースティック</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="ambient"><span>Ambient</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="lo-fi"><span>Lo-fi</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="folk"><span>Folk</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="country"><span>Country</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="reggae"><span>Reggae</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="blues"><span>Blues</span></label>
+                    <label class="genre-option"><input type="radio" name="detailedGenre" value="anime"><span>Anime</span></label>
+                </div></fieldset>
+            </div>
         </div>
         <div class="home-submit">
             <span>気分を選ぶか入力して、「5曲を選ぶ」を押してください。</span>
@@ -222,12 +293,12 @@
     <!-- 検索ページ -->
     <section id="searchPage" class="page">
         <div class="page-header">
-            <h1>🔎 曲を検索</h1>
+            <h1>曲を検索</h1>
             <p>Spotify公式カタログから曲を探します</p>
         </div>
         <section class="content-box">
             <input type="text" id="songSearchInput" class="big-search" placeholder="曲名・アーティスト名を入力..." autocomplete="off">
-            <button id="songSearchButton" class="search-button">🔎 検索</button>
+            <button id="songSearchButton" class="search-button">検索</button>
             <div id="searchResults" class="search-results"></div>
         </section>
     </section>
@@ -235,13 +306,13 @@
     <!-- ライブラリ（お気に入り & Spotifyプレイリスト） -->
     <section id="favoritesPage" class="page">
         <div class="page-header">
-            <h1>📚 ライブラリ</h1>
+            <h1>ライブラリ</h1>
             <p>お気に入りやSpotifyのプレイリストを管理</p>
         </div>
 
         <section class="library-section">
             <button class="library-section-header" type="button" data-target="favoritesContent">
-                <span>❤️ お気に入り</span>
+                <span>お気に入り</span>
                 <span class="library-arrow">▼</span>
             </button>
             <div id="favoritesContent" class="library-section-content">
@@ -251,7 +322,7 @@
 
         <section class="library-section">
             <button class="library-section-header" type="button" data-target="playlistsContent">
-                <span>🎵 Spotifyプレイリスト</span>
+                <span>Spotifyプレイリスト</span>
                 <span class="library-arrow">▼</span>
             </button>
             <div id="playlistsContent" class="library-section-content">
@@ -293,7 +364,7 @@
     <!-- 履歴 -->
     <section id="historyPage" class="page">
         <div class="page-header">
-            <h1>📜 履歴</h1>
+            <h1>履歴</h1>
             <p>最近再生した曲</p>
         </div>
         <section class="content-box">
@@ -304,12 +375,12 @@
     <!-- 設定 -->
     <section id="settingsPage" class="page">
         <div class="page-header">
-            <h1>⚙️ 設定</h1>
+            <h1>設定</h1>
         </div>
         <section class="content-box settings-box">
-            <button id="clearFavorites" class="danger-button">❤️ お気に入りを全部削除</button>
-            <button id="clearHistory" class="danger-button">📜 履歴を全部削除</button>
-            <button id="logoutButton" class="logout-button">🚪 Spotifyからログアウト</button>
+            <button id="clearFavorites" class="danger-button">お気に入りをすべて削除</button>
+            <button id="clearHistory" class="danger-button">履歴を全部削除</button>
+            <button id="logoutButton" class="logout-button">Spotifyからログアウト</button>
         </section>
     </section>
 </main>
