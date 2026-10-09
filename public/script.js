@@ -53,6 +53,8 @@ let isSeeking = false;
 let progressTimer = null;
 let endHandled = false;
 let playlistLoadId = 0;
+let spotifyPlaylistCache = [];
+let playlistSourcePage = "favoritesPage";
 let playlistDetailLoadId = 0;
 let spotifyQueue = [];
 let queueStatus = "";
@@ -112,7 +114,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initSpotifyLoginButton();
   updateLibraryPage();
   initLibraryAccordion();
-  document.getElementById("playlistBack")?.addEventListener("click", () => showPage("favoritesPage"));
+  loadSpotifyPlaylists();
+  document.getElementById("playlistBack")?.addEventListener("click", () => showPage(playlistSourcePage));
   document.getElementById("fpQueueRefresh")?.addEventListener("click", () => refreshSpotifyQueue());
   updateHistoryPage();
   updateMenuPlayerEmptyState();
@@ -250,6 +253,7 @@ function showPage(pageId) {
     updateLibraryPage();
     loadSpotifyPlaylists();
   }
+  if (pageId === "homePage" && spotifyPlaylistCache.length) renderHomePlaylists();
   if (pageId === "historyPage") updateHistoryPage();
   window.scrollTo(0, 0);
 }
@@ -258,6 +262,10 @@ function showPage(pageId) {
 // Home Screen (Mood, Artist, Genre, Gemini AI integration)
 // -------------------------------------------------------------
 function initHome() {
+  document.getElementById("homePlaylistRefresh")?.addEventListener("click", () => {
+    if (spotifyPlaylistCache.length) renderHomePlaylists();
+    else loadSpotifyPlaylists();
+  });
   const moodButtons = document.querySelectorAll(".moods button");
   moodButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -276,7 +284,7 @@ function initHome() {
   if (genre) {
     selectedGenre = genre.value || "all";
     genre.addEventListener("change", () => {
-      selectedGenre = genre.value;
+      setSelectedGenre(genre.value);
     });
   }
 
@@ -336,10 +344,32 @@ function initHome() {
     });
   }
 
+  document.getElementById("advancedToggle")?.addEventListener("click", () => {
+    const toggle = document.getElementById("advancedToggle");
+    const panel = document.getElementById("advancedSettings");
+    const expanded = toggle.getAttribute("aria-expanded") !== "true";
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.querySelector("span").textContent = expanded ? "−" : "＋";
+    panel.hidden = !expanded;
+  });
+  document.querySelectorAll('input[name="detailedGenre"]').forEach((input) => {
+    input.addEventListener("change", () => setSelectedGenre(input.value));
+  });
+  document.getElementById("resetGenre")?.addEventListener("click", () => setSelectedGenre("all"));
+
   initArtistSearch();
 
   const makeButton = document.getElementById("makePlaylist");
   if (makeButton) makeButton.addEventListener("click", makePlaylist);
+}
+
+function setSelectedGenre(value) {
+  selectedGenre = value;
+  const select = document.getElementById("genre");
+  if (select) select.value = value;
+  document.querySelectorAll('input[name="detailedGenre"]').forEach((input) => {
+    input.checked = input.value === value;
+  });
 }
 
 function initArtistSearch() {
@@ -432,7 +462,7 @@ async function makePlaylist() {
     aiCuratorNote = "";
 
     // 1. If user entered free text mood, use Hybrid Gemini Recommendation
-    if (aiMoodText || !selectedArtistId) {
+    if (aiMoodText || !selectedArtistId || selectedGenre !== "all") {
       const res = await fetch("/api/gemini/recommend-from-mood", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -494,9 +524,8 @@ function displayPlaylist(playlist) {
     <h2 style="font-size:16px;margin:0;">🎵 ${escapeHtml(selectedMood || "AIおすすめ")} プレイリスト</h2>
   `;
   const playAll = document.createElement("button");
-  playAll.className = "play-all-button";
   playAll.textContent = "▶ まとめて再生";
-  playAll.style.cssText = "background:#00e676;color:#000;border:0;border-radius:999px;padding:6px 14px;font-weight:bold;cursor:pointer;";
+  playAll.className = "play-all-button playlist-play-all";
   playAll.addEventListener("click", () => {
     startTrackList(playlist);
   });
@@ -1378,33 +1407,71 @@ function updateLibraryPage() {
   favs.forEach((t, i) => f.appendChild(createTrackCard(t, i, favs)));
 }
 
+function samplePlaylists(list, limit = 4) {
+  const unique = [...new Map(list.filter((p) => p?.id).map((p) => [p.id, p])).values()];
+  for (let i = unique.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unique[i], unique[j]] = [unique[j], unique[i]];
+  }
+  return unique.slice(0, limit);
+}
+
+function setPlaylistListStatus(message, retry = false) {
+  for (const id of ["playlistList", "homePlaylists"]) {
+    const box = document.getElementById(id);
+    if (box) box.innerHTML = `<div class="empty-message" role="status">${escapeHtml(message)}</div>`;
+  }
+  const refresh = document.getElementById("homePlaylistRefresh");
+  if (refresh) {
+    refresh.disabled = !retry;
+    refresh.textContent = retry ? "再読み込み" : "別のプレイリスト";
+  }
+}
+
 async function loadSpotifyPlaylists() {
-  const box = document.getElementById("playlistList");
-  if (!box) return;
   const reqId = ++playlistLoadId;
-
-  const token = await getFreshSpotifyToken(false);
-  if (reqId !== playlistLoadId) return;
-  if (!token) {
-    box.innerHTML = `<div class="empty-message">Spotifyにログインするとプレイリストが表示されます</div>`;
-    return;
-  }
-  if (!box.querySelector(".spotify-playlist-card")) {
-    box.innerHTML = `<div class="empty-message">🔄 読み込み中...</div>`;
-  }
-
+  spotifyPlaylistCache = [];
+  setPlaylistListStatus("プレイリストを読み込んでいます…");
   try {
+    const token = await getFreshSpotifyToken(false);
+    if (reqId !== playlistLoadId) return;
+    if (!token) {
+      spotifyPlaylistCache = [];
+      setPlaylistListStatus("Spotifyにログインすると、保存したプレイリストが表示されます。", true);
+      return;
+    }
     const all = await fetchSpotifyPages("https://api.spotify.com/v1/me/playlists?limit=50", () => reqId !== playlistLoadId);
     if (reqId !== playlistLoadId) return;
-    renderSpotifyPlaylists(all);
+    spotifyPlaylistCache = [...new Map(all.filter((p) => p?.id).map((p) => [p.id, p])).values()];
+    renderSpotifyPlaylists(spotifyPlaylistCache);
+    renderHomePlaylists();
   } catch (e) {
     if (reqId !== playlistLoadId) return;
-    const msg =
-      e.status === 401 || e.status === 403
-        ? "プレイリストを取得できませんでした。Spotifyにログインし直してください"
-        : "プレイリストの取得に失敗しました。時間をおいて再度お試しください";
-    box.innerHTML = `<div class="empty-message">${msg}</div>`;
+    spotifyPlaylistCache = [];
+    const msg = e.status === 401 || e.status === 403
+      ? "プレイリストを取得できませんでした。Spotifyにログインし直してください。"
+      : "プレイリストの取得に失敗しました。再読み込みしてください。";
+    setPlaylistListStatus(msg, true);
   }
+}
+
+function createSpotifyPlaylistCard(p, sourcePage = "favoritesPage") {
+  const count = p.tracks?.total ?? p.items?.total;
+  const img = p.images?.[1]?.url || p.images?.[0]?.url || "";
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "spotify-playlist-card";
+  card.innerHTML = `
+    <span class="spotify-playlist-image"><span aria-hidden="true">♫</span>${img ? `<img src="${escapeHtml(img)}" alt="" loading="lazy">` : ""}</span>
+    <span class="spotify-playlist-info">
+      <span class="spotify-playlist-name">${escapeHtml(p.name || "プレイリスト")}</span>
+      <span class="spotify-playlist-count">${count != null ? `${count}曲` : "Spotifyプレイリスト"}</span>
+    </span>
+  `;
+  const image = card.querySelector?.("img");
+  if (image) image.addEventListener("error", () => { image.hidden = true; });
+  card.addEventListener("click", () => openSpotifyPlaylist(p, sourcePage));
+  return card;
 }
 
 function renderSpotifyPlaylists(list) {
@@ -1412,34 +1479,24 @@ function renderSpotifyPlaylists(list) {
   if (!box) return;
   box.innerHTML = "";
   if (!list.length) {
-    box.innerHTML = `<div class="empty-message">プレイリストはまだありません</div>`;
+    box.innerHTML = `<div class="empty-message">保存したプレイリストはまだありません。</div>`;
     return;
   }
-  list.forEach((p) => {
-    const count = p.tracks?.total ?? p.items?.total;
-    const img = p.images?.[1]?.url || p.images?.[0]?.url || "";
-    const card = document.createElement("div");
-    card.className = "spotify-playlist-card";
-    card.tabIndex = 0;
-    card.setAttribute("role", "button");
-    card.innerHTML = `
-      <div class="spotify-playlist-image">${img ? `<img src="${escapeHtml(img)}" alt="" loading="lazy">` : ""}</div>
-      <div class="spotify-playlist-info">
-        <div class="spotify-playlist-name">${escapeHtml(p.name)}</div>
-        <div class="spotify-playlist-count">${count != null ? `${count}曲` : ""}</div>
-      </div>
-      <div class="spotify-playlist-arrow">›</div>
-    `;
-    const play = () => openSpotifyPlaylist(p);
-    card.addEventListener("click", play);
-    card.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        play();
-      }
-    });
-    box.appendChild(card);
-  });
+  list.forEach((p) => box.appendChild(createSpotifyPlaylistCard(p)));
+}
+
+function renderHomePlaylists() {
+  const box = document.getElementById("homePlaylists");
+  if (!box) return;
+  box.innerHTML = "";
+  const chosen = samplePlaylists(spotifyPlaylistCache);
+  chosen.forEach((p) => box.appendChild(createSpotifyPlaylistCard(p, "homePage")));
+  if (!chosen.length) box.innerHTML = `<div class="empty-message">保存したプレイリストはまだありません。Spotifyでプレイリストを保存すると、ここに表示されます。</div>`;
+  const refresh = document.getElementById("homePlaylistRefresh");
+  if (refresh) {
+    refresh.disabled = chosen.length < 2;
+    refresh.textContent = "別のプレイリスト";
+  }
 }
 
 // Spotify paging URLs are followed only on Spotify's API origin.
@@ -1479,7 +1536,9 @@ function spotifyReadError(error) {
   return "取得に失敗しました。通信状況を確認して再度お試しください。";
 }
 
-async function openSpotifyPlaylist(playlist) {
+async function openSpotifyPlaylist(playlist, sourcePage = "favoritesPage") {
+  playlistSourcePage = sourcePage;
+  setText("playlistBack", sourcePage === "homePage" ? "← ホームに戻る" : "← ライブラリに戻る");
   showPage("playlistDetailPage");
   const requestId = ++playlistDetailLoadId;
   const box = document.getElementById("playlistTracks");
@@ -1517,7 +1576,7 @@ async function openSpotifyPlaylist(playlist) {
     if (requestId !== playlistDetailLoadId) return;
     box.innerHTML = `<div class="empty-message" role="alert">${escapeHtml(spotifyReadError(error))}</div>`;
     retry.hidden = false;
-    retry.onclick = () => openSpotifyPlaylist(playlist);
+    retry.onclick = () => openSpotifyPlaylist(playlist, sourcePage);
   }
 }
 

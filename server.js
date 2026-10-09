@@ -817,14 +817,16 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
 
     const token = await getSpotifyToken();
     let rawTracks = [];
+    const genreName = String(genre || "").trim().slice(0, 80).replace(/["\\]/g, "");
+    const genreFilter = genreName ? ` genre:"${genreName}"` : "";
 
     if (artistId) {
-      const items = await get80Tracks(token, `artist:"${artistName}"`);
+      const items = await get80Tracks(token, `artist:"${String(artistName || "").replace(/["\\]/g, "")}"${genreFilter}`);
       rawTracks = items.filter((t) => t.artists?.some((a) => a.id === artistId));
     } else {
       const qList = [
-        `${genre || "J-Pop"} ${(analysis.keywords || []).join(" ")}`,
-        ...(analysis.searchQueries || []).map((q) => `${genre || ""} ${q}`),
+        `${genreFilter || "J-Pop"} ${(analysis.keywords || []).join(" ")}`,
+        ...(analysis.searchQueries || []).map((q) => `${genreFilter} ${q}`),
       ];
       for (const q of qList.slice(0, 3)) {
         const data = await searchSpotifyTracks(token, q.trim(), 10, 0);
@@ -834,10 +836,11 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
 
     const candidates = uniqueTracks(rawTracks).map(formatTrack).filter((t) => t.uri).slice(0, 30);
     if (candidates.length < 5) {
-      return res.status(404).json({ error: "候補曲が不足しています。別の気分やアーティストをお試しください。" });
+      return res.status(404).json({ error: "候補曲が不足しています。ジャンルを「おまかせ」に戻すか、別の気分やアーティストをお試しください。" });
     }
 
     const rankPrompt = `ユーザーの気分: 「${text}」
+希望ジャンル: ${genreName || "指定なし"}
 分析データ: ${JSON.stringify(analysis)}
 Spotify候補曲リスト:
 ${JSON.stringify(candidates.map((c, i) => ({ index: i, title: c.title, artist: c.artist })))}
