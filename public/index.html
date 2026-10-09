@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="/ui-fix.css">
     <link rel="stylesheet" href="/theme.css">
+    <link rel="stylesheet" href="/home-preview.css">
     <script>
         // 初回描画前にテーマを適用（ちらつき防止）。ocean=ライト(ダークモードOFF) / night=ダーク
         try { document.documentElement.dataset.theme = localStorage.getItem("music_picker_theme") === "night" ? "night" : "ocean"; }
@@ -29,13 +30,13 @@
 <!-- ハンバーガーメニュー -->
 <nav id="sideMenu" class="side-menu">
     <div class="side-menu-header">
-        <div class="menu-title">🎵 Music Picker</div>
+        <div class="menu-title" data-label="Music Picker">🎵 Music Picker</div>
         <button id="menuCloseButton" class="menu-close-button" aria-label="メニューを閉じる">×</button>
     </div>
 
     <!-- NOW PLAYING -->
     <section class="menu-section now-playing-section">
-        <h3 class="menu-section-title">🎧 NOW PLAYING</h3>
+        <h3 class="menu-section-title" data-label="再生中">🎧 NOW PLAYING</h3>
         <div class="menu-player">
             <img id="menuPlayerImage" class="menu-player-image" src="" alt="">
             <div class="menu-player-info">
@@ -57,19 +58,19 @@
 
     <!-- ページ移動 -->
     <section class="menu-section">
-        <h3 class="menu-section-title">📱 ページ</h3>
-        <button class="menu-link active" data-page="homePage">🏠 ホーム</button>
-        <button class="menu-link" data-page="searchPage">🔎 曲を検索</button>
-        <button class="menu-link" data-page="favoritesPage">❤️ お気に入り</button>
-        <button class="menu-link" data-page="historyPage">📜 履歴</button>
+        <h3 class="menu-section-title" data-label="ミュージック">📱 ページ</h3>
+        <button class="menu-link active" data-label="ホーム" data-page="homePage">🏠 ホーム</button>
+        <button class="menu-link" data-label="検索" data-page="searchPage">🔎 曲を検索</button>
+        <button class="menu-link" data-label="ライブラリ" data-page="favoritesPage">❤️ お気に入り</button>
+        <button class="menu-link" data-label="履歴" data-page="historyPage">📜 履歴</button>
     </section>
 
     <!-- アプリをカスタマイズ -->
     <section class="menu-section">
-        <h3 class="menu-section-title">🎨 アプリをカスタマイズ</h3>
+        <h3 class="menu-section-title" data-label="表示">🎨 アプリをカスタマイズ</h3>
         <div class="menu-setting dark-mode-setting">
             <div class="menu-setting-row">
-                <span>🌙 ダークモード</span>
+                <span class="home-menu-label" data-label="ダークモード">🌙 ダークモード</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="darkModeToggle">
                     <span class="toggle-slider"></span>
@@ -77,7 +78,7 @@
             </div>
         </div>
         <div class="menu-setting menu-setting-row">
-            <span>✨ アニメーション</span>
+            <span class="home-menu-label" data-label="アニメーション">✨ アニメーション</span>
             <label class="toggle-switch">
                 <input type="checkbox" id="animationToggle">
                 <span class="toggle-slider"></span>
@@ -87,30 +88,30 @@
 
     <!-- 再生設定 -->
     <section class="menu-section">
-        <h3 class="menu-section-title">🎧 再生設定</h3>
+        <h3 class="menu-section-title" data-label="再生">🎧 再生設定</h3>
         <div class="menu-setting">
-            <div class="menu-setting-label">🔊 音量</div>
+            <div class="menu-setting-label home-menu-label" data-label="音量">🔊 音量</div>
             <div class="menu-volume">
                 <input type="range" id="menuVolumeBar" min="0" max="100" value="50">
                 <span id="menuVolumeValue">50%</span>
             </div>
         </div>
         <div class="menu-setting menu-setting-row">
-            <span>▶️ リストの次の曲へ進む</span>
+            <span class="home-menu-label" data-label="リストの次の曲へ進む">▶️ リストの次の曲へ進む</span>
             <label class="toggle-switch">
                 <input type="checkbox" id="autoplayToggle" checked>
                 <span class="toggle-slider"></span>
             </label>
         </div>
         <div class="menu-setting menu-setting-row">
-            <span>🔀 シャッフル</span>
+            <span class="home-menu-label" data-label="シャッフル">🔀 シャッフル</span>
             <label class="toggle-switch">
                 <input type="checkbox" id="shuffleToggle">
                 <span class="toggle-slider"></span>
             </label>
         </div>
         <div class="menu-setting">
-            <div class="menu-setting-label">🔁 リピート</div>
+            <div class="menu-setting-label home-menu-label" data-label="リピート">🔁 リピート</div>
             <select id="repeatMode" class="menu-select">
                 <option value="off">OFF</option>
                 <option value="one">1曲</option>
@@ -122,7 +123,7 @@
             <p class="playback-mode-help">ONにすると、リスト終了後にアーティストの別の曲を探して続けます。</p>
         </div>
         <div class="menu-setting menu-setting-row">
-            <span>🎚️ プレイヤーを常に表示</span>
+            <span class="home-menu-label" data-label="プレイヤーを常に表示">🎚️ プレイヤーを常に表示</span>
             <label class="toggle-switch">
                 <input type="checkbox" id="alwaysShowPlayerToggle">
                 <span class="toggle-slider"></span>
@@ -132,7 +133,7 @@
 
     <!-- 設定ページ -->
     <section class="menu-section">
-        <button class="menu-link" data-page="settingsPage">⚙️ その他の設定</button>
+        <button class="menu-link" data-label="設定" data-page="settingsPage">⚙️ その他の設定</button>
     </section>
 </nav>
 
@@ -141,69 +142,78 @@
     <!-- ホーム -->
     <section id="homePage" class="page active-page">
         <header class="main-header">
-            <h1>🎵 Music Picker</h1>
-            <p>今の気分にぴったりの曲をGoogle Gemini AIとSpotifyが探します！</p>
+            <div>
+                <p class="home-kicker">MUSIC PICKER</p>
+                <h1>ホーム</h1>
+            </div>
+            <section class="spotify-box" aria-label="Spotify接続">
+                <div id="spotifyStatus" class="spotify-status">Spotify未接続</div>
+                <button id="spotifyLoginButton" class="spotify-login-button" type="button">ログイン</button>
+            </section>
         </header>
 
-        <!-- Spotify 接続ボックス -->
-        <section class="spotify-box">
-            <button id="spotifyLoginButton" class="spotify-login-button" type="button">
-                🎵 Spotifyにログイン
-            </button>
-            <div id="spotifyStatus" class="spotify-status">Spotify未接続</div>
-        </section>
-
-        <!-- 気分（AI自由入力 & クイック選択） -->
-        <section class="picker-box">
-            <h2>😊 今の気分・シチュエーション</h2>
-
-            <div class="ai-mood-input">
-                <label for="freeMoodInput">🤖 今の気分を自由に入力</label>
-                <p>文章で入力すると、Gemini AIが気分・情景・テンポ感を分析して最適な5曲を厳選します。</p>
-                <textarea id="freeMoodInput" maxlength="300" rows="3" placeholder="例：今日は一日集中して疲れたから、帰り道に優しく寄り添って元気が出る曲"></textarea>
-                <button type="button" id="aiMoodButton" class="ai-mood-button">🤖 AIに気分を分析してもらう</button>
-                <div id="aiMoodResult" class="ai-mood-result" aria-live="polite"></div>
+        <section class="picker-box home-moods" aria-labelledby="homeMoodHeading">
+            <div class="home-section-heading">
+                <h2 id="homeMoodHeading">気分を選ぶ</h2>
+                <p>気分と好きなアーティストから、おすすめの5曲を選びます。</p>
             </div>
-
-            <div class="ai-mood-divider">
-                <span>またはクイック選択</span>
-            </div>
-
             <div class="moods">
-                <button type="button" data-mood="楽しい">😆 楽しい</button>
-                <button type="button" data-mood="テンション高い">🔥 テンション高い</button>
-                <button type="button" data-mood="落ち着きたい">😌 落ち着きたい</button>
-                <button type="button" data-mood="しんみり">😢 しんみり</button>
+                <button type="button" data-mood="楽しい" aria-pressed="false">
+                    <span class="mood-art mood-art-happy" aria-hidden="true"><span>FEEL<br>GOOD</span><i></i></span>
+                    <span class="mood-name">楽しい<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
+                    <span class="mood-caption">明るい曲を聴きたい</span>
+                </button>
+                <button type="button" data-mood="テンション高い" aria-pressed="false">
+                    <span class="mood-art mood-art-energy" aria-hidden="true"><span>TURN<br>IT UP.</span><i></i></span>
+                    <span class="mood-name">気分を上げたい<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
+                    <span class="mood-caption">元気が出る曲を聴きたい</span>
+                </button>
+                <button type="button" data-mood="落ち着きたい" aria-pressed="false">
+                    <span class="mood-art mood-art-calm" aria-hidden="true"><span>SLOW<br>DOWN</span><i></i></span>
+                    <span class="mood-name">落ち着きたい<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
+                    <span class="mood-caption">ゆったりした曲を聴きたい</span>
+                </button>
+                <button type="button" data-mood="しんみり" aria-pressed="false">
+                    <span class="mood-art mood-art-night" aria-hidden="true"><span>LATE<br>NIGHT</span><i></i></span>
+                    <span class="mood-name">しんみり<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
+                    <span class="mood-caption">静かに曲に浸りたい</span>
+                </button>
             </div>
         </section>
 
-        <!-- アーティスト -->
-        <section class="picker-box">
-            <h2>🎤 アーティスト（任意）</h2>
-            <p>好きなアーティストを指定すると、そのアーティストや親和性の高い名曲を重視します</p>
-            <input type="text" id="artistSearch" class="artist-search" placeholder="アーティスト名を入力..." autocomplete="off">
-            <div id="artistResults" class="artist-results"></div>
-            <div id="selectedArtist" class="selected-artist" style="display:none;"></div>
-        </section>
-
-        <!-- ジャンル -->
-        <section class="picker-box">
-            <h2>🎸 ジャンル（任意）</h2>
-            <select id="genre" class="genre-select">
-                <option value="all">ジャンルを選択（AIにおまかせ）</option>
-                <option value="j-pop">J-Pop</option>
-                <option value="rock">Rock</option>
-                <option value="pop">Pop</option>
-                <option value="hip-hop">Hip-Hop</option>
-                <option value="electronic">Electronic</option>
-                <option value="anime">Anime</option>
-            </select>
-        </section>
-
-        <!-- 作成ボタン -->
-        <button id="makePlaylist" class="make-playlist-button">
-            🎵 おすすめ5曲を選ぶ
-        </button>
+        <div class="home-preferences">
+            <section class="picker-box home-free-mood" aria-labelledby="homeFreeHeading">
+                <h2 id="homeFreeHeading">気分を入力する</h2>
+                <div class="ai-mood-input">
+                    <label for="freeMoodInput">カードの代わりに、気分や聴く場面を入力できます</label>
+                    <textarea id="freeMoodInput" maxlength="300" rows="3" placeholder="例：帰り道に、ゆっくり聴きたい" aria-describedby="homeMoodHint"></textarea>
+                    <div class="home-input-footer">
+                        <p id="homeMoodHint">入力後、そのまま「5曲を選ぶ」で選曲できます。</p>
+                        <button type="button" id="aiMoodButton" class="ai-mood-button">気分を分析</button>
+                    </div>
+                    <div id="aiMoodResult" class="ai-mood-result" aria-live="polite"></div>
+                </div>
+            </section>
+            <section class="picker-box home-refine" aria-labelledby="homeRefineHeading">
+                <h2 id="homeRefineHeading">アーティスト・ジャンル <span>任意</span></h2>
+                <label for="artistSearch">アーティスト</label>
+                <input type="text" id="artistSearch" class="artist-search" placeholder="アーティスト名で検索" autocomplete="off" aria-describedby="homeArtistHint">
+                <div id="artistResults" class="artist-results" aria-live="polite"></div>
+                <div id="selectedArtist" class="selected-artist" style="display:none;"></div>
+                <p id="homeArtistHint" class="home-field-hint">検索結果から選択。指定しない場合はおまかせ。</p>
+                <label for="genre">ジャンル</label>
+                <select id="genre" class="genre-select">
+                    <option value="all">おまかせ</option>
+                    <option value="j-pop">J-Pop</option><option value="rock">Rock</option>
+                    <option value="pop">Pop</option><option value="hip-hop">Hip-Hop</option>
+                    <option value="electronic">Electronic</option><option value="anime">Anime</option>
+                </select>
+            </section>
+        </div>
+        <div class="home-submit">
+            <span>気分を選ぶか入力して、「5曲を選ぶ」を押してください。</span>
+            <button id="makePlaylist" class="make-playlist-button" type="button">5曲を選ぶ</button>
+        </div>
 
         <!-- プレイリスト結果エリア -->
         <section id="playlist" class="playlist"></section>
