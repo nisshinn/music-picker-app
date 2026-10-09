@@ -809,6 +809,9 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
     const { text, artistId, artistName, genre } = req.body;
     if (!text) return res.status(400).json({ error: "気分を入力してください。" });
 
+    const excluded = new Set((Array.isArray(req.body.excludedTrackUris) ? req.body.excludedTrackUris : [])
+      .slice(0, 100).filter((uri) => typeof uri === "string" && /^spotify:track:[a-zA-Z0-9]+$/.test(uri)));
+    const eligible = (track) => !excluded.has(track.uri || `spotify:track:${track.id}`) && !excluded.has(track.linked_from?.uri);
     let analysis = req.body?.analysis;
     if (!analysis) {
       const raw = await generateContentWithRetry(`気分:「${text}」を分析してJSONを出力してください: {"summary":"...","mood":"楽しい/落ち着きたい/等","energy":3,"positivity":3,"keywords":["..."],"searchQueries":["..."]}`);
@@ -829,14 +832,18 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
         ...(analysis.searchQueries || []).map((q) => `${genreFilter} ${q}`),
       ];
       for (const q of qList.slice(0, 3)) {
-        const data = await searchSpotifyTracks(token, q.trim(), 10, 0);
-        rawTracks.push(...(data.tracks?.items || []));
+        for (let offset = 0; offset < (excluded.size ? 80 : 10); offset += 10) {
+          const data = await searchSpotifyTracks(token, q.trim(), 10, offset);
+          const items = data.tracks?.items || [];
+          rawTracks.push(...items);
+          if (items.length < 10 || uniqueTracks(rawTracks).filter(eligible).length >= 30) break;
+        }
       }
     }
 
-    const candidates = uniqueTracks(rawTracks).map(formatTrack).filter((t) => t.uri).slice(0, 30);
+    const candidates = uniqueTracks(rawTracks).filter(eligible).map(formatTrack).filter((t) => t.uri).slice(0, 30);
     if (candidates.length < 5) {
-      return res.status(404).json({ error: "候補曲が不足しています。ジャンルを「おまかせ」に戻すか、別の気分やアーティストをお試しください。" });
+      return res.status(404).json({ error: excluded.size ? "最近聴いた曲を除くと候補が不足しています。条件を変えるか、「最近聴いた曲を除外」をオフにしてください。" : "候補曲が不足しています。ジャンルを「おまかせ」に戻すか、別の気分やアーティストをお試しください。" });
     }
 
     const rankPrompt = `ユーザーの気分: 「${text}」
@@ -867,7 +874,7 @@ ${JSON.stringify(candidates.map((c, i) => ({ index: i, title: c.title, artist: c
 
     for (const item of rankData.selected || []) {
       const cand = candidates[item.index];
-      if (cand) {
+      if (cand && !selectedTracks.some((track) => track.uri === cand.uri)) {
         cand.reason = item.reason;
         cand.genre = item.genre || cand.genre;
         cand.tempo = item.tempo || cand.tempo;

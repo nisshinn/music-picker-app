@@ -434,3 +434,118 @@ test('curator applies an explicit genre to artist catalogue queries and ranking'
   assert.ok(context.searchQueries.every(q => q.includes('genre:"jazz"')));
   assert.equal(body.tracks.length, 5);
 });
+
+function memoryStorage(run) {
+  run('globalThis.savedData = new Map(); localStorage.getItem = key => savedData.get(key) || null; localStorage.setItem = (key,value) => savedData.set(key,value);');
+}
+
+test('selection presets persist, overwrite by name, restore all conditions without playing, and delete', () => {
+  const { run, elements } = app();
+  memoryStorage(run);
+  run('initSelectionPresets();selectedMood="楽しい";selectedArtistId="artist";selectedArtistName="Artist";selectedGenre="jazz";excludeRecent=true;document.getElementById("presetName").value="帰り道";saveSelectionPreset();');
+  assert.equal(run('readSelectionPresets().length'), 1);
+  assert.equal(run('readSelectionPresets()[0].excludeRecent'), true);
+  run('aiMoodText="夜にゆっくり";saveSelectionPreset();');
+  assert.equal(run('readSelectionPresets().length'), 1);
+  assert.equal(run('readSelectionPresets()[0].mood'), '');
+  run('document.getElementById("genre").options=[{value:"all"},{value:"jazz"}];selectedArtistId="other";setSelectedGenre("all");excludeRecent=false;applySelectionPreset(readSelectionPresets()[0]);');
+  assert.equal(run('aiMoodText'), '夜にゆっくり');
+  assert.equal(run('selectedArtistId'), 'artist');
+  assert.equal(run('selectedGenre'), 'jazz');
+  assert.equal(run('excludeRecent'), true);
+  assert.equal(run('aiMoodAnalysis'), null);
+  assert.equal(run('currentPlaylist.length'), 0);
+  elements.get('deletePreset').click();
+  assert.equal(run('readSelectionPresets().length'), 0);
+});
+
+test('preset storage handles malformed data, capacity and write failures', () => {
+  const { run, elements } = app();
+  memoryStorage(run);
+  run('localStorage.setItem(SELECTION_PRESETS_KEY,"{}");');
+  assert.equal(run('readSelectionPresets().length'), 0);
+  run('localStorage.setItem(SELECTION_PRESETS_KEY,JSON.stringify(Array.from({length:20},(_,i)=>({id:String(i),name:"Preset"+i,mood:"楽しい"}))));selectedMood="楽しい";document.getElementById("presetName").value="Extra";saveSelectionPreset();');
+  assert.equal(run('readSelectionPresets().length'), 20);
+  assert.match(elements.get('presetStatus').textContent, /20件/);
+  run('document.getElementById("presetName").value="Preset0";localStorage.setItem=()=>{throw Error("quota")};saveSelectionPreset();');
+  assert.match(elements.get('presetStatus').textContent, /保存できません/);
+  assert.equal(run('readSelectionPresets().length'), 20);
+});
+
+test('loading a preset discards an older mood analysis response', async () => {
+  let finish;
+  const { run, elements } = app(async () => new Promise(resolve => { finish = resolve; }));
+  memoryStorage(run);
+  run('initHome();document.getElementById("freeMoodInput").value="old text";document.getElementById("genre").options=[{value:"all"}];');
+  const analysis = elements.get('aiMoodButton').click();
+  run('applySelectionPreset({name:"New",mood:"楽しい",freeMood:"",artistId:"",artistName:"",genre:"all",excludeRecent:false});');
+  finish(response({ analysis: { mood: 'しんみり', summary: 'old result' } }));
+  await analysis;
+  assert.equal(run('selectedMood'), '楽しい');
+  assert.equal(run('aiMoodAnalysis'), null);
+  assert.equal(elements.get('aiMoodResult').textContent, '');
+});
+
+test('recent exclusion uses only the latest 50 local tracks, handles relinks and is optional', () => {
+  const { run } = app();
+  memoryStorage(run);
+  run('localStorage.setItem("music_picker_history",JSON.stringify(Array.from({length:60},(_,i)=>({uri:"spotify:track:"+i,linked_from:i===0?{uri:"spotify:track:original"}:undefined}))));');
+  assert.equal(run('getRecentTrackUris().length'), 0);
+  run('excludeRecent=true;');
+  assert.equal(run('getRecentTrackUris().length'), 51);
+  assert.equal(run('getRecentTrackUris().includes("spotify:track:50")'), false);
+  assert.equal(run('getRecentTrackUris().includes("spotify:track:original")'), true);
+  run('localStorage.setItem("music_picker_history","null");');
+  assert.equal(run('getRecentTrackUris().length'), 0);
+});
+
+test('direct artist picks filter history before taking five; insufficient results never display excluded tracks', async () => {
+  let catalogue = Array.from({ length: 8 }, (_, i) => track(String(i)));
+  const { run } = app(async () => response(catalogue));
+  memoryStorage(run);
+  run('selectedMood="楽しい";selectedArtistId="artist";excludeRecent=true;localStorage.setItem("music_picker_history",JSON.stringify([{uri:"spotify:track:0"},{uri:"spotify:track:1"}]));displayPlaylist=tracks=>{window.result=tracks};showToast=()=>{};globalThis.alert=message=>{window.error=message};');
+  await run('makePlaylist()');
+  assert.deepEqual(Array.from(run('window.result'), t => t.id), ['2','3','4','5','6']);
+  catalogue = [track('0'),track('1'),track('2')];
+  run('window.result=null;');
+  await run('makePlaylist()');
+  assert.equal(run('window.result'), null);
+  assert.match(run('window.error'), /5曲そろいません/);
+  run('excludeRecent=false;');
+  await run('makePlaylist()');
+  assert.equal(run('window.result[0].id'), '0');
+});
+
+function exclusionServer() {
+  const routes = new Map();
+  const expressApp = { set() {}, use() {}, listen() {}, get() {}, post(path, handler) { routes.set(path, handler); } };
+  const express = Object.assign(() => expressApp, { json: () => {}, static: () => {} });
+  const context = vm.createContext({console:{log(){},error(){}},process:{env:{}},Buffer,URLSearchParams,
+    require(name) { if(name==='express')return express;if(name==='dotenv')return {config(){}};if(name==='@google/genai')return {};return require(name); }
+  });
+  vm.runInContext(fs.readFileSync('server.js','utf8'),context);
+  vm.runInContext('getSpotifyToken=async()=>"synthetic";globalThis.rankCalls=0;generateContentWithRetry=async prompt=>{rankCalls++;globalThis.lastPrompt=prompt;return JSON.stringify({selected:[{index:0},{index:0},{index:999},{index:1}]})};',context);
+  return {context,run:code=>vm.runInContext(code,context),async recommend(body){let result,status=200;await routes.get('/api/gemini/recommend-from-mood')({body:{text:'calm',analysis:{keywords:[],searchQueries:[]},...body}},{json(value){result=value},status(value){status=value;return this}});return {result,status};}};
+}
+
+test('curator excludes history before ranking and fills duplicate AI selections with distinct eligible tracks', async () => {
+  const api = exclusionServer();
+  api.run('get80Tracks=async()=>Array.from({length:40},(_,i)=>({id:String(i),uri:"spotify:track:"+i,artists:[{id:"artist"}]}));');
+  const { result, status } = await api.recommend({ artistId:'artist',excludedTrackUris:Array.from({length:31},(_,i)=>`spotify:track:${i}`) });
+  assert.equal(status,200);
+  assert.deepEqual(Array.from(result.tracks,t=>t.id),['31','32','33','34','35']);
+});
+
+test('curator searches later pages for unseen tracks and reports exclusion exhaustion', async () => {
+  const api=exclusionServer();
+  api.run('globalThis.offsets=[];searchSpotifyTracks=async(token,query,limit,offset)=>{offsets.push(offset);return {tracks:{items:Array.from({length:offset===20?4:10},(_,i)=>({id:String(offset+i),uri:"spotify:track:"+(offset+i)}))}}};');
+  const response=await api.recommend({excludedTrackUris:Array.from({length:10},(_,i)=>`spotify:track:${i}`)});
+  assert.equal(response.status,200);
+  assert.deepEqual(Array.from(api.context.offsets),[0,10,20]);
+  assert.ok(response.result.tracks.every(t=>Number(t.id)>=10));
+  api.run('get80Tracks=async()=>[{id:"a",uri:"spotify:track:a",artists:[{id:"artist"}]}];rankCalls=0;');
+  const empty=await api.recommend({artistId:'artist',excludedTrackUris:['spotify:track:a']});
+  assert.equal(empty.status,404);
+  assert.match(empty.result.error,/最近聴いた曲/);
+  assert.equal(api.context.rankCalls,0);
+});

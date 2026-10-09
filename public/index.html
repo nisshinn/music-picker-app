@@ -240,9 +240,29 @@
                 </select>
             </section>
         </div>
+        <details class="selection-presets">
+            <summary>選曲条件を保存・呼び出す</summary>
+            <p>このブラウザに最大20件保存できます。同じ名前で保存すると上書きします。</p>
+            <label for="savedPreset">保存した条件</label>
+            <div class="preset-row">
+                <select id="savedPreset"></select>
+                <button id="loadPreset" class="preset-button" type="button" disabled>呼び出す</button>
+                <button id="deletePreset" class="text-button" type="button" disabled>削除</button>
+            </div>
+            <label for="presetName">保存する名前</label>
+            <div class="preset-row">
+                <input id="presetName" type="text" maxlength="40" placeholder="例：帰り道のリラックス" autocomplete="off">
+                <button id="savePreset" class="preset-button" type="button">今の条件を保存</button>
+            </div>
+            <p id="presetStatus" role="status" aria-live="polite"></p>
+        </details>
         <div class="home-advanced">
             <button id="advancedToggle" class="advanced-toggle" type="button" aria-expanded="false" aria-controls="advancedSettings">詳細設定 <span aria-hidden="true">＋</span></button>
             <div id="advancedSettings" class="advanced-settings" hidden>
+                <div class="exclude-recent-setting">
+                    <label><input id="excludeRecent" type="checkbox" aria-describedby="excludeRecentHint">最近聴いた曲を除外</label>
+                    <p id="excludeRecentHint">このアプリで再生した直近50曲を、今回の5曲から除きます。このブラウザの履歴が対象です。</p>
+                </div>
                 <div class="advanced-heading">
                     <div><h2>ジャンルを詳しく選ぶ</h2><p>ジャンルを1つ選んで、選曲の範囲を絞れます。</p></div>
                     <button id="resetGenre" class="text-button" type="button">おまかせに戻す</button>
@@ -282,7 +302,7 @@
             </div>
         </div>
         <div class="home-submit">
-            <span>気分を選ぶか入力して、「5曲を選ぶ」を押してください。</span>
+            <span id="selectionHint">気分を選ぶか入力して、「5曲を選ぶ」を押してください。</span>
             <button id="makePlaylist" class="make-playlist-button" type="button">5曲を選ぶ</button>
         </div>
 
