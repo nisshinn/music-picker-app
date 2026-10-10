@@ -599,6 +599,33 @@ function matchesRecordingVersion(track, version) {
   return version === "live" ? isLiveRecording(track) : version === "studio" ? !isLiveRecording(track) : true;
 }
 
+// Accept bilingual titles while preserving recording/version annotations.
+function normalizeLyricName(value) {
+  return typeof value === "string" ? value.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase() : "";
+}
+function lyricTitleAliases(value) {
+  const title = normalizeLyricName(value);
+  const aliases = [title];
+  const parts = title.split(/\s[-–—]\s/);
+  const cjk = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+  const latin = /^[\p{Script=Latin}\s'’]+$/u;
+  const version = /\b(?:live|remix|mix|remaster(?:ed)?|acoustic|instrumental|karaoke|edit|version|demo|session|mono|stereo|sped|slowed|cover|radio)\b/i;
+  if (parts.length === 2 && cjk.test(parts[0]) && latin.test(parts[1]) && !version.test(parts[1])) aliases.push(parts[0]);
+  return aliases;
+}
+function matchesLyricRecording(item, { title, artist, album, duration }) {
+  if (!item || !normalizeLyricName(item.trackName) || normalizeLyricName(item.artistName) !== normalizeLyricName(artist)) return false;
+  if (!Number.isFinite(item.duration) || Math.abs(item.duration - duration) > 2) return false;
+  const aliases = lyricTitleAliases(title);
+  if (!lyricTitleAliases(item.trackName).some(name => aliases.includes(name))) return false;
+  return isLiveRecording({ name: title, album: { name: album } }) === isLiveRecording({ name: item.trackName, album: { name: item.albumName } });
+}
+function lyricPayload(item) {
+  const plainLyrics = typeof item.plainLyrics === "string" ? item.plainLyrics.slice(0, 100000) : "";
+  const syncedLyrics = typeof item.syncedLyrics === "string" ? item.syncedLyrics.slice(0, 100000) : "";
+  return { status: item.instrumental ? "instrumental" : plainLyrics || syncedLyrics ? "found" : "unavailable", plainLyrics, syncedLyrics };
+}
+
 // Keep the upstream fixed and cache a bounded amount of public lyric data.
 const lyricsCache = new Map();
 app.get("/api/lyrics", async (req, res) => {
@@ -613,21 +640,33 @@ app.get("/api/lyrics", async (req, res) => {
   const cached = lyricsCache.get(key);
   if (cached && cached.until > Date.now()) return res.json(cached.data);
   try {
-    const upstream = await fetch(`https://lrclib.net/api/get?${params}`, {
+    // Both requests share one deadline, including response body reads.
+    const options = {
       headers: { "User-Agent": "MusicPicker/1.0 (https://github.com/nisshinn/music-picker-app)" },
       signal: AbortSignal.timeout(8000),
-    });
+    };
+    const query = { title, artist, album, duration };
+    const upstream = await fetch(`https://lrclib.net/api/get?${params}`, options);
     let data = { status: "unavailable" };
     if (upstream.status !== 404) {
       if (!upstream.ok) return res.status(502).json({ error: "歌詞を取得できませんでした。時間をおいて再度お試しください。" });
       const item = await upstream.json();
-      // Reject mismatches instead of dropping version suffixes and finding a
-      // different recording. LRCLIB's documented duration tolerance is ±2s.
-      const same = (a, b) => typeof a === "string" && a.normalize("NFKC").trim().toLowerCase() === b.normalize("NFKC").trim().toLowerCase();
-      if (same(item.trackName, title) && same(item.artistName, artist) && same(item.albumName, album) && Number.isFinite(item.duration) && Math.abs(item.duration - duration) <= 2) {
-        const plainLyrics = typeof item.plainLyrics === "string" ? item.plainLyrics.slice(0, 100000) : "";
-        const syncedLyrics = typeof item.syncedLyrics === "string" ? item.syncedLyrics.slice(0, 100000) : "";
-        data = { status: item.instrumental ? "instrumental" : plainLyrics || syncedLyrics ? "found" : "unavailable", plainLyrics, syncedLyrics };
+      if (matchesLyricRecording(item, query)) data = lyricPayload(item);
+    }
+    if (data.status === "unavailable") {
+      // Album names vary across regions/releases. Search without the album,
+      // but retain title/version, artist and LRCLIB's ±2-second duration check.
+      const searchParams = new URLSearchParams({ track_name: title, artist_name: artist });
+      const search = await fetch(`https://lrclib.net/api/search?${searchParams}`, options);
+      if (search.status !== 404) {
+        if (!search.ok) return res.status(502).json({ error: "歌詞を取得できませんでした。時間をおいて再度お試しください。" });
+        const results = await search.json();
+        if (!Array.isArray(results)) throw new Error("Invalid lyric search response");
+        const candidates = results.filter(item => matchesLyricRecording(item, query) && lyricPayload(item).status !== "unavailable");
+        const score = item => (normalizeLyricName(item.albumName) === normalizeLyricName(album) ? 8 : 0)
+          + (item.syncedLyrics ? 4 : 0) - Math.abs(item.duration - duration);
+        candidates.sort((a, b) => score(b) - score(a));
+        if (candidates.length) data = lyricPayload(candidates[0]);
       }
     }
     if (lyricsCache.size >= 100) lyricsCache.delete(lyricsCache.keys().next().value);

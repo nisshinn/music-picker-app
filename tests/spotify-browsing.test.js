@@ -613,7 +613,7 @@ const lyricQuery={title:'Song - Live',artist:'Artist',album:'Live Album',duratio
 const lyricData={trackName:'Song - Live',artistName:'Artist',albumName:'Live Album',duration:201,instrumental:false,plainLyrics:'Synthetic line',syncedLyrics:'[00:01]Synthetic line'};
 test('lyrics endpoint validates metadata, fixed provider, duration/version matching and caches responses', async () => {
   const api=exclusionServer();let calls=0;
-  api.context.fetch=async(url,options)=>{calls++;assert.match(url,/^https:\/\/lrclib.net\/api\/get\?/);assert.ok(options.signal);return response(lyricData);};
+  api.context.fetch=async(url,options)=>{calls++;assert.match(url,/^https:\/\/lrclib.net\/api\/(?:get|search)\?/);assert.ok(options.signal);return response(url.includes('/search?')?[lyricData]:lyricData);};
   assert.equal((await api.get('/api/lyrics',{...lyricQuery,duration:'no'})).status,400);
   assert.equal(calls,0);
   assert.equal((await api.get('/api/lyrics',lyricQuery)).result.status,'found');
@@ -631,6 +631,48 @@ test('lyrics endpoint handles absent, instrumental, plain, errors and timeout st
   assert.equal((await api.get('/api/lyrics',lyricQuery)).status,502);
   api.context.fetch=async()=>{throw new DOMException('timeout','TimeoutError');};
   assert.equal((await api.get('/api/lyrics',lyricQuery)).status,502);
+});
+
+test('lyrics search resolves bilingual titles and regional albums with a shared deadline and cache', async () => {
+  const api=exclusionServer(),calls=[];
+  const query={title:'筆舌',artist:'RADWIMPS',album:'あにゅー',duration:'354.4'};
+  const match={...lyricData,trackName:'筆舌 - Hitsu Zetsu',artistName:'Radwimps',albumName:'Anew',duration:355};
+  api.context.fetch=async(url,options)=>{
+    calls.push({url,signal:options.signal});
+    if(url.includes('/get?'))return response({},404);
+    const params=new URL(url).searchParams;
+    assert.equal(params.get('track_name'),'筆舌');assert.equal(params.get('artist_name'),'RADWIMPS');assert.equal(params.has('album_name'),false);
+    return response([{...match,duration:366,syncedLyrics:'wrong duration'}, {...match,artistName:'Other',syncedLyrics:'wrong artist'},match]);
+  };
+  const result=await api.get('/api/lyrics',query);
+  assert.equal(result.result.status,'found');assert.equal(result.result.syncedLyrics,lyricData.syncedLyrics);
+  assert.equal(calls.length,2);assert.equal(calls[0].signal,calls[1].signal);
+  await api.get('/api/lyrics',query);assert.equal(calls.length,2);
+});
+
+test('lyrics fallback rejects other versions, live albums, unrelated titles and invalid durations', async () => {
+  for(const candidate of [
+    {trackName:'筆舌 - Live'}, {trackName:'筆舌 - Acoustic'}, {trackName:'筆舌 - Remix'},
+    {trackName:'筆舌 - Hitsu Zetsu - Live'}, {trackName:'別の曲 - Hitsu Zetsu'},
+    {albumName:'Live at Tokyo'}, {duration:360}, {duration:null}, {artistName:'Other'},
+  ]) {
+    const api=exclusionServer();
+    api.context.fetch=async url=>url.includes('/get?')?response({},404):response([{...lyricData,trackName:'筆舌 - Hitsu Zetsu',artistName:'RADWIMPS',albumName:'Anew',duration:355,...candidate}]);
+    assert.equal((await api.get('/api/lyrics',{title:'筆舌',artist:'RADWIMPS',album:'あにゅー',duration:'355'})).result.status,'unavailable',JSON.stringify(candidate));
+  }
+});
+
+test('lyrics fallback selects matching album, then synced lyrics and handles empty/error search results', async () => {
+  const api=exclusionServer();
+  let candidates=[{...lyricData,albumName:'Other',syncedLyrics:'other album'}, {...lyricData,syncedLyrics:null}, {...lyricData,syncedLyrics:'preferred'}];
+  api.context.fetch=async url=>url.includes('/get?')?response({},404):response(candidates);
+  assert.equal((await api.get('/api/lyrics',lyricQuery)).result.syncedLyrics,'preferred');
+  for (const [data,status,expected] of [[[],200,200],[{},429,502],[{},200,502]]) {
+    const fresh=exclusionServer();
+    fresh.context.fetch=async url=>url.includes('/get?')?response({},404):response(data,status);
+    const result=await fresh.get('/api/lyrics',lyricQuery);assert.equal(result.status,expected);
+    if(expected===200)assert.equal(result.result.status,'unavailable');
+  }
 });
 
 test('lyrics ignores old track requests, highlights seek position and respects manual scrolling', async () => {
