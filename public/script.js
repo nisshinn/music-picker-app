@@ -1117,7 +1117,7 @@ function setNowPlaying(title, artist, image) {
   setText("menuPlayerArtist", artist);
   setText("fpTitle", title);
   setText("fpArtist", artist);
-  ["playerImage", "menuPlayerImage", "fpImage", "fpBackdrop"].forEach((id) => {
+  ["playerImage", "menuPlayerImage", "fpImage", "fpBackdrop", "fpThumb"].forEach((id) => {
     const img = document.getElementById(id);
     if (img) img.src = image || "";
   });
@@ -1127,7 +1127,14 @@ function updatePlayerInfo(track) {
   track = normalizeTrack(track);
   if (!track) return;
   setNowPlaying(track.title || "曲名なし", getArtistText(track), track.image);
-  setText("fpArtist", [getArtistText(track), track.album?.name].filter(Boolean).join(" — "));
+  const artistElement = document.getElementById("fpArtist");
+  if (artistElement) {
+    artistElement.dataset.artist = getArtistText(track);
+    artistElement.dataset.album = track.album?.name || "";
+  }
+  renderFullPlayerArtist();
+  const spotifyLink = document.getElementById("fpSpotifyLink");
+  if (spotifyLink) spotifyLink.href = /^[a-zA-Z0-9]+$/.test(track.id || "") ? `https://open.spotify.com/track/${track.id}` : "https://open.spotify.com/";
 
   refreshLyricsForTrack(track);
 
@@ -1982,6 +1989,7 @@ function initFullPlayer() {
     }
   });
   initLyrics();
+  initMobileFullPlayer();
   document.getElementById("fpClose")?.addEventListener("click", closeFullPlayer);
   document.getElementById("fpQueueButton")?.addEventListener("click", () => setPlayerQueueOpen(!fp.classList.contains("queue-open")));
   document.getElementById("fpQueueBack")?.addEventListener("click", () => setPlayerQueueOpen(false));
@@ -1990,7 +1998,7 @@ function initFullPlayer() {
   document.getElementById("playerLyrics")?.addEventListener("click", () => { openFullPlayer(); setLyricsOpen(true); });
   document.getElementById("playerQueue")?.addEventListener("click", () => { openFullPlayer(); setPlayerQueueOpen(true); });
   fp.addEventListener("click", event => {
-    if (!event.target.closest(".fp-control-area")) closePlayerPopovers();
+    if (!event.target.closest(".fp-control-area, .fp-mobile-actions, .fp-mobile-options, .fp-mobile-volume")) closePlayerPopovers();
   });
 
   document.getElementById("fpFav")?.addEventListener("click", () => {
@@ -2042,6 +2050,7 @@ function closeFullPlayer() {
   fp.classList.remove("open", "queue-open");
   closePlayerPopovers();
   document.getElementById("fpQueueButton")?.setAttribute("aria-expanded", "false");
+  document.getElementById("fpQueueButton")?.classList.remove("active");
   setLyricsOpen(false);
   fp.setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
@@ -2182,6 +2191,7 @@ function refreshLyricsForTrack(track) {
 }
 
 function setLyricsOpen(open) {
+  if (open && mobilePlayerLayout && document.getElementById("fullPlayer")?.classList.contains("queue-open")) setPlayerQueueOpen(false);
   lyricsOpen = open;
   const main = document.querySelector(".fp-main");
   if (main) main.scrollTop = 0;
@@ -2306,6 +2316,8 @@ const PLAYER_ICONS = {
   infinite: '<path d="M12 12c-3-5-4-5-6-5a5 5 0 0 0 0 10c2 0 3-1 6-5s4-5 6-5a5 5 0 0 1 0 10c-2 0-3-1-6-5Z"/>',
   lyrics: '<path d="M5 3h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-7l-6 4v-4H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M8 8v3h2c0 2-1 3-2 3m6-6v3h2c0 2-1 3-2 3"/>',
   queue: '<path d="M9 5h12M9 12h12M9 19h12M3 5h1M3 12h1M3 19h1"/>',
+  volumeLow: '<path d="M3 9h4l5-4v14l-5-4H3Z" fill="currentColor" stroke="none"/>',
+  spotify: '<circle cx="12" cy="12" r="9"/><path d="M6 9c4-1 8-1 12 1M7 12c3-1 7-1 10 1m-9 2c3-.6 5-.5 8 1"/>',
   volume: '<path d="M3 9h4l5-4v14l-5-4H3Zm13-1a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
   more: '<circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="1.5" fill="currentColor" stroke="none"/>',
   close: '<path d="m5 5 14 14M19 5 5 19"/>',
@@ -2332,6 +2344,7 @@ function closePlayerPopovers() {
   let closed = false;
   for (const [panelId, buttonId] of [["fpOptions", "fpMoreButton"], ["fpVolumePanel", "fpVolumeButton"]]) {
     const panel = document.getElementById(panelId);
+    if (mobilePlayerLayout && (panelId === "fpVolumePanel" || (panelId === "fpOptions" && document.getElementById("fullPlayer")?.classList.contains("queue-open")))) continue;
     if (panel && !panel.hidden) {
       panel.hidden = true;
       const button = document.getElementById(buttonId);
@@ -2353,15 +2366,70 @@ function togglePlayerPopover(panelId, buttonId) {
   button?.classList.toggle("active", open);
 }
 function setPlayerQueueOpen(open) {
+  if (open && mobilePlayerLayout && lyricsOpen) setLyricsOpen(false);
   document.getElementById("fullPlayer")?.classList.toggle("queue-open", open);
   document.getElementById("fpQueueButton")?.setAttribute("aria-expanded", String(open));
+  document.getElementById("fpQueueButton")?.classList.toggle("active", open);
   closePlayerPopovers();
+  if (mobilePlayerLayout) {
+    const panel = document.getElementById("fpOptions");
+    if (panel) panel.hidden = !open;
+    document.getElementById("fpMoreButton")?.setAttribute("aria-expanded", String(open));
+    document.getElementById("fpMoreButton")?.classList.toggle("active", open);
+  }
   renderQueue();
   if (open) {
-    document.getElementById("fpQueueBack")?.focus();
+    document.getElementById(mobilePlayerLayout ? "fpQueueButton" : "fpQueueBack")?.focus();
     refreshSpotifyQueue();
   } else {
     document.getElementById("fpMoreButton")?.focus();
     syncLyrics(clockPosition(), true);
   }
+}
+
+// Reuse the same controls and listeners in the phone layout, including queue
+// mode, so playback, seek and volume remain available in all three views.
+let mobilePlayerLayout = false;
+function renderFullPlayerArtist() {
+  const element = document.getElementById("fpArtist");
+  if (!element) return;
+  element.textContent = mobilePlayerLayout ? element.dataset.artist || "" : [element.dataset.artist, element.dataset.album].filter(Boolean).join(" — ");
+}
+function initMobileFullPlayer() {
+  const query = window.matchMedia("(max-width: 600px)");
+  const moves = [
+    ["#fpImage", "fpMobileArt"], [".fp-meta", "fpMobileMetadata"],
+    ["#fpFav", "fpMobileActions"], ["#fpMoreButton", "fpMobileActions"],
+    [".fp-progress", "fpMobileProgress"], ["#fpPrev", "fpMobileTransport"],
+    ["#fpPlay", "fpMobileTransport"], ["#fpNext", "fpMobileTransport"],
+    ["#fpVolumePanel", "fpMobileVolume"], ["#fpLyricsButton", "fpMobileLyricsTab"],
+    ["#fpQueueButton", "fpMobileQueueTab"], ["#fpOptions", "fpMobileOptions"],
+    ["#fpLyrics", "fpMobileContent"], ["#fpQueue", "fpMobileContent"],
+  ].map(([selector, targetId]) => {
+    const node = document.querySelector(selector);
+    const anchor = document.createComment(`desktop ${selector}`);
+    node.before(anchor);
+    return { node, anchor, target: document.getElementById(targetId) };
+  });
+  const update = () => {
+    if (mobilePlayerLayout === query.matches) return;
+    closePlayerPopovers();
+    mobilePlayerLayout = query.matches;
+    document.getElementById("fpMobile").hidden = !mobilePlayerLayout;
+    for (const { node, anchor, target } of moves) {
+      if (mobilePlayerLayout) target.appendChild(node);
+      else anchor.after(node);
+    }
+    document.getElementById("fpVolumePanel").hidden = !mobilePlayerLayout;
+    const queueOpen = document.getElementById("fullPlayer").classList.contains("queue-open");
+    if (mobilePlayerLayout && queueOpen) {
+      setLyricsOpen(false);
+      document.getElementById("fpOptions").hidden = false;
+      document.getElementById("fpMoreButton").setAttribute("aria-expanded", "true");
+    }
+    renderFullPlayerArtist();
+    requestAnimationFrame(() => syncLyrics(clockPosition(), true));
+  };
+  query.addEventListener("change", update);
+  update();
 }
