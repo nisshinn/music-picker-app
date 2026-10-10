@@ -244,7 +244,7 @@ button { cursor:pointer!important}
 
 .menu-overlay { position:fixed!important; inset:0!important; background:rgba(0,0,0,.55)!important; transition:opacity .25s ease,visibility .25s ease!important}
 
-.menu-button { background:var(--sidebar,#182022)!important; color:var(--text,#e9eeee)!important; border:1px solid var(--border,rgba(255,255,255,.14))!important; border-radius:8px!important; width:38px!important; height:38px!important; font-size:20px!important; left:10px!important; top:10px!important}
+.menu-button { background:var(--sidebar,#182022)!important; color:var(--text,#e9eeee)!important; border:1px solid var(--border,rgba(255,255,255,.14))!important; border-radius:8px!important; width:38px!important; height:38px!important; font-size:20px!important; left:auto!important; right:max(10px, env(safe-area-inset-right, 0px))!important; top:calc(10px + env(safe-area-inset-top, 0px))!important}
 
 }
 
@@ -804,7 +804,9 @@ body .menu-link[data-page="settingsPage"] { --home-nav-icon: url("data:image/svg
 @media (max-width: 900px) {
   body #app { padding: 68px 24px 230px !important; }
   body #menuButton { display: block; background: transparent !important; border: 0 !important; color: var(--accent-text) !important; }
-  body .side-menu { padding-top: 60px; }
+  body #menuButton[aria-expanded="true"] { display: none; }
+  body .side-menu { padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+  body .menu-close-button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--accent-text); font-size: 28px; cursor: pointer; }
   body .bottom-nav { display: flex; left: 0; transform: none; width: 100%; bottom: 0; height: calc(66px + env(safe-area-inset-bottom, 0px)); padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)); border: 0; border-top: 1px solid var(--border); border-radius: 0; background: var(--sidebar); }
   body .bottom-nav-link { color: var(--muted); font-size: 10px; gap: 4px; }
   body .bottom-nav-link.active { background: transparent; color: var(--accent-text); }
