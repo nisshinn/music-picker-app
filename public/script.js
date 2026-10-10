@@ -748,6 +748,8 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   track = normalizeTrack(track);
   const card = document.createElement("div");
   card.className = "track-card";
+  // Playlist detail retains its existing artwork layout and explicit controls.
+  const compact = !onPlay;
 
   // 一覧の中の曲を押したら、その一覧を再生リストにして次/前の曲に進めるようにする
   const playFromCard = () => {
@@ -763,21 +765,25 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   img.onerror = () => (img.style.visibility = "hidden");
   if (!track.image) img.style.visibility = "hidden";
 
-  const info = document.createElement("div");
+  const info = document.createElement(compact ? "span" : "div");
   info.className = "track-info";
+  const textTag = compact ? "span" : "div";
   info.innerHTML = `
-    <div class="track-title">${escapeHtml(track.title)}</div>
-    <div class="track-artist">${escapeHtml(getArtistText(track))}</div>
-    ${track.reason ? `<div class="track-reason">💡 ${escapeHtml(track.reason)}</div>` : ""}
+    <${textTag} class="track-title">${escapeHtml(track.title)}</${textTag}>
+    <${textTag} class="track-artist">${escapeHtml(getArtistText(track))}</${textTag}>
+    ${track.reason ? `<${textTag} class="track-reason">💡 ${escapeHtml(track.reason)}</${textTag}>` : ""}
     ${
       track.vibeKeywords && track.vibeKeywords.length
-        ? `<div class="track-tags">${track.vibeKeywords
+        ? `<${textTag} class="track-tags">${track.vibeKeywords
             .map((k) => `<span class="track-tag">#${escapeHtml(k)}</span>`)
-            .join("")}</div>`
+            .join("")}</${textTag}>`
         : ""
     }
   `;
 
+  if (compact) {
+    info.title = [track.title, getArtistText(track), track.reason].filter(Boolean).join(" · ");
+  }
   const actions = document.createElement("div");
   actions.className = "track-actions";
 
@@ -795,6 +801,7 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   favBtn.className = "favorite-button";
   favBtn.type = "button";
   favBtn.dataset.uri = track.uri || "";
+  favBtn.dataset.compact = String(compact);
   updateFavoriteButton(favBtn, track);
   favBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -809,12 +816,24 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   spotLink.href = track.spotifyUrl || `https://open.spotify.com/track/${track.id}`;
   spotLink.addEventListener("click", (e) => e.stopPropagation());
 
-  actions.appendChild(playBtn);
+  if (!compact) actions.appendChild(playBtn);
+  else setPlayerIcon(spotLink, "spotify", "Spotifyで開く");
   actions.appendChild(favBtn);
   actions.appendChild(spotLink);
 
-  card.appendChild(img);
-  card.appendChild(info);
+  if (compact) {
+    const main = document.createElement("button");
+    main.className = "track-main";
+    main.type = "button";
+    main.setAttribute("aria-label", `${track.title} — ${getArtistText(track)}を再生`);
+    img.alt = "";
+    main.appendChild(img);
+    main.appendChild(info);
+    card.appendChild(main);
+  } else {
+    card.appendChild(img);
+    card.appendChild(info);
+  }
   card.appendChild(actions);
 
   card.addEventListener("click", () => {
@@ -1684,6 +1703,9 @@ function updateFavoriteButton(btn, track) {
   if (btn.id === "fpFav") {
     setPlayerIcon(btn, "favorite", exists ? "お気に入りから削除" : "お気に入りに追加");
     btn.setAttribute("aria-pressed", String(exists));
+  } else if (btn.dataset.compact === "true") {
+    setPlayerIcon(btn, "heart", exists ? "お気に入りから削除" : "お気に入りに追加");
+    btn.setAttribute("aria-pressed", String(exists));
   } else btn.textContent = exists ? "❤️" : "♡";
   btn.classList.toggle("favorite-active", exists);
   btn.setAttribute("aria-label", exists ? "お気に入りから削除" : "お気に入りに追加");
@@ -2447,6 +2469,7 @@ const PLAYER_ICONS = {
   more: '<circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="1.5" fill="currentColor" stroke="none"/>',
   close: '<path d="m5 5 14 14M19 5 5 19"/>',
   back: '<path d="m14 5-7 7 7 7"/>',
+  heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
   favorite: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/>',
   follow: '<path d="M12 3v4m0 10v4M3 12h4m10 0h4"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1"/>',
   refresh: '<path d="M20 5v6h-6m6 0a8 8 0 1 0-2 7"/>',
