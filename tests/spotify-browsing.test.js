@@ -14,7 +14,7 @@ function app(fetch, timers = {}) {
     setAttribute() {}, addEventListener(type, fn) { this[type] = fn; },
   });
   const context = vm.createContext({
-    console, URL, URLSearchParams, AbortController, Date, setTimeout: timers.setTimeout || setTimeout, clearTimeout: timers.clearTimeout || clearTimeout, setInterval: () => 0, fetch,
+    console, URL, URLSearchParams, AbortController, Date, setTimeout: timers.setTimeout || setTimeout, clearTimeout: timers.clearTimeout || clearTimeout, setInterval: timers.setInterval || (() => 0), fetch,
     document: {
       addEventListener() {}, querySelector: () => null, querySelectorAll: (selector) => selector === 'input[name="detailedGenre"]' ? ["j-pop","jazz","rock","all"].map(value=>({value,addEventListener(){}})) : [], createElement: element,
       getElementById(id) { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); },
@@ -613,7 +613,7 @@ const lyricQuery={title:'Song - Live',artist:'Artist',album:'Live Album',duratio
 const lyricData={trackName:'Song - Live',artistName:'Artist',albumName:'Live Album',duration:201,instrumental:false,plainLyrics:'Synthetic line',syncedLyrics:'[00:01]Synthetic line'};
 test('lyrics endpoint validates metadata, fixed provider, duration/version matching and caches responses', async () => {
   const api=exclusionServer();let calls=0;
-  api.context.fetch=async(url,options)=>{calls++;assert.match(url,/^https:\/\/lrclib.net\/api\/get\?/);assert.ok(options.signal);return response(lyricData);};
+  api.context.fetch=async(url,options)=>{calls++;assert.match(url,/^https:\/\/lrclib.net\/api\/(?:get|search)\?/);assert.ok(options.signal);return response(url.includes('/search?')?[lyricData]:lyricData);};
   assert.equal((await api.get('/api/lyrics',{...lyricQuery,duration:'no'})).status,400);
   assert.equal(calls,0);
   assert.equal((await api.get('/api/lyrics',lyricQuery)).result.status,'found');
@@ -633,6 +633,48 @@ test('lyrics endpoint handles absent, instrumental, plain, errors and timeout st
   assert.equal((await api.get('/api/lyrics',lyricQuery)).status,502);
 });
 
+test('lyrics search resolves bilingual titles and regional albums with a shared deadline and cache', async () => {
+  const api=exclusionServer(),calls=[];
+  const query={title:'筆舌',artist:'RADWIMPS',album:'あにゅー',duration:'354.4'};
+  const match={...lyricData,trackName:'筆舌 - Hitsu Zetsu',artistName:'Radwimps',albumName:'Anew',duration:355};
+  api.context.fetch=async(url,options)=>{
+    calls.push({url,signal:options.signal});
+    if(url.includes('/get?'))return response({},404);
+    const params=new URL(url).searchParams;
+    assert.equal(params.get('track_name'),'筆舌');assert.equal(params.get('artist_name'),'RADWIMPS');assert.equal(params.has('album_name'),false);
+    return response([{...match,duration:366,syncedLyrics:'wrong duration'}, {...match,artistName:'Other',syncedLyrics:'wrong artist'},match]);
+  };
+  const result=await api.get('/api/lyrics',query);
+  assert.equal(result.result.status,'found');assert.equal(result.result.syncedLyrics,lyricData.syncedLyrics);
+  assert.equal(calls.length,2);assert.equal(calls[0].signal,calls[1].signal);
+  await api.get('/api/lyrics',query);assert.equal(calls.length,2);
+});
+
+test('lyrics fallback rejects other versions, live albums, unrelated titles and invalid durations', async () => {
+  for(const candidate of [
+    {trackName:'筆舌 - Live'}, {trackName:'筆舌 - Acoustic'}, {trackName:'筆舌 - Remix'},
+    {trackName:'筆舌 - Hitsu Zetsu - Live'}, {trackName:'別の曲 - Hitsu Zetsu'},
+    {albumName:'Live at Tokyo'}, {duration:360}, {duration:null}, {artistName:'Other'},
+  ]) {
+    const api=exclusionServer();
+    api.context.fetch=async url=>url.includes('/get?')?response({},404):response([{...lyricData,trackName:'筆舌 - Hitsu Zetsu',artistName:'RADWIMPS',albumName:'Anew',duration:355,...candidate}]);
+    assert.equal((await api.get('/api/lyrics',{title:'筆舌',artist:'RADWIMPS',album:'あにゅー',duration:'355'})).result.status,'unavailable',JSON.stringify(candidate));
+  }
+});
+
+test('lyrics fallback selects matching album, then synced lyrics and handles empty/error search results', async () => {
+  const api=exclusionServer();
+  let candidates=[{...lyricData,albumName:'Other',syncedLyrics:'other album'}, {...lyricData,syncedLyrics:null}, {...lyricData,syncedLyrics:'preferred'}];
+  api.context.fetch=async url=>url.includes('/get?')?response({},404):response(candidates);
+  assert.equal((await api.get('/api/lyrics',lyricQuery)).result.syncedLyrics,'preferred');
+  for (const [data,status,expected] of [[[],200,200],[{},429,502],[{},200,502]]) {
+    const fresh=exclusionServer();
+    fresh.context.fetch=async url=>url.includes('/get?')?response({},404):response(data,status);
+    const result=await fresh.get('/api/lyrics',lyricQuery);assert.equal(result.status,expected);
+    if(expected===200)assert.equal(result.result.status,'unavailable');
+  }
+});
+
 test('lyrics ignores old track requests, highlights seek position and respects manual scrolling', async () => {
   let finish;
   const {run,elements}=app(async url=>url.includes('title=old')?new Promise(resolve=>{finish=resolve;}):response({status:'found',syncedLyrics:'[00:01]New\n[00:05]Next'}));
@@ -647,4 +689,63 @@ test('lyrics ignores old track requests, highlights seek position and respects m
   run('lyricsFollowing=false;syncLyrics(6000)');assert.equal(scrolls,0);
   run('lyricsFollowing=true;syncLyrics(6000,true)');assert.equal(scrolls,1);
   run('setLyricsOpen(false);');assert.equal(run('lyricsOpen'),false);
+});
+
+
+test('seek preview survives incoming progress and rapid commits apply in order', async () => {
+  const {run,elements}=app();
+  run('globalThis.seeks=[];globalThis.finishSeek=null;spotifyPlayer={seek:pos=>{seeks.push(pos);return new Promise(resolve=>{finishSeek=resolve;});}};playerClock={position:1000,duration:100000,paused:true,ts:Date.now()};bindSeekBar("fpProgress");');
+  const bar=elements.get('fpProgress');bar.value='20000';bar.input();
+  run('renderProgress(1500)');assert.equal(Number(bar.value),20000);
+  const first=bar.change();
+  bar.value='70000';bar.input();const second=bar.change();
+  assert.deepEqual(Array.from(run('seeks')),[20000]);
+  run('finishSeek()');await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(Array.from(run('seeks')),[20000,70000]);
+  assert.equal(run('isSeeking'),true);
+  run('finishSeek()');await Promise.all([first,second]);
+  assert.equal(run('playerClock.position'),70000);assert.equal(run('isSeeking'),false);
+});
+
+test('seek failures restore clock and track changes discard stale commits without leaving scrub active', async () => {
+  const {run,elements}=app();
+  run('showToast=message=>{window.message=message;};spotifyPlayer={seek:async()=>{throw Error("offline")}};playerClock={position:4000,duration:100000,paused:true,ts:Date.now()};bindSeekBar("fpProgress");');
+  const bar=elements.get('fpProgress');bar.value='80000';bar.input();await bar.change();
+  assert.equal(run('playerClock.position'),4000);assert.equal(run('isSeeking'),false);assert.match(run('window.message'),/変更できません/);
+  run('globalThis.calls=0;spotifyPlayer.seek=async()=>{calls++;};');
+  bar.value='30000';bar.input();run('playbackGeneration++;playerClock.position=0;');await bar.change();
+  assert.equal(run('calls'),0);assert.equal(run('playerClock.position'),0);assert.equal(run('isSeeking'),false);
+});
+
+test('volume requests are serialized and intermediate drag values are coalesced', async () => {
+  const {run}=app();
+  run('globalThis.volumes=[];globalThis.finishVolume=null;spotifyPlayer={setVolume:v=>{volumes.push(v);return new Promise(resolve=>{finishVolume=resolve;});}};');
+  const first=run('setVolume(10)');run('setVolume(40)');const last=run('setVolume(80)');
+  assert.deepEqual(Array.from(run('volumes')),[0.1]);
+  run('finishVolume()');await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(Array.from(run('volumes')),[0.1,0.8]);
+  run('finishVolume()');await Promise.all([first,last]);assert.equal(run('appSettings.volume'),80);
+});
+
+test('volume failure restores confirmed value and iOS gives hardware guidance without fake percentages', async () => {
+  const {run,elements}=app();
+  run('showToast=message=>{window.message=message;};spotifyPlayer={setVolume:async()=>{}};');
+  await run('setVolume(35)');run('spotifyPlayer.setVolume=async()=>{throw Error("offline");};');await run('setVolume(80)');
+  assert.equal(Number(elements.get('fpVolume').value),35);assert.equal(run('appSettings.volume'),35);assert.match(run('window.message'),/変更できません/);
+  for(const setup of ['navigator.userAgent="iPhone";', 'navigator.userAgent="Macintosh";navigator.platform="MacIntel";navigator.maxTouchPoints=5;']) {
+    run(setup+'globalThis.calls=0;spotifyPlayer.setVolume=async()=>{calls++;};');await run('setVolume(90)');
+    assert.equal(run('calls'),0);assert.equal(elements.get('fpVolume').hidden,true);assert.equal(elements.get('fpVolume').disabled,true);
+    assert.equal(elements.get('fpVolumeHint').hidden,false);assert.doesNotMatch(elements.get('menuVolumeValue').textContent,/%/);
+  }
+});
+
+
+test('a delayed clock poll cannot undo a completed seek', async () => {
+  let tick;
+  const {run}=app(undefined,{setInterval:fn=>{tick=fn;return 1;}});
+  run('globalThis.finishPoll=null;globalThis.states=0;spotifyPlayer={getCurrentState:()=>new Promise(resolve=>{finishPoll=resolve;})};playerClock={position:1000,duration:180000,paused:false,ts:Date.now()};onSpotifyPlayerState=()=>{states++;};startProgressTimer();');
+  for(let i=0;i<20;i++)tick();
+  run('seekRevision++;playerClock.position=120000;finishPoll({position:2000});');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(run('states'),0);assert.equal(run('playerClock.position'),120000);
 });

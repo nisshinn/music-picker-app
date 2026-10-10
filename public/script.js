@@ -45,11 +45,17 @@ let spotifyToken = "";
 
 let searchRequestId = 0;
 let playbackRequestId = 0;
-let volumeInitialized = false;
+let volumeApplying = null;
+let queuedVolume = null;
+let confirmedVolume = 50;
 
 // 再生状態の時計（Spotifyの状態変化は秒ごとには来ないため、自前で進める）
 let playerClock = { position: 0, duration: 0, paused: true, ts: Date.now(), trackId: "" };
 let isSeeking = false;
+let seekPreview = null;
+let queuedSeek = null;
+let seekApplying = null;
+let seekRevision = 0;
 let progressTimer = null;
 let endHandled = false;
 let playlistLoadId = 0;
@@ -742,6 +748,8 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   track = normalizeTrack(track);
   const card = document.createElement("div");
   card.className = "track-card";
+  // Playlist detail retains its existing artwork layout and explicit controls.
+  const compact = !onPlay;
 
   // 一覧の中の曲を押したら、その一覧を再生リストにして次/前の曲に進めるようにする
   const playFromCard = () => {
@@ -757,21 +765,25 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   img.onerror = () => (img.style.visibility = "hidden");
   if (!track.image) img.style.visibility = "hidden";
 
-  const info = document.createElement("div");
+  const info = document.createElement(compact ? "span" : "div");
   info.className = "track-info";
+  const textTag = compact ? "span" : "div";
   info.innerHTML = `
-    <div class="track-title">${escapeHtml(track.title)}</div>
-    <div class="track-artist">${escapeHtml(getArtistText(track))}</div>
-    ${track.reason ? `<div class="track-reason">💡 ${escapeHtml(track.reason)}</div>` : ""}
+    <${textTag} class="track-title">${escapeHtml(track.title)}</${textTag}>
+    <${textTag} class="track-artist">${escapeHtml(getArtistText(track))}</${textTag}>
+    ${track.reason ? `<${textTag} class="track-reason">💡 ${escapeHtml(track.reason)}</${textTag}>` : ""}
     ${
       track.vibeKeywords && track.vibeKeywords.length
-        ? `<div class="track-tags">${track.vibeKeywords
+        ? `<${textTag} class="track-tags">${track.vibeKeywords
             .map((k) => `<span class="track-tag">#${escapeHtml(k)}</span>`)
-            .join("")}</div>`
+            .join("")}</${textTag}>`
         : ""
     }
   `;
 
+  if (compact) {
+    info.title = [track.title, getArtistText(track), track.reason].filter(Boolean).join(" · ");
+  }
   const actions = document.createElement("div");
   actions.className = "track-actions";
 
@@ -789,6 +801,7 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   favBtn.className = "favorite-button";
   favBtn.type = "button";
   favBtn.dataset.uri = track.uri || "";
+  favBtn.dataset.compact = String(compact);
   updateFavoriteButton(favBtn, track);
   favBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -803,12 +816,24 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   spotLink.href = track.spotifyUrl || `https://open.spotify.com/track/${track.id}`;
   spotLink.addEventListener("click", (e) => e.stopPropagation());
 
-  actions.appendChild(playBtn);
+  if (!compact) actions.appendChild(playBtn);
+  else setPlayerIcon(spotLink, "spotify", "Spotifyで開く");
   actions.appendChild(favBtn);
   actions.appendChild(spotLink);
 
-  card.appendChild(img);
-  card.appendChild(info);
+  if (compact) {
+    const main = document.createElement("button");
+    main.className = "track-main";
+    main.type = "button";
+    main.setAttribute("aria-label", `${track.title} — ${getArtistText(track)}を再生`);
+    img.alt = "";
+    main.appendChild(img);
+    main.appendChild(info);
+    card.appendChild(main);
+  } else {
+    card.appendChild(img);
+    card.appendChild(info);
+  }
   card.appendChild(actions);
 
   card.addEventListener("click", () => {
@@ -1071,12 +1096,12 @@ function setupSpotifyPlayer() {
       const t = (await getFreshSpotifyToken(false)) || localStorage.getItem("spotifyAccessToken") || "";
       cb(t);
     },
-    volume: appSettings.volume / 100,
+    ...(usesSystemVolume() ? {} : { volume: appSettings.volume / 100 }),
   });
 
   spotifyPlayer.addListener("ready", ({ device_id }) => {
     spotifyDeviceId = device_id;
-    spotifyPlayer.setVolume(appSettings.volume / 100).catch(() => {});
+    setVolume(appSettings.volume);
     showSpotifyStatus("✓ Spotify接続済み");
   });
 
@@ -1155,12 +1180,13 @@ function clockPosition(c = playerClock) {
 }
 
 function renderProgress(pos) {
+  if (isSeeking && seekPreview !== null) pos = seekPreview;
   const dur = playerClock.duration || 0;
   ["progressBar", "menuProgressBar", "fpProgress"].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.max = dur;
-    if (!isSeeking) el.value = pos;
+    el.value = pos;
   });
   const cur = formatTime(pos);
   const total = formatTime(dur);
@@ -1199,55 +1225,167 @@ function startProgressTimer() {
     renderProgress(clockPosition());
     // 5秒ごとにSpotify本体の位置と合わせてズレを補正
     if (++tick % 20 === 0 && spotifyPlayer) {
+      const revision = seekRevision;
+      const target = seekTarget();
       spotifyPlayer
         .getCurrentState()
         .then((st) => {
-          if (st && !isSeeking) onSpotifyPlayerState(st);
+          if (st && !isSeeking && revision === seekRevision && target === seekTarget()) onSpotifyPlayerState(st);
         })
         .catch(() => {});
     }
   }, 250);
 }
 
+// Own pointer dragging so touch works across the entire track, including
+// outside its bounds after capture. Native input/change still handle keyboards.
+function bindRangeDrag(el) {
+  let pointerId = null;
+  const update = event => {
+    const rect = el.getBoundingClientRect();
+    if (!rect.width) return;
+    const min = Number(el.min) || 0, max = Number(el.max) || 0;
+    const step = Number(el.step) || 1;
+    const fraction = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    el.value = Math.min(max, Math.max(min, min + Math.round(fraction * (max - min) / step) * step));
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+  const finish = event => {
+    if (event.pointerId !== pointerId) return;
+    const captured = pointerId;
+    pointerId = null;
+    if (el.hasPointerCapture?.(captured)) el.releasePointerCapture(captured);
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  el.addEventListener("pointerdown", event => {
+    if (el.disabled || event.isPrimary === false || event.button !== 0 || pointerId !== null) return;
+    event.preventDefault();
+    pointerId = event.pointerId;
+    el.focus({ preventScroll: true });
+    el.setPointerCapture(event.pointerId);
+    update(event);
+  });
+  el.addEventListener("pointermove", event => {
+    if (event.pointerId === pointerId) { event.preventDefault(); update(event); }
+  });
+  el.addEventListener("pointerup", event => {
+    if (event.pointerId === pointerId) update(event);
+    finish(event);
+  });
+  el.addEventListener("pointercancel", finish);
+  el.addEventListener("lostpointercapture", finish);
+}
+
+function seekTarget() {
+  return `${playbackGeneration}:${currentTrackData?.uri || playerClock.trackId || ""}`;
+}
 function bindSeekBar(id) {
   const el = document.getElementById(id);
   if (!el) return;
+  let target = null;
+  bindRangeDrag(el);
   el.addEventListener("input", () => {
+    if (target === null) target = seekTarget();
     isSeeking = true;
+    seekPreview = Number(el.value);
+    seekRevision++;
     clearTimeout(trackEndTimer);
-    const pos = Number(el.value);
-    ["progressBar", "menuProgressBar", "fpProgress"].forEach((bid) => {
-      const b = document.getElementById(bid);
-      if (b && b !== el) b.value = pos;
-    });
-    const t = formatTime(pos);
-    setText("currentTime", t);
-    setText("menuCurrentTime", t);
-    setText("fpCurrent", t);
+    renderProgress(seekPreview);
   });
-  el.addEventListener("change", async () => {
-    const pos = Number(el.value);
-    isSeeking = false;
-    playerClock = { ...playerClock, position: pos, ts: Date.now() };
-    renderProgress(pos);
-    try {
-      await spotifyPlayer?.seek(pos);
-      scheduleTrackEnd();
-    } catch { scheduleTrackEnd(); }
+  el.addEventListener("change", () => {
+    const request = { pos: Number(el.value), target: target ?? seekTarget(), revision: seekRevision };
+    target = null;
+    queuedSeek = request;
+    return flushSeek();
   });
 }
 
-function setVolume(value) {
-  const v = Math.min(100, Math.max(0, Math.round(Number(value) || 0)));
-  saveAppSetting("volume", v);
-  ["volumeBar", "menuVolumeBar", "fpVolume"].forEach((id) => {
+async function flushSeek() {
+  if (seekApplying) return seekApplying;
+  seekApplying = (async () => {
+    while (queuedSeek) {
+      const request = queuedSeek;
+      queuedSeek = null;
+      try {
+        if (request.target !== seekTarget()) continue;
+        if (!spotifyPlayer) throw new Error("Player unavailable");
+        await spotifyPlayer.seek(request.pos);
+        if (request.target === seekTarget() && request.revision === seekRevision) {
+          playerClock = { ...playerClock, position: request.pos, ts: Date.now() };
+        }
+      } catch {
+        if (request.target === seekTarget() && request.revision === seekRevision) showToast("再生位置を変更できませんでした。もう一度お試しください。");
+      } finally {
+        if (!queuedSeek && request.revision === seekRevision) {
+          isSeeking = false;
+          seekPreview = null;
+          renderProgress(clockPosition());
+          scheduleTrackEnd();
+        }
+      }
+    }
+  })();
+  try { await seekApplying; }
+  finally {
+    seekApplying = null;
+    if (queuedSeek) return flushSeek();
+  }
+}
+
+function usesSystemVolume() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent || "") ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+function renderVolume(value) {
+  const system = usesSystemVolume();
+  ["volumeBar", "menuVolumeBar", "fpVolume"].forEach(id => {
     const el = document.getElementById(id);
-    if (el && Number(el.value) !== v) el.value = v;
-    if (id === "fpVolume") el?.style.setProperty?.("--range-progress", `${v}%`);
+    if (!el) return;
+    el.disabled = system;
+    el.hidden = system;
+    el.value = value;
+    if (id === "fpVolume") el.style.setProperty?.("--range-progress", `${value}%`);
   });
-  setText("volumeValue", `${v}%`);
-  setText("menuVolumeValue", `${v}%`);
-  if (spotifyPlayer) spotifyPlayer.setVolume(v / 100).catch(() => {});
+  setText("volumeValue", system ? "本体で調整" : `${value}%`);
+  setText("menuVolumeValue", system ? "本体の音量ボタンで調整" : `${value}%`);
+  const hint = document.getElementById("fpVolumeHint");
+  if (hint) hint.hidden = !system;
+}
+function setVolume(value) {
+  if (usesSystemVolume()) { renderVolume(appSettings.volume); return Promise.resolve(); }
+  const v = Math.min(100, Math.max(0, Math.round(Number(value) || 0)));
+  renderVolume(v);
+  if (!spotifyPlayer) {
+    confirmedVolume = v;
+    saveAppSetting("volume", v);
+    return Promise.resolve();
+  }
+  queuedVolume = v;
+  return flushVolume();
+}
+async function flushVolume() {
+  if (volumeApplying) return volumeApplying;
+  volumeApplying = (async () => {
+    while (queuedVolume !== null) {
+      const v = queuedVolume;
+      queuedVolume = null;
+      try {
+        await spotifyPlayer.setVolume(v / 100);
+        confirmedVolume = v;
+        saveAppSetting("volume", v);
+      } catch {
+        if (queuedVolume === null) {
+          renderVolume(confirmedVolume);
+          showToast("音量を変更できませんでした。再接続してお試しください。");
+        }
+      }
+    }
+  })();
+  try { await volumeApplying; }
+  finally {
+    volumeApplying = null;
+    if (queuedVolume !== null) return flushVolume();
+  }
 }
 
 async function togglePlay() {
@@ -1564,6 +1702,9 @@ function updateFavoriteButton(btn, track) {
   const exists = getFavorites().some((t) => t.uri === uri);
   if (btn.id === "fpFav") {
     setPlayerIcon(btn, "favorite", exists ? "お気に入りから削除" : "お気に入りに追加");
+    btn.setAttribute("aria-pressed", String(exists));
+  } else if (btn.dataset.compact === "true") {
+    setPlayerIcon(btn, "heart", exists ? "お気に入りから削除" : "お気に入りに追加");
     btn.setAttribute("aria-pressed", String(exists));
   } else btn.textContent = exists ? "❤️" : "♡";
   btn.classList.toggle("favorite-active", exists);
@@ -1933,9 +2074,12 @@ function initMenuSettings() {
   }
 
   // 音量：下部プレイヤーとサイドメニューのスライダーを双方向で同期
-  ["volumeBar", "menuVolumeBar", "fpVolume"].forEach((id) =>
-    document.getElementById(id)?.addEventListener("input", (e) => setVolume(e.target.value))
-  );
+  ["volumeBar", "menuVolumeBar", "fpVolume"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    bindRangeDrag(el);
+    el.addEventListener("input", event => setVolume(event.target.value));
+  });
   setVolume(appSettings.volume);
   updatePlayerVisibility();
   renderFpExtras();
@@ -2325,6 +2469,7 @@ const PLAYER_ICONS = {
   more: '<circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="1.5" fill="currentColor" stroke="none"/>',
   close: '<path d="m5 5 14 14M19 5 5 19"/>',
   back: '<path d="m14 5-7 7 7 7"/>',
+  heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
   favorite: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/>',
   follow: '<path d="M12 3v4m0 10v4M3 12h4m10 0h4"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1"/>',
   refresh: '<path d="M20 5v6h-6m6 0a8 8 0 1 0-2 7"/>',
