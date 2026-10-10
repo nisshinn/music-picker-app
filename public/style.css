@@ -126,7 +126,7 @@ button,a,input,select,textarea { font:inherit}
 
 .bottom-nav-icon { font-size:16px}
 
-input[type=range] { accent-color:var(--green)}
+input[type=range] { accent-color:var(--green); touch-action:none; user-select:none; -webkit-user-select:none }
 
 
 @media(max-width:900px) { #app { width:100%; margin-left:0; padding:18px 18px 130px}
@@ -244,7 +244,7 @@ button { cursor:pointer!important}
 
 .menu-overlay { position:fixed!important; inset:0!important; background:rgba(0,0,0,.55)!important; transition:opacity .25s ease,visibility .25s ease!important}
 
-.menu-button { background:var(--sidebar,#182022)!important; color:var(--text,#e9eeee)!important; border:1px solid var(--border,rgba(255,255,255,.14))!important; border-radius:8px!important; width:38px!important; height:38px!important; font-size:20px!important; left:auto!important; right:max(10px, env(safe-area-inset-right, 0px))!important; top:calc(10px + env(safe-area-inset-top, 0px))!important}
+.menu-button { background:var(--sidebar,#182022)!important; color:var(--text,#e9eeee)!important; border:1px solid var(--border,rgba(255,255,255,.14))!important; border-radius:8px!important; width:38px!important; height:38px!important; font-size:20px!important; left:max(10px, env(safe-area-inset-left, 0px))!important; right:auto!important; top:calc(10px + env(safe-area-inset-top, 0px))!important}
 
 }
 
@@ -1143,9 +1143,9 @@ body .player-button .player-icon, body .menu-player-button .player-icon { width:
   .fp-mobile .fp-progress input { grid-column: 1 / -1; grid-row: 1; height: 28px; }
   .fp-mobile #fpDuration { text-align: right; }
   .fp-mobile .fp-progress span { line-height: 20px; }
-  .fp-mobile input[type="range"]::-webkit-slider-thumb { width: 0; height: 0; }
+  .fp-mobile input[type="range"]::-webkit-slider-thumb { width: 12px; height: 12px; }
   .fp-mobile input[type="range"]:focus-visible::-webkit-slider-thumb { width: 12px; height: 12px; }
-  .fp-mobile input[type="range"]::-moz-range-thumb { width: 0; height: 0; }
+  .fp-mobile input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; }
   .fp-mobile-transport { display: flex; align-items: center; justify-content: space-around; }
   .fp-mobile-transport .icon-control { width: 70px; height: 70px; color: #fff; }
   .fp-mobile-transport .icon-control:hover { background: transparent; }
@@ -1216,3 +1216,5 @@ body .player-button .player-icon, body .menu-player-button .player-icon { width:
   .player-main > .volume-container { order: 2; }
   .player-main > .player-tools { order: 3; }
 }
+
+.volume-hint { font-size: 12px; line-height: 1.5; color: inherit; text-align: center; }

@@ -14,7 +14,7 @@ function app(fetch, timers = {}) {
     setAttribute() {}, addEventListener(type, fn) { this[type] = fn; },
   });
   const context = vm.createContext({
-    console, URL, URLSearchParams, AbortController, Date, setTimeout: timers.setTimeout || setTimeout, clearTimeout: timers.clearTimeout || clearTimeout, setInterval: () => 0, fetch,
+    console, URL, URLSearchParams, AbortController, Date, setTimeout: timers.setTimeout || setTimeout, clearTimeout: timers.clearTimeout || clearTimeout, setInterval: timers.setInterval || (() => 0), fetch,
     document: {
       addEventListener() {}, querySelector: () => null, querySelectorAll: (selector) => selector === 'input[name="detailedGenre"]' ? ["j-pop","jazz","rock","all"].map(value=>({value,addEventListener(){}})) : [], createElement: element,
       getElementById(id) { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); },
@@ -689,4 +689,63 @@ test('lyrics ignores old track requests, highlights seek position and respects m
   run('lyricsFollowing=false;syncLyrics(6000)');assert.equal(scrolls,0);
   run('lyricsFollowing=true;syncLyrics(6000,true)');assert.equal(scrolls,1);
   run('setLyricsOpen(false);');assert.equal(run('lyricsOpen'),false);
+});
+
+
+test('seek preview survives incoming progress and rapid commits apply in order', async () => {
+  const {run,elements}=app();
+  run('globalThis.seeks=[];globalThis.finishSeek=null;spotifyPlayer={seek:pos=>{seeks.push(pos);return new Promise(resolve=>{finishSeek=resolve;});}};playerClock={position:1000,duration:100000,paused:true,ts:Date.now()};bindSeekBar("fpProgress");');
+  const bar=elements.get('fpProgress');bar.value='20000';bar.input();
+  run('renderProgress(1500)');assert.equal(Number(bar.value),20000);
+  const first=bar.change();
+  bar.value='70000';bar.input();const second=bar.change();
+  assert.deepEqual(Array.from(run('seeks')),[20000]);
+  run('finishSeek()');await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(Array.from(run('seeks')),[20000,70000]);
+  assert.equal(run('isSeeking'),true);
+  run('finishSeek()');await Promise.all([first,second]);
+  assert.equal(run('playerClock.position'),70000);assert.equal(run('isSeeking'),false);
+});
+
+test('seek failures restore clock and track changes discard stale commits without leaving scrub active', async () => {
+  const {run,elements}=app();
+  run('showToast=message=>{window.message=message;};spotifyPlayer={seek:async()=>{throw Error("offline")}};playerClock={position:4000,duration:100000,paused:true,ts:Date.now()};bindSeekBar("fpProgress");');
+  const bar=elements.get('fpProgress');bar.value='80000';bar.input();await bar.change();
+  assert.equal(run('playerClock.position'),4000);assert.equal(run('isSeeking'),false);assert.match(run('window.message'),/変更できません/);
+  run('globalThis.calls=0;spotifyPlayer.seek=async()=>{calls++;};');
+  bar.value='30000';bar.input();run('playbackGeneration++;playerClock.position=0;');await bar.change();
+  assert.equal(run('calls'),0);assert.equal(run('playerClock.position'),0);assert.equal(run('isSeeking'),false);
+});
+
+test('volume requests are serialized and intermediate drag values are coalesced', async () => {
+  const {run}=app();
+  run('globalThis.volumes=[];globalThis.finishVolume=null;spotifyPlayer={setVolume:v=>{volumes.push(v);return new Promise(resolve=>{finishVolume=resolve;});}};');
+  const first=run('setVolume(10)');run('setVolume(40)');const last=run('setVolume(80)');
+  assert.deepEqual(Array.from(run('volumes')),[0.1]);
+  run('finishVolume()');await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(Array.from(run('volumes')),[0.1,0.8]);
+  run('finishVolume()');await Promise.all([first,last]);assert.equal(run('appSettings.volume'),80);
+});
+
+test('volume failure restores confirmed value and iOS gives hardware guidance without fake percentages', async () => {
+  const {run,elements}=app();
+  run('showToast=message=>{window.message=message;};spotifyPlayer={setVolume:async()=>{}};');
+  await run('setVolume(35)');run('spotifyPlayer.setVolume=async()=>{throw Error("offline");};');await run('setVolume(80)');
+  assert.equal(Number(elements.get('fpVolume').value),35);assert.equal(run('appSettings.volume'),35);assert.match(run('window.message'),/変更できません/);
+  for(const setup of ['navigator.userAgent="iPhone";', 'navigator.userAgent="Macintosh";navigator.platform="MacIntel";navigator.maxTouchPoints=5;']) {
+    run(setup+'globalThis.calls=0;spotifyPlayer.setVolume=async()=>{calls++;};');await run('setVolume(90)');
+    assert.equal(run('calls'),0);assert.equal(elements.get('fpVolume').hidden,true);assert.equal(elements.get('fpVolume').disabled,true);
+    assert.equal(elements.get('fpVolumeHint').hidden,false);assert.doesNotMatch(elements.get('menuVolumeValue').textContent,/%/);
+  }
+});
+
+
+test('a delayed clock poll cannot undo a completed seek', async () => {
+  let tick;
+  const {run}=app(undefined,{setInterval:fn=>{tick=fn;return 1;}});
+  run('globalThis.finishPoll=null;globalThis.states=0;spotifyPlayer={getCurrentState:()=>new Promise(resolve=>{finishPoll=resolve;})};playerClock={position:1000,duration:180000,paused:false,ts:Date.now()};onSpotifyPlayerState=()=>{states++;};startProgressTimer();');
+  for(let i=0;i<20;i++)tick();
+  run('seekRevision++;playerClock.position=120000;finishPoll({position:2000});');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(run('states'),0);assert.equal(run('playerClock.position'),120000);
 });
