@@ -108,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initSettings();
   initTheme();
   initMenuSettings();
+  initPlaybackIcons();
   initPlayerControls();
   initFullPlayer();
   initSpotify();
@@ -1002,8 +1003,7 @@ function finishManagedTrack() {
 }
 
 function setPlaybackIcon(paused) {
-  const icon = paused ? "▶\uFE0E" : "⏸\uFE0E";
-  ["playPauseButton", "menuPlayPauseButton", "fpPlay"].forEach(id => setText(id, icon));
+  ["playPauseButton", "menuPlayPauseButton", "fpPlay"].forEach(id => setPlayerIcon(document.getElementById(id), paused ? "play" : "pause", paused ? "再生" : "一時停止"));
 }
 
 function resetPlayerClock(trackId = "") {
@@ -1127,6 +1127,7 @@ function updatePlayerInfo(track) {
   track = normalizeTrack(track);
   if (!track) return;
   setNowPlaying(track.title || "曲名なし", getArtistText(track), track.image);
+  setText("fpArtist", [getArtistText(track), track.album?.name].filter(Boolean).join(" — "));
 
   refreshLyricsForTrack(track);
 
@@ -1158,7 +1159,8 @@ function renderProgress(pos) {
   setText("duration", total);
   setText("menuDuration", total);
   setText("fpCurrent", cur);
-  setText("fpDuration", total);
+  setText("fpDuration", `−${formatTime(Math.max(0, dur - pos))}`);
+  document.getElementById("fpProgress")?.style.setProperty?.("--range-progress", `${dur ? Math.min(100, pos / dur * 100) : 0}%`);
   syncLyrics(pos);
 }
 
@@ -1231,6 +1233,7 @@ function setVolume(value) {
   ["volumeBar", "menuVolumeBar", "fpVolume"].forEach((id) => {
     const el = document.getElementById(id);
     if (el && Number(el.value) !== v) el.value = v;
+    if (id === "fpVolume") el?.style.setProperty?.("--range-progress", `${v}%`);
   });
   setText("volumeValue", `${v}%`);
   setText("menuVolumeValue", `${v}%`);
@@ -1549,7 +1552,10 @@ function toggleFavorite(track) {
 function updateFavoriteButton(btn, track) {
   const uri = track?.uri || btn.dataset.uri;
   const exists = getFavorites().some((t) => t.uri === uri);
-  btn.textContent = exists ? "❤️" : "♡";
+  if (btn.id === "fpFav") {
+    setPlayerIcon(btn, "favorite", exists ? "お気に入りから削除" : "お気に入りに追加");
+    btn.setAttribute("aria-pressed", String(exists));
+  } else btn.textContent = exists ? "❤️" : "♡";
   btn.classList.toggle("favorite-active", exists);
   btn.setAttribute("aria-label", exists ? "お気に入りから削除" : "お気に入りに追加");
 }
@@ -1977,39 +1983,37 @@ function initFullPlayer() {
   });
   initLyrics();
   document.getElementById("fpClose")?.addEventListener("click", closeFullPlayer);
-  document.getElementById("fpQueueButton")?.addEventListener("click", () => {
-    const queueOpen = fp.classList.toggle("queue-open");
-    document.getElementById("fpQueueButton")?.setAttribute("aria-expanded", String(queueOpen));
-    renderQueue();
-    if (fp.classList.contains("queue-open")) {
-      document.getElementById("fpQueueBack")?.focus();
-      refreshSpotifyQueue();
-    }
-  });
-  document.getElementById("fpQueueBack")?.addEventListener("click", () => {
-    fp.classList.remove("queue-open");
-    document.getElementById("fpQueueButton")?.setAttribute("aria-expanded", "false");
-    document.getElementById("fpQueueButton")?.focus();
+  document.getElementById("fpQueueButton")?.addEventListener("click", () => setPlayerQueueOpen(!fp.classList.contains("queue-open")));
+  document.getElementById("fpQueueBack")?.addEventListener("click", () => setPlayerQueueOpen(false));
+  document.getElementById("fpMoreButton")?.addEventListener("click", () => togglePlayerPopover("fpOptions", "fpMoreButton"));
+  document.getElementById("fpVolumeButton")?.addEventListener("click", () => togglePlayerPopover("fpVolumePanel", "fpVolumeButton"));
+  document.getElementById("playerLyrics")?.addEventListener("click", () => { openFullPlayer(); setLyricsOpen(true); });
+  document.getElementById("playerQueue")?.addEventListener("click", () => { openFullPlayer(); setPlayerQueueOpen(true); });
+  fp.addEventListener("click", event => {
+    if (!event.target.closest(".fp-control-area")) closePlayerPopovers();
   });
 
   document.getElementById("fpFav")?.addEventListener("click", () => {
     if (currentTrackData) toggleFavorite(currentTrackData);
   });
-  document.getElementById("fpShuffle")?.addEventListener("click", () => setShuffle(!appSettings.shuffle));
+  ["fpShuffle", "playerShuffle"].forEach(id => document.getElementById(id)?.addEventListener("click", () => setShuffle(!appSettings.shuffle)));
   ["fpInfinite", "menuInfinite"].forEach(id => {
     document.getElementById(id)?.addEventListener("click", () => setInfiniteMode(!infiniteMode));
   });
-  document.getElementById("fpRepeat")?.addEventListener("click", () => {
+  ["fpRepeat", "playerRepeat"].forEach(id => document.getElementById(id)?.addEventListener("click", () => {
     const order = ["off", "all", "one"];
     setRepeat(order[(order.indexOf(appSettings.repeat) + 1) % order.length]);
-  });
+  }));
 
   setInterval(() => {
     if (!document.hidden && fp.classList.contains("open") && fp.classList.contains("queue-open")) refreshSpotifyQueue();
   }, 10000);
   document.addEventListener("keydown", (e) => {
     if (!fp.classList.contains("open")) return;
-    if (e.key === "Escape") closeFullPlayer();
+    if (e.key === "Escape") {
+      if (closePlayerPopovers()) document.getElementById("fpMoreButton")?.focus();
+      else closeFullPlayer();
+    }
     if (e.key === "Tab") {
       const controls = [...fp.querySelectorAll("button, input, a[href], [tabindex='0']")].filter(el => !el.disabled && el.getClientRects().length);
       const first = controls[0], last = controls[controls.length - 1];
@@ -2036,6 +2040,7 @@ function closeFullPlayer() {
   const fp = document.getElementById("fullPlayer");
   if (!fp) return;
   fp.classList.remove("open", "queue-open");
+  closePlayerPopovers();
   document.getElementById("fpQueueButton")?.setAttribute("aria-expanded", "false");
   setLyricsOpen(false);
   fp.setAttribute("aria-hidden", "true");
@@ -2075,18 +2080,25 @@ function renderFpExtras() {
   ["fpInfinite", "menuInfinite"].forEach(id => {
     const button = document.getElementById(id);
     if (!button) return;
-    button.textContent = `∞ 無限再生 ${infiniteMode ? "ON" : "OFF"}`;
+    setPlayerIcon(button, "infinite", `無限再生：${infiniteMode ? "オン" : "オフ"}`);
     button.classList.toggle("active", infiniteMode);
     button.setAttribute("aria-pressed", String(infiniteMode));
   });
-  const sh = document.getElementById("fpShuffle");
-  if (sh) { sh.classList.toggle("active", !!appSettings.shuffle); sh.setAttribute("aria-pressed", String(!!appSettings.shuffle)); }
-  const rp = document.getElementById("fpRepeat");
-  if (rp) {
-    const label = { off: "OFF", all: "全曲", one: "1曲" }[appSettings.repeat] || "OFF";
-    rp.textContent = `↻ ${label}`;
-    rp.classList.toggle("active", appSettings.repeat !== "off");
-  }
+  ["fpShuffle", "playerShuffle"].forEach(id => {
+    const button = document.getElementById(id);
+    if (!button) return;
+    setPlayerIcon(button, "shuffle", `シャッフル：${appSettings.shuffle ? "オン" : "オフ"}`);
+    button.classList.toggle("active", !!appSettings.shuffle);
+    button.setAttribute("aria-pressed", String(!!appSettings.shuffle));
+  });
+  ["fpRepeat", "playerRepeat"].forEach(id => {
+    const button = document.getElementById(id);
+    if (!button) return;
+    const label = { off: "オフ", all: "全曲", one: "1曲" }[appSettings.repeat] || "オフ";
+    setPlayerIcon(button, appSettings.repeat === "one" ? "repeatOne" : "repeat", `リピート：${label}`);
+    button.classList.toggle("active", appSettings.repeat !== "off");
+    button.setAttribute("aria-pressed", String(appSettings.repeat !== "off"));
+  });
 }
 
 function renderQueue() {
@@ -2180,6 +2192,7 @@ function setLyricsOpen(open) {
   button?.setAttribute("aria-pressed", String(open));
   button?.classList.toggle("active", open);
   if (open) {
+    closePlayerPopovers();
     refreshLyricsForTrack(currentTrackData);
     // refresh may have already started this request for a new track.
     if (!lyricsController) loadLyrics();
@@ -2224,7 +2237,7 @@ async function loadLyrics() {
     const synced = lyricsLines.some(line => line.text);
     if (!synced) lyricsLines = [];
     container.classList.toggle("plain-lyrics", !synced);
-    setText("fpLyricsStatus", synced ? "再生に合わせて歌詞が進みます" : "この曲は歌詞の時間情報がないため、全文を表示します。");
+    setText("fpLyricsStatus", synced ? "" : "この曲は歌詞の時間情報がないため、全文を表示します。");
     const display = synced ? lyricsLines : String(data.plainLyrics || "").split(/\r?\n/).map(text => ({ text }));
     display.forEach(line => {
       const element = document.createElement("p");
@@ -2251,14 +2264,16 @@ function syncLyrics(position, force = false) {
   const container = document.getElementById("fpLyricsLines");
   [...container.children].forEach((el, i) => {
     el.classList.toggle("current", i === index);
+    el.classList.toggle("past", i < index);
     if (i === index) el.setAttribute("aria-current", "true");
     else el.removeAttribute("aria-current");
   });
   const line = container.children[index];
-  if (line && lyricsFollowing) container.scrollTo({ top: line.offsetTop - container.offsetTop - container.clientHeight * .35, behavior: "auto" });
+  if (line && lyricsFollowing) container.scrollTo({ top: Math.max(0, line.offsetTop - 12), behavior: "auto" });
 }
 
 function initLyrics() {
+  window.addEventListener?.("resize", () => syncLyrics(clockPosition(), true));
   document.getElementById("fpLyricsButton")?.addEventListener("click", () => setLyricsOpen(!lyricsOpen));
   document.getElementById("fpLyricsRetry")?.addEventListener("click", loadLyrics);
   document.getElementById("fpLyricsFollow")?.addEventListener("click", () => {
@@ -2277,4 +2292,76 @@ function initLyrics() {
   lines?.addEventListener("keydown", event => {
     if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(event.key)) manual();
   });
+}
+
+// Shared SVG controls keep transport symbols identical across all players.
+const PLAYER_ICONS = {
+  play: '<path d="M7 4.5v15L20 12z" fill="currentColor" stroke="none"/>',
+  pause: '<path d="M6 4h4v16H6zM14 4h4v16h-4z" fill="currentColor" stroke="none"/>',
+  previous: '<path d="M12 5v14L1 12zm11 0v14L12 12z" fill="currentColor" stroke="none"/>',
+  next: '<path d="M1 5v14l11-7zm11 0v14l11-7z" fill="currentColor" stroke="none"/>',
+  shuffle: '<path d="M3 6h2c5 0 9 12 14 12h2m-4-4 4 4-4 4M3 18h2c2 0 4-2 6-5m2-3c2-3 4-4 6-4h2m-4-4 4 4-4 4"/>',
+  repeat: '<path d="m16 2 4 4-4 4M4 11V9a3 3 0 0 1 3-3h13M8 22l-4-4 4-4m12-1v2a3 3 0 0 1-3 3H4"/>',
+  repeatOne: '<path d="m16 2 4 4-4 4M4 11V9a3 3 0 0 1 3-3h13M8 22l-4-4 4-4m12-1v2a3 3 0 0 1-3 3H4m7-7 2-1v5"/>',
+  infinite: '<path d="M12 12c-3-5-4-5-6-5a5 5 0 0 0 0 10c2 0 3-1 6-5s4-5 6-5a5 5 0 0 1 0 10c-2 0-3-1-6-5Z"/>',
+  lyrics: '<path d="M5 3h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-7l-6 4v-4H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M8 8v3h2c0 2-1 3-2 3m6-6v3h2c0 2-1 3-2 3"/>',
+  queue: '<path d="M9 5h12M9 12h12M9 19h12M3 5h1M3 12h1M3 19h1"/>',
+  volume: '<path d="M3 9h4l5-4v14l-5-4H3Zm13-1a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
+  more: '<circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="12" r="1.5" fill="currentColor" stroke="none"/>',
+  close: '<path d="m5 5 14 14M19 5 5 19"/>',
+  back: '<path d="m14 5-7 7 7 7"/>',
+  favorite: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/>',
+  follow: '<path d="M12 3v4m0 10v4M3 12h4m10 0h4"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1"/>',
+  refresh: '<path d="M20 5v6h-6m6 0a8 8 0 1 0-2 7"/>',
+};
+function playerIcon(name) {
+  return `<svg class="player-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${PLAYER_ICONS[name] || PLAYER_ICONS.play}</svg>`;
+}
+function setPlayerIcon(button, name, label) {
+  if (!button) return;
+  button.innerHTML = playerIcon(name);
+  if (label) {
+    button.setAttribute("aria-label", label);
+    button.setAttribute("title", label);
+  }
+}
+function initPlaybackIcons() {
+  document.querySelectorAll("[data-player-icon]").forEach(button => setPlayerIcon(button, button.dataset.playerIcon, button.getAttribute("aria-label")));
+}
+function closePlayerPopovers() {
+  let closed = false;
+  for (const [panelId, buttonId] of [["fpOptions", "fpMoreButton"], ["fpVolumePanel", "fpVolumeButton"]]) {
+    const panel = document.getElementById(panelId);
+    if (panel && !panel.hidden) {
+      panel.hidden = true;
+      const button = document.getElementById(buttonId);
+      button?.setAttribute("aria-expanded", "false");
+      button?.classList.remove("active");
+      closed = true;
+    }
+  }
+  return closed;
+}
+function togglePlayerPopover(panelId, buttonId) {
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+  const open = panel.hidden;
+  closePlayerPopovers();
+  panel.hidden = !open;
+  const button = document.getElementById(buttonId);
+  button?.setAttribute("aria-expanded", String(open));
+  button?.classList.toggle("active", open);
+}
+function setPlayerQueueOpen(open) {
+  document.getElementById("fullPlayer")?.classList.toggle("queue-open", open);
+  document.getElementById("fpQueueButton")?.setAttribute("aria-expanded", String(open));
+  closePlayerPopovers();
+  renderQueue();
+  if (open) {
+    document.getElementById("fpQueueBack")?.focus();
+    refreshSpotifyQueue();
+  } else {
+    document.getElementById("fpMoreButton")?.focus();
+    syncLyrics(clockPosition(), true);
+  }
 }
