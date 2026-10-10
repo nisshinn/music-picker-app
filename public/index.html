@@ -42,13 +42,13 @@
             </div>
             <div class="menu-player-progress">
                 <span id="menuCurrentTime">0:00</span>
-                <input type="range" id="menuProgressBar" min="0" max="0" value="0" step="100">
+                <input type="range" id="menuProgressBar" aria-label="再生位置" min="0" max="0" value="0" step="100">
                 <span id="menuDuration">0:00</span>
             </div>
             <div class="menu-player-controls">
-                <button id="menuPreviousButton" class="menu-player-button" aria-label="前の曲">⏮</button>
-                <button id="menuPlayPauseButton" class="menu-player-button menu-play-button" aria-label="再生・一時停止">▶</button>
-                <button id="menuNextButton" class="menu-player-button" aria-label="次の曲">⏭</button>
+                <button id="menuPreviousButton" class="menu-player-button" aria-label="前の曲" data-player-icon="previous"></button>
+                <button id="menuPlayPauseButton" class="menu-player-button menu-play-button" aria-label="再生・一時停止" data-player-icon="play"></button>
+                <button id="menuNextButton" class="menu-player-button" aria-label="次の曲" data-player-icon="next"></button>
             </div>
         </div>
     </section>
@@ -89,7 +89,7 @@
         <div class="menu-setting">
             <div class="menu-setting-label home-menu-label" data-label="音量">🔊 音量</div>
             <div class="menu-volume">
-                <input type="range" id="menuVolumeBar" min="0" max="100" value="50">
+                <input type="range" id="menuVolumeBar" aria-label="音量" min="0" max="100" value="50">
                 <span id="menuVolumeValue">50%</span>
             </div>
         </div>
@@ -108,7 +108,7 @@
             </label>
         </div>
         <div class="menu-setting">
-            <div class="menu-setting-label home-menu-label" data-label="リピート">🔁 リピート</div>
+            <label for="repeatMode" class="menu-setting-label home-menu-label" data-label="リピート">リピート</label>
             <select id="repeatMode" class="menu-select">
                 <option value="off">OFF</option>
                 <option value="one">1曲</option>
@@ -116,7 +116,7 @@
             </select>
         </div>
         <div class="menu-setting">
-            <button id="menuInfinite" class="fp-chip" type="button" aria-pressed="false">∞ 無限再生 OFF</button>
+            <button id="menuInfinite" aria-label="無限再生" class="icon-control" type="button" aria-pressed="false" data-player-icon="infinite"></button>
             <p class="playback-mode-help">ONにすると、リスト終了後にアーティストの別の曲を探して続けます。</p>
         </div>
         <div class="menu-setting menu-setting-row">
@@ -164,19 +164,19 @@
             </div>
             <div class="moods">
                 <button type="button" data-mood="楽しい" aria-pressed="false">
-                    <span class="mood-name">楽しい<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
+                    <span class="mood-name">楽しい<span class="mood-selected" aria-hidden="true">✓</span></span>
                     <span class="mood-caption">明るい曲を聴きたい</span>
                 </button>
                 <button type="button" data-mood="テンション高い" aria-pressed="false">
-                    <span class="mood-name">気分を上げたい<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
+                    <span class="mood-name">気分を上げたい<span class="mood-selected" aria-hidden="true">✓</span></span>
                     <span class="mood-caption">元気が出る曲を聴きたい</span>
                 </button>
                 <button type="button" data-mood="落ち着きたい" aria-pressed="false">
-                    <span class="mood-name">落ち着きたい<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
+                    <span class="mood-name">落ち着きたい<span class="mood-selected" aria-hidden="true">✓</span></span>
                     <span class="mood-caption">ゆったりした曲を聴きたい</span>
                 </button>
                 <button type="button" data-mood="しんみり" aria-pressed="false">
-                    <span class="mood-name">しんみり<span class="mood-selected" aria-hidden="true">✓ 選択中</span></span>
+                    <span class="mood-name">しんみり<span class="mood-selected" aria-hidden="true">✓</span></span>
                     <span class="mood-caption">静かに曲に浸りたい</span>
                 </button>
             </div>
@@ -186,7 +186,7 @@
             <section class="picker-box home-free-mood" aria-labelledby="homeFreeHeading">
                 <h2 id="homeFreeHeading">気分を入力する</h2>
                 <div class="ai-mood-input">
-                    <label for="freeMoodInput">カードの代わりに、気分や聴く場面を入力できます</label>
+                    <label for="freeMoodInput">気分を選ぶ代わりに、聴く場面を入力できます</label>
                     <textarea id="freeMoodInput" maxlength="300" rows="3" placeholder="例：帰り道に、ゆっくり聴きたい" aria-describedby="homeMoodHint"></textarea>
                     <div class="home-input-footer">
                         <p id="homeMoodHint">入力後、そのまま「5曲を選ぶ」で選曲できます。</p>
@@ -419,19 +419,25 @@
             <div id="playerArtist" class="player-artist">アーティスト</div>
         </div>
         <div class="player-controls">
-            <button id="previousButton" class="player-button" aria-label="前の曲">⏮</button>
-            <button id="playPauseButton" class="player-button play-button" aria-label="再生・一時停止">▶</button>
-            <button id="nextButton" class="player-button" aria-label="次の曲">⏭</button>
+            <button id="playerShuffle" class="icon-control" type="button" aria-label="シャッフル" aria-pressed="false" data-player-icon="shuffle"></button>
+            <button id="previousButton" class="player-button" aria-label="前の曲" data-player-icon="previous"></button>
+            <button id="playPauseButton" class="player-button play-button" aria-label="再生・一時停止" data-player-icon="play"></button>
+            <button id="nextButton" class="player-button" aria-label="次の曲" data-player-icon="next"></button>
+            <button id="playerRepeat" class="icon-control" type="button" aria-label="リピート：オフ" aria-pressed="false" data-player-icon="repeat"></button>
+        </div>
+        <div class="player-tools">
+            <button id="playerLyrics" class="icon-control" type="button" aria-label="歌詞を開く" data-player-icon="lyrics"></button>
+            <button id="playerQueue" class="icon-control" type="button" aria-label="再生リストを開く" data-player-icon="queue"></button>
         </div>
         <div class="volume-container">
-            <span>🔊</span>
-            <input type="range" id="volumeBar" min="0" max="100" value="50">
+            <span class="volume-symbol" data-player-icon="volume" aria-hidden="true"></span>
+            <input type="range" id="volumeBar" aria-label="音量" min="0" max="100" value="50">
             <span id="volumeValue">50%</span>
         </div>
     </div>
     <div class="progress-container">
         <span id="currentTime">0:00</span>
-        <input type="range" id="progressBar" min="0" max="0" value="0" step="100">
+        <input type="range" id="progressBar" aria-label="再生位置" min="0" max="0" value="0" step="100">
         <span id="duration">0:00</span>
     </div>
 </div>
@@ -441,56 +447,57 @@
     <img id="fpBackdrop" class="fp-backdrop" alt="" aria-hidden="true">
     <div class="fp-main">
         <div class="fp-topbar">
-            <button id="fpClose" class="fp-icon-button" type="button" aria-label="閉じる">⌄</button>
-            <span class="fp-now-label">再生中</span>
-            <button id="fpQueueButton" class="fp-icon-button" type="button" aria-label="再生リスト" aria-expanded="false" aria-controls="fpQueue">☷</button>
+            <button id="fpClose" class="icon-control" type="button" aria-label="フルプレーヤーを閉じる" data-player-icon="close"></button>
         </div>
         <div class="fp-body">
-            <img id="fpImage" class="fp-art" src="" alt="">
+            <div class="fp-record">
+                <img id="fpImage" class="fp-art" src="" alt="">
+                <div class="fp-meta">
+                    <div id="fpTitle" class="fp-title">曲名</div>
+                    <div id="fpArtist" class="fp-artist">アーティスト</div>
+                </div>
+                <div class="fp-progress">
+                    <span id="fpCurrent">0:00</span>
+                    <input type="range" id="fpProgress" min="0" max="0" value="0" step="100" aria-label="再生位置">
+                    <span id="fpDuration">0:00</span>
+                </div>
+                <div class="fp-control-area">
+                    <div class="fp-controls">
+                        <button id="fpVolumeButton" class="icon-control" type="button" aria-label="音量" aria-expanded="false" aria-controls="fpVolumePanel" data-player-icon="volume"></button>
+                        <button id="fpMoreButton" class="icon-control" type="button" aria-label="再生オプション" aria-expanded="false" aria-controls="fpOptions" data-player-icon="more"></button>
+                        <button id="fpPrev" class="icon-control fp-skip" type="button" aria-label="前の曲" data-player-icon="previous"></button>
+                        <button id="fpPlay" class="icon-control fp-play" type="button" aria-label="再生" data-player-icon="play"></button>
+                        <button id="fpNext" class="icon-control fp-skip" type="button" aria-label="次の曲" data-player-icon="next"></button>
+                        <button id="fpLyricsButton" class="icon-control" type="button" aria-label="歌詞" aria-pressed="false" aria-controls="fpLyrics" data-player-icon="lyrics"></button>
+                    </div>
+                    <div id="fpVolumePanel" class="fp-volume fp-popover" hidden>
+                        <input type="range" id="fpVolume" min="0" max="100" value="50" aria-label="音量">
+                    </div>
+                    <div id="fpOptions" class="fp-extra fp-popover" hidden>
+                        <button id="fpShuffle" class="icon-control" type="button" aria-label="シャッフル" aria-pressed="false" data-player-icon="shuffle"></button>
+                        <button id="fpRepeat" class="icon-control" type="button" aria-label="リピート：オフ" aria-pressed="false" data-player-icon="repeat"></button>
+                        <button id="fpInfinite" class="icon-control" type="button" aria-label="無限再生" aria-pressed="false" data-player-icon="infinite"></button>
+                        <button id="fpFav" class="icon-control favorite-button" type="button" aria-label="お気に入りに追加" data-player-icon="favorite"></button>
+                        <button id="fpQueueButton" class="icon-control" type="button" aria-label="再生リスト" aria-expanded="false" aria-controls="fpQueue" data-player-icon="queue"></button>
+                    </div>
+                </div>
+            </div>
             <section id="fpLyrics" class="fp-lyrics" aria-label="歌詞" hidden>
                 <p id="fpLyricsStatus" class="fp-lyrics-status" role="status"></p>
                 <div id="fpLyricsLines" class="fp-lyrics-lines" tabindex="0" aria-label="歌詞をスクロール"></div>
                 <div class="fp-lyrics-footer">
-                    <a href="https://lrclib.net/" target="_blank" rel="noopener noreferrer">歌詞：LRCLIB ↗</a>
-                    <button id="fpLyricsFollow" class="fp-chip" type="button" hidden>再生位置に戻る</button>
-                    <button id="fpLyricsRetry" class="fp-chip" type="button" hidden>再読み込み</button>
+                    <a href="https://lrclib.net/" target="_blank" rel="noopener noreferrer">LRCLIB ↗</a>
+                    <button id="fpLyricsFollow" class="icon-control" type="button" aria-label="再生位置に戻る" data-player-icon="follow" hidden></button>
+                    <button id="fpLyricsRetry" class="icon-control" type="button" aria-label="歌詞を再読み込み" data-player-icon="refresh" hidden></button>
                 </div>
             </section>
-            <div class="fp-meta">
-                <div class="fp-meta-text">
-                    <div id="fpTitle" class="fp-title">曲名</div>
-                    <div id="fpArtist" class="fp-artist">アーティスト</div>
-                </div>
-                <button id="fpFav" class="favorite-button fp-fav" type="button" aria-label="お気に入り">♡</button>
-            </div>
-            <div class="fp-progress">
-                <input type="range" id="fpProgress" min="0" max="0" value="0" step="100" aria-label="再生位置">
-                <div class="fp-times"><span id="fpCurrent">0:00</span><span id="fpDuration">0:00</span></div>
-            </div>
-            <div class="fp-controls">
-                <button id="fpPrev" class="fp-skip" type="button" aria-label="前の曲"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M3 4h3v16H3zM21 4v16L7 12z"/></svg></button>
-                <button id="fpPlay" class="fp-play" type="button" aria-label="再生・一時停止">▶</button>
-                <button id="fpNext" class="fp-skip" type="button" aria-label="次の曲"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M18 4h3v16h-3zM3 4l14 8L3 20z"/></svg></button>
-            </div>
-            <div class="fp-volume">
-                <span>🔈</span>
-                <input type="range" id="fpVolume" min="0" max="100" value="50" aria-label="音量">
-                <span>🔊</span>
-            </div>
-            <div class="fp-extra">
-                <button id="fpLyricsButton" class="fp-chip" type="button" aria-pressed="false" aria-controls="fpLyrics">歌詞</button>
-                <button id="fpShuffle" class="fp-chip" type="button">⇄ シャッフル</button>
-                <button id="fpRepeat" class="fp-chip" type="button">↻ OFF</button>
-                <button id="fpInfinite" class="fp-chip" type="button" aria-pressed="false">∞ 無限再生 OFF</button>
-            </div>
-            <p class="playback-mode-help">通常は選んだ曲だけを再生。無限再生は別の曲へ続けます。</p>
         </div>
     </div>
     <aside id="fpQueue" class="fp-queue" aria-label="再生リスト">
         <div class="fp-queue-header">
-            <button id="fpQueueBack" class="fp-icon-button" type="button" aria-label="再生リストを閉じる">←</button>
+            <button id="fpQueueBack" class="icon-control" type="button" aria-label="再生リストを閉じる" data-player-icon="back"></button>
             <span>次に再生</span>
-            <button id="fpQueueRefresh" class="detail-secondary" type="button">更新</button>
+            <button id="fpQueueRefresh" class="icon-control" type="button" aria-label="再生リストを更新" data-player-icon="refresh"></button>
         </div>
         <div id="fpQueueList" class="fp-queue-list"></div>
     </aside>
