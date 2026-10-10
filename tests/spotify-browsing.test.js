@@ -8,14 +8,15 @@ function app(fetch, timers = {}) {
   const element = () => ({
     children: [], dataset: {}, style: {}, classList: { add() {}, remove() {}, toggle() {} },
     appendChild(child) { this.children.push(child); },
+    replaceChildren() { this.children = []; }, removeAttribute() {}, scrollTo() {},
     set innerHTML(value) { this.html = value; this.children = []; },
     get innerHTML() { return this.html; },
     setAttribute() {}, addEventListener(type, fn) { this[type] = fn; },
   });
   const context = vm.createContext({
-    console, URL, Date, setTimeout: timers.setTimeout || setTimeout, clearTimeout: timers.clearTimeout || clearTimeout, setInterval: () => 0, fetch,
+    console, URL, URLSearchParams, AbortController, Date, setTimeout: timers.setTimeout || setTimeout, clearTimeout: timers.clearTimeout || clearTimeout, setInterval: () => 0, fetch,
     document: {
-      addEventListener() {}, querySelectorAll: () => [], createElement: element,
+      addEventListener() {}, querySelector: () => null, querySelectorAll: (selector) => selector === 'input[name="detailedGenre"]' ? ["j-pop","jazz","rock","all"].map(value=>({value,addEventListener(){}})) : [], createElement: element,
       getElementById(id) { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); },
     },
     window: { scrollTo() {} }, navigator: {},
@@ -410,7 +411,7 @@ test('preset mood with an artist and explicit genre sends all conditions to the 
 
 test('curator applies an explicit genre to artist catalogue queries and ranking', async () => {
   const routes = new Map();
-  const expressApp = { set() {}, use() {}, listen() {}, get() {}, post(path, handler) { routes.set(path, handler); } };
+  const expressApp = { set() {}, use() {}, listen() {}, get(path, handler) { routes.set(path, handler); }, post(path, handler) { routes.set(path, handler); } };
   const express = Object.assign(() => expressApp, { json: () => {}, static: () => {} });
   const context = vm.createContext({
     console: { log() {}, error() {} }, process: { env: {} }, Buffer, URLSearchParams,
@@ -518,14 +519,14 @@ test('direct artist picks filter history before taking five; insufficient result
 
 function exclusionServer() {
   const routes = new Map();
-  const expressApp = { set() {}, use() {}, listen() {}, get() {}, post(path, handler) { routes.set(path, handler); } };
+  const expressApp = { set() {}, use() {}, listen() {}, get(path, handler) { routes.set(path, handler); }, post(path, handler) { routes.set(path, handler); } };
   const express = Object.assign(() => expressApp, { json: () => {}, static: () => {} });
-  const context = vm.createContext({console:{log(){},error(){}},process:{env:{}},Buffer,URLSearchParams,
+  const context = vm.createContext({console:{log(){},error(){}},process:{env:{}},Buffer,URLSearchParams,AbortSignal,
     require(name) { if(name==='express')return express;if(name==='dotenv')return {config(){}};if(name==='@google/genai')return {};return require(name); }
   });
   vm.runInContext(fs.readFileSync('server.js','utf8'),context);
   vm.runInContext('getSpotifyToken=async()=>"synthetic";globalThis.rankCalls=0;generateContentWithRetry=async prompt=>{rankCalls++;globalThis.lastPrompt=prompt;return JSON.stringify({selected:[{index:0},{index:0},{index:999},{index:1}]})};',context);
-  return {context,run:code=>vm.runInContext(code,context),async recommend(body){let result,status=200;await routes.get('/api/gemini/recommend-from-mood')({body:{text:'calm',analysis:{keywords:[],searchQueries:[]},...body}},{json(value){result=value},status(value){status=value;return this}});return {result,status};}};
+  return {context,run:code=>vm.runInContext(code,context),async get(path,query){let result,status=200;await routes.get(path)({query},{json(value){result=value},status(value){status=value;return this}});return {result,status};},async recommend(body){let result,status=200;await routes.get('/api/gemini/recommend-from-mood')({body:{text:'calm',analysis:{keywords:[],searchQueries:[]},...body}},{json(value){result=value},status(value){status=value;return this}});return {result,status};}};
 }
 
 test('curator excludes history before ranking and fills duplicate AI selections with distinct eligible tracks', async () => {
@@ -548,4 +549,102 @@ test('curator searches later pages for unseen tracks and reports exclusion exhau
   assert.equal(empty.status,404);
   assert.match(empty.result.error,/最近聴いた曲/);
   assert.equal(api.context.rankCalls,0);
+});
+
+test('recording filters recognize annotations without classifying ordinary Live titles', () => {
+  const api=exclusionServer();
+  for (const name of ['Song - Live', 'Song (Live at Tokyo)', 'Song [Live Version]', 'Song - 2024 Live', 'Song（ライブ版）']) {
+    assert.equal(api.run(`isLiveRecording({name:${JSON.stringify(name)}})`),true,name);
+  }
+  for (const name of ['Live Forever', 'I Want to Live', 'Living on a Prayer', 'Song - Remastered']) {
+    assert.equal(api.run(`isLiveRecording({name:${JSON.stringify(name)}})`),false,name);
+  }
+  assert.equal(api.run('isLiveRecording({name:"Song",album:{name:"Live at Budokan"}})'),true);
+  assert.equal(api.run('matchesRecordingVersion({name:"Song - Live"},"studio")'),false);
+  assert.equal(api.run('matchesRecordingVersion({name:"Song - Live"},"all")'),true);
+});
+
+test('both artist and curator routes filter recordings before selection and never pad with wrong versions', async () => {
+  const api=exclusionServer();
+  api.run('spotifyFetch=async()=>({name:"Artist"});get80Tracks=async()=>Array.from({length:12},(_,i)=>({id:String(i),uri:"spotify:track:"+i,name:i<6?"Song - Live":"Song",artists:[{id:"artist"}]}));');
+  const direct=await api.get('/api/artist-tracks',{id:'artist',recordingVersion:'studio'});
+  assert.deepEqual(Array.from(direct.result,t=>t.id),['6','7','8','9','10','11']);
+  const curated=await api.recommend({artistId:'artist',recordingVersion:'live'});
+  assert.equal(curated.status,200);
+  assert.ok(curated.result.tracks.every(t=>t.name.endsWith('Live')));
+  api.run('get80Tracks=async()=>[{id:"s",name:"Song",artists:[{id:"artist"}]}];rankCalls=0;');
+  const empty=await api.recommend({artistId:'artist',recordingVersion:'live'});
+  assert.equal(empty.status,404);
+  assert.equal(api.context.rankCalls,0);
+});
+
+test('version filters request later discovery pages and client sends both path preferences', async () => {
+  const api=exclusionServer();
+  api.run('globalThis.offsets=[];searchSpotifyTracks=async(token,q,limit,offset)=>{offsets.push(offset);return {tracks:{items:Array.from({length:offset===10?6:10},(_,i)=>({id:String(offset+i),name:offset?"Song - Live":"Song"}))}}};');
+  assert.equal((await api.recommend({recordingVersion:'live'})).status,200);
+  assert.deepEqual(Array.from(api.context.offsets),[0,10]);
+  const calls=[];
+  const {run}=app(async(url,options)=>{calls.push([url,options]);return response(options?{tracks:[]}:[]);});
+  run('globalThis.alert=()=>{};selectedMood="楽しい";selectedArtistId="a";recordingVersion="live";');
+  await run('makePlaylist()');
+  assert.match(calls[0][0],/recordingVersion=live/);
+  run('selectedGenre="rock";');await run('makePlaylist()');
+  assert.equal(JSON.parse(calls[1][1].body).recordingVersion,'live');
+});
+
+test('presets preserve advanced-only genre and recording preference; old presets default to any version', () => {
+  const {run,elements}=app();memoryStorage(run);
+  run('renderSelectionPresets=()=>{};selectedMood="楽しい";selectedGenre="jazz";recordingVersion="live";document.getElementById("presetName").value="Live Jazz";saveSelectionPreset();recordingVersion="studio";applySelectionPreset(readSelectionPresets()[0]);');
+  assert.equal(run('recordingVersion'),'live');
+  assert.equal(run('selectedGenre'),'jazz');
+  assert.equal(elements.get('genre').value,'advanced');
+  run('applySelectionPreset({...readSelectionPresets()[0],recordingVersion:undefined});');
+  assert.equal(run('recordingVersion'),'all');
+});
+
+test('LRC parsing supports fractions, repeated timestamps, offset, empty instrumental gaps and sorting', () => {
+  const {run}=app();
+  const lrc='[offset:100]\n[00:05.5]later\n[00:01.25][00:03.250]repeat\n[00:04.00]\n[ar:ignored]\n[00:99]invalid';
+  const lines=run(`parseSyncedLyrics(${JSON.stringify(lrc)})`);
+  assert.deepEqual(Array.from(lines,l=>[l.time,l.text]),[[1150,'repeat'],[3150,'repeat'],[3900,''],[5400,'later']]);
+});
+
+const lyricQuery={title:'Song - Live',artist:'Artist',album:'Live Album',duration:'200'};
+const lyricData={trackName:'Song - Live',artistName:'Artist',albumName:'Live Album',duration:201,instrumental:false,plainLyrics:'Synthetic line',syncedLyrics:'[00:01]Synthetic line'};
+test('lyrics endpoint validates metadata, fixed provider, duration/version matching and caches responses', async () => {
+  const api=exclusionServer();let calls=0;
+  api.context.fetch=async(url,options)=>{calls++;assert.match(url,/^https:\/\/lrclib.net\/api\/get\?/);assert.ok(options.signal);return response(lyricData);};
+  assert.equal((await api.get('/api/lyrics',{...lyricQuery,duration:'no'})).status,400);
+  assert.equal(calls,0);
+  assert.equal((await api.get('/api/lyrics',lyricQuery)).result.status,'found');
+  await api.get('/api/lyrics',lyricQuery);assert.equal(calls,1);
+  assert.equal((await api.get('/api/lyrics',{...lyricQuery,duration:'205'})).result.status,'unavailable');
+  assert.equal((await api.get('/api/lyrics',{...lyricQuery,title:'Song'})).result.status,'unavailable');
+});
+
+test('lyrics endpoint handles absent, instrumental, plain, errors and timeout states', async () => {
+  for (const [data,status,expected] of [[{},404,'unavailable'],[{...lyricData,instrumental:true},200,'instrumental'],[{...lyricData,syncedLyrics:null},200,'found']]) {
+    const api=exclusionServer();api.context.fetch=async()=>response(data,status);
+    assert.equal((await api.get('/api/lyrics',lyricQuery)).result.status,expected);
+  }
+  const api=exclusionServer();api.context.fetch=async()=>response({},429);
+  assert.equal((await api.get('/api/lyrics',lyricQuery)).status,502);
+  api.context.fetch=async()=>{throw new DOMException('timeout','TimeoutError');};
+  assert.equal((await api.get('/api/lyrics',lyricQuery)).status,502);
+});
+
+test('lyrics ignores old track requests, highlights seek position and respects manual scrolling', async () => {
+  let finish;
+  const {run,elements}=app(async url=>url.includes('title=old')?new Promise(resolve=>{finish=resolve;}):response({status:'found',syncedLyrics:'[00:01]New\n[00:05]Next'}));
+  run('lyricsOpen=true;lyricsTrack={title:"old",artist:"Artist",album:{name:"Album"},duration_ms:10000};');
+  const old=run('loadLyrics()');
+  run('lyricsTrack={...lyricsTrack,title:"new"};');await run('loadLyrics()');
+  finish(response({status:'found',syncedLyrics:'[00:01]Stale'}));await old;
+  assert.equal(elements.get('fpLyricsLines').children[0].textContent,'New');
+  run('syncLyrics(6000)');assert.equal(run('lyricsActiveIndex'),1);
+  run('syncLyrics(2000)');assert.equal(run('lyricsActiveIndex'),0);
+  let scrolls=0;elements.get('fpLyricsLines').scrollTo=()=>scrolls++;
+  run('lyricsFollowing=false;syncLyrics(6000)');assert.equal(scrolls,0);
+  run('lyricsFollowing=true;syncLyrics(6000,true)');assert.equal(scrolls,1);
+  run('setLyricsOpen(false);');assert.equal(run('lyricsOpen'),false);
 });

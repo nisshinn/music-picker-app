@@ -587,6 +587,57 @@ app.get("/api/artists", async (req, res) => {
   }
 });
 
+// Spotify has no recording-type flag. Use explicit version annotations, not
+// bare words in song titles such as "Live Forever" or "Living on a Prayer".
+function isLiveRecording(track) {
+  const title = String(track.name || track.title || "");
+  const album = String(track.album?.name || "");
+  const version = /(?:[([{（【]|\s[-–—:]\s)\s*(?:[^)\]】）]*?\s)?live\b|\blive\s+(?:at|from|in|on)\b|ライブ(?:版|音源|バージョン)|ライヴ(?:版|音源|バージョン)|[（(【]\s*(?:ライブ|ライヴ)/i;
+  return version.test(title) || version.test(album) || /^(?:live|ライブ|ライヴ)(?:$|\s|[!:(（-])/i.test(album);
+}
+function matchesRecordingVersion(track, version) {
+  return version === "live" ? isLiveRecording(track) : version === "studio" ? !isLiveRecording(track) : true;
+}
+
+// Keep the upstream fixed and cache a bounded amount of public lyric data.
+const lyricsCache = new Map();
+app.get("/api/lyrics", async (req, res) => {
+  const text = (key) => typeof req.query[key] === "string" ? req.query[key].trim() : "";
+  const title = text("title"), artist = text("artist"), album = text("album");
+  const duration = Number(req.query.duration);
+  if (!title || !artist || !album || [title, artist, album].some(v => v.length > 300) || !Number.isFinite(duration) || duration < 1 || duration > 3600) {
+    return res.status(400).json({ error: "歌詞を探すための曲情報が不足しています。" });
+  }
+  const params = new URLSearchParams({ track_name: title, artist_name: artist, album_name: album, duration: String(duration) });
+  const key = params.toString();
+  const cached = lyricsCache.get(key);
+  if (cached && cached.until > Date.now()) return res.json(cached.data);
+  try {
+    const upstream = await fetch(`https://lrclib.net/api/get?${params}`, {
+      headers: { "User-Agent": "MusicPicker/1.0 (https://github.com/nisshinn/music-picker-app)" },
+      signal: AbortSignal.timeout(8000),
+    });
+    let data = { status: "unavailable" };
+    if (upstream.status !== 404) {
+      if (!upstream.ok) return res.status(502).json({ error: "歌詞を取得できませんでした。時間をおいて再度お試しください。" });
+      const item = await upstream.json();
+      // Reject mismatches instead of dropping version suffixes and finding a
+      // different recording. LRCLIB's documented duration tolerance is ±2s.
+      const same = (a, b) => typeof a === "string" && a.normalize("NFKC").trim().toLowerCase() === b.normalize("NFKC").trim().toLowerCase();
+      if (same(item.trackName, title) && same(item.artistName, artist) && same(item.albumName, album) && Number.isFinite(item.duration) && Math.abs(item.duration - duration) <= 2) {
+        const plainLyrics = typeof item.plainLyrics === "string" ? item.plainLyrics.slice(0, 100000) : "";
+        const syncedLyrics = typeof item.syncedLyrics === "string" ? item.syncedLyrics.slice(0, 100000) : "";
+        data = { status: item.instrumental ? "instrumental" : plainLyrics || syncedLyrics ? "found" : "unavailable", plainLyrics, syncedLyrics };
+      }
+    }
+    if (lyricsCache.size >= 100) lyricsCache.delete(lyricsCache.keys().next().value);
+    lyricsCache.set(key, { data, until: Date.now() + (data.status === "unavailable" ? 60000 : 3600000) });
+    res.json(data);
+  } catch {
+    res.status(502).json({ error: "歌詞サービスに接続できませんでした。再読み込みをお試しください。" });
+  }
+});
+
 app.get("/api/artist-tracks", async (req, res) => {
   try {
     const artistId = String(req.query.id || "").trim();
@@ -598,7 +649,7 @@ app.get("/api/artist-tracks", async (req, res) => {
     });
     const items = await get80Tracks(token, `artist:"${artist.name}"`);
     const tracks = items
-      .filter((track) => track.artists?.some((a) => a.id === artistId))
+      .filter((track) => track.artists?.some((a) => a.id === artistId) && matchesRecordingVersion(track, req.query.recordingVersion))
       .map(formatTrack);
     res.json(uniqueTracks(tracks).slice(0, 80));
   } catch (error) {
@@ -811,7 +862,8 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
 
     const excluded = new Set((Array.isArray(req.body.excludedTrackUris) ? req.body.excludedTrackUris : [])
       .slice(0, 100).filter((uri) => typeof uri === "string" && /^spotify:track:[a-zA-Z0-9]+$/.test(uri)));
-    const eligible = (track) => !excluded.has(track.uri || `spotify:track:${track.id}`) && !excluded.has(track.linked_from?.uri);
+    const version = ["live", "studio"].includes(req.body.recordingVersion) ? req.body.recordingVersion : "all";
+    const eligible = (track) => matchesRecordingVersion(track, version) && !excluded.has(track.uri || `spotify:track:${track.id}`) && !excluded.has(track.linked_from?.uri);
     let analysis = req.body?.analysis;
     if (!analysis) {
       const raw = await generateContentWithRetry(`気分:「${text}」を分析してJSONを出力してください: {"summary":"...","mood":"楽しい/落ち着きたい/等","energy":3,"positivity":3,"keywords":["..."],"searchQueries":["..."]}`);
@@ -832,7 +884,7 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
         ...(analysis.searchQueries || []).map((q) => `${genreFilter} ${q}`),
       ];
       for (const q of qList.slice(0, 3)) {
-        for (let offset = 0; offset < (excluded.size ? 80 : 10); offset += 10) {
+        for (let offset = 0; offset < (excluded.size || version !== "all" ? 80 : 10); offset += 10) {
           const data = await searchSpotifyTracks(token, q.trim(), 10, offset);
           const items = data.tracks?.items || [];
           rawTracks.push(...items);
@@ -843,7 +895,7 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
 
     const candidates = uniqueTracks(rawTracks).filter(eligible).map(formatTrack).filter((t) => t.uri).slice(0, 30);
     if (candidates.length < 5) {
-      return res.status(404).json({ error: excluded.size ? "最近聴いた曲を除くと候補が不足しています。条件を変えるか、「最近聴いた曲を除外」をオフにしてください。" : "候補曲が不足しています。ジャンルを「おまかせ」に戻すか、別の気分やアーティストをお試しください。" });
+      return res.status(404).json({ error: version !== "all" ? "指定したバージョンの候補が不足しています。条件を変えるか、曲のバージョンを「指定なし」にしてください。" : excluded.size ? "最近聴いた曲を除くと候補が不足しています。条件を変えるか、「最近聴いた曲を除外」をオフにしてください。" : "候補曲が不足しています。ジャンルを「おまかせ」に戻すか、別の気分やアーティストをお試しください。" });
     }
 
     const rankPrompt = `ユーザーの気分: 「${text}」
