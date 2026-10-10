@@ -669,21 +669,6 @@ body #favoritesList, body #historyList { grid-template-columns: repeat(auto-fit,
 .playlist-tracks-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin: 0 4px 16px; }
 .playlist-tracks-heading h2 { margin: 0; font-size: 18px; }
 .playlist-tracks-heading span { color: var(--muted); font-size: 12px; }
-#playlistTracks { counter-reset: playlist-track; }
-#playlistTracks .track-card {
-  counter-increment: playlist-track; grid-template-columns: 24px 48px minmax(0, 1fr) auto;
-  align-items: center; gap: 16px; padding: 14px 18px; border-radius: 14px;
-  margin-bottom: 8px; background: var(--panel); cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease;
-}
-#playlistTracks .track-card:hover { background: var(--hover); border-color: var(--green); }
-#playlistTracks .track-card::before { content: counter(playlist-track, decimal-leading-zero); color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; text-align: center; }
-#playlistTracks .track-image { grid-column: 2; width: 48px; height: 48px; }
-#playlistTracks .track-info { grid-column: 3; }
-#playlistTracks .track-actions { grid-column: 4; grid-row: 1; flex-wrap: nowrap; gap: 10px; }
-#playlistTracks .track-artist { margin-top: 5px; font-size: 12px; }
-#playlistTracks .spotify-button { background: var(--accent-soft); color: var(--accent-text); }
-
 @media (max-width: 1100px) {
   .playlist-detail-header { grid-template-columns: 160px minmax(0, 1fr); padding: 24px; gap: 24px; }
 }
@@ -694,11 +679,6 @@ body #favoritesList, body #historyList { grid-template-columns: repeat(auto-fit,
   .playlist-detail-header h1 { font-size: 28px; }
   .playlist-detail-header .playlist-detail-actions { margin-top: 20px; }
   .playlist-tracks-heading { align-items: flex-start; flex-direction: column; gap: 6px; }
-  #playlistTracks .track-card { grid-template-columns: 48px minmax(0, 1fr); gap: 10px 12px; padding: 14px; }
-  #playlistTracks .track-card::before { display: none; }
-  #playlistTracks .track-image { grid-column: 1; }
-  #playlistTracks .track-info { grid-column: 2; }
-  #playlistTracks .track-actions { grid-column: 2; grid-row: 2; flex-wrap: wrap; gap: 8px; }
 }
 
 .playback-mode-help { color: var(--muted); font-size: 11px; line-height: 1.6; margin: 8px 0 0; }
@@ -922,7 +902,7 @@ body .spotify-playlist-name { font-weight: 500 !important; }
 body .spotify-playlist-count { margin-top: 4px !important; }
 body .spotify-playlist-arrow { display: none; }
 body #favoritesList, body #historyList { display: block !important; }
-.page:not(#playlistDetailPage) .track-card { padding: 8px 0; background: transparent; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; margin: 0; }
+.page .track-card { padding: 8px 0; background: transparent; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; margin: 0; }
 .track-main { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; min-width: 0; min-height: 44px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
 .track-main .track-image { width: 44px; height: 44px; border-radius: 5px; }
 .track-main .track-title, .track-main .track-artist { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
@@ -930,15 +910,15 @@ body #favoritesList, body #historyList { display: block !important; }
 .track-main .track-artist { font-size: 11px; line-height: 1.4; margin-top: 2px; }
 .track-main .track-reason { display: block; font-size: 10px; padding: 0; border: 0; background: none; }
 .track-main .track-tags { margin-top: 4px; }
-.page:not(#playlistDetailPage) .track-actions :is(.favorite-button, .spotify-button) { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-width: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; }
-.page:not(#playlistDetailPage) .track-actions .favorite-button { color: var(--sub); }
-.page:not(#playlistDetailPage) .track-actions .favorite-active { color: var(--accent-text); }
-.page:not(#playlistDetailPage) .track-actions .favorite-active .player-icon { fill: currentColor; }
-.page:not(#playlistDetailPage) .track-actions .spotify-button { color: var(--sub); }
-.page:not(#playlistDetailPage) .track-actions .spotify-button:hover { color: var(--accent-text); }
-.page:not(#playlistDetailPage) .track-actions .player-icon { width: 21px; height: 21px; }
-.page:not(#playlistDetailPage) .track-card:hover { background: var(--card); }
-.page:not(#playlistDetailPage) .track-actions { grid-column: 2; grid-row: 1; flex-wrap: nowrap; gap: 0; }
+.page .track-actions :is(.favorite-button, .spotify-button) { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-width: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; }
+.page .track-actions .favorite-button { color: var(--sub); }
+.page .track-actions .favorite-active { color: var(--accent-text); }
+.page .track-actions .favorite-active .player-icon { fill: currentColor; }
+.page .track-actions .spotify-button { color: var(--sub); }
+.page .track-actions .spotify-button:hover { color: var(--accent-text); }
+.page .track-actions .player-icon { width: 21px; height: 21px; }
+.page .track-card:hover { background: var(--card); }
+.page .track-actions { grid-column: 2; grid-row: 1; flex-wrap: nowrap; gap: 0; }
 body .big-search, body .search-button { border-radius: 7px; font-size: 16px; min-height: 46px; }
 body .search-button { font-weight: 600; }
 body #settingsPage .settings-box { align-items: stretch !important; flex-direction: column; gap: 0 !important; padding: 0 !important; }
