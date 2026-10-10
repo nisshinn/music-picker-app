@@ -968,6 +968,33 @@ async function playTrack(track, index = 0, playlistMode = false) {
   return success;
 }
 
+// Older saved favorites may predate album/duration fields needed by lyrics.
+function fillPlaybackMetadata(saved, track, duration) {
+  const patch = {};
+  if (!saved.album?.name && track.album?.name) patch.album = { ...saved.album, ...track.album };
+  if ((!Number.isFinite(saved.duration_ms) || saved.duration_ms <= 0) && Number.isFinite(duration) && duration > 0) patch.duration_ms = duration;
+  if (!saved.artists?.length && track.artists?.length) patch.artists = track.artists;
+  return Object.keys(patch).length ? { ...saved, ...patch } : saved;
+}
+function restorePlayingMetadata(track, duration) {
+  const restored = fillPlaybackMetadata(currentTrackData, track, duration);
+  if (restored === currentTrackData) return;
+  currentTrackData = restored;
+  updatePlayerInfo(restored); // Restarts lyrics when the required metadata arrives.
+  try {
+    const favorites = getFavorites();
+    if (!Array.isArray(favorites)) return;
+    let changed = false;
+    const updated = favorites.map(saved => {
+      if (saved.uri !== restored.uri) return saved;
+      const filled = fillPlaybackMetadata(saved, track, duration);
+      if (filled !== saved) changed = true;
+      return filled;
+    });
+    if (changed) localStorage.setItem("music_picker_favorites", JSON.stringify(updated));
+  } catch { /* Storage failure must not interrupt playback or lyrics. */ }
+}
+
 // Stop Spotify autoplay (or its saved repeat mode) from changing the app's list.
 function onSpotifyPlayerState(state) {
   if (!state) return;
@@ -988,6 +1015,7 @@ function onSpotifyPlayerState(state) {
     }
     clearTimeout(confirmationTimer);
     managedTrackConfirmed = true;
+    restorePlayingMetadata(track, state.duration);
     updatePlayerState(state);
     return;
   }

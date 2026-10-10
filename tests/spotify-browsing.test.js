@@ -749,3 +749,28 @@ test('a delayed clock poll cannot undo a completed seek', async () => {
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(run('states'),0);assert.equal(run('playerClock.position'),120000);
 });
+
+
+test('legacy favorites gain lyric metadata only after matching playback and retain their identity', () => {
+  const {run}=app();memoryStorage(run);
+  run(`globalThis.infoUpdates=0;updatePlayerInfo=()=>{infoUpdates++;};updatePlayerState=()=>{};
+    currentTrackData={uri:'spotify:track:saved',id:'saved',title:'筆舌',artist:'RADWIMPS'};
+    localStorage.setItem('music_picker_favorites',JSON.stringify([currentTrackData,{uri:'spotify:track:other',title:'Other'}]));
+    localPlayback=true;playbackPending=false;playbackStopped=false;endHandled=false;managedTrackConfirmed=false;
+    globalThis.sdk={position:0,duration:354000,paused:true,track_window:{current_track:{uri:'spotify:track:relinked',linked_from:{uri:'spotify:track:saved'},album:{name:'あにゅー'},artists:[{name:'RADWIMPS'}]}}};
+    onSpotifyPlayerState({...sdk,track_window:{current_track:{uri:'spotify:track:old',album:{name:'Wrong'}}}});`);
+  assert.equal(run('currentTrackData.album'),undefined);assert.equal(run('infoUpdates'),0);
+  run('onSpotifyPlayerState(sdk)');
+  assert.equal(run('currentTrackData.album.name'),'あにゅー');assert.equal(run('currentTrackData.duration_ms'),354000);
+  assert.equal(run('currentTrackData.uri'),'spotify:track:saved');assert.equal(run('getFavorites()[0].duration_ms'),354000);
+  assert.equal(run('getFavorites()[1].album'),undefined);assert.equal(run('infoUpdates'),1);
+  run('onSpotifyPlayerState(sdk)');assert.equal(run('infoUpdates'),1);
+});
+
+test('favorite metadata recovery tolerates storage failure and never re-adds a removed favorite', () => {
+  const {run}=app();memoryStorage(run);
+  run('updatePlayerInfo=()=>{};currentTrackData={uri:"spotify:track:a"};restorePlayingMetadata({album:{name:"Album"}},120000);');
+  assert.equal(run('getFavorites().length'),0);
+  run('currentTrackData={uri:"spotify:track:a"};localStorage.setItem("music_picker_favorites",JSON.stringify([currentTrackData]));localStorage.setItem=()=>{throw Error("quota");};restorePlayingMetadata({album:{name:"Album"}},120000);');
+  assert.equal(run('currentTrackData.album.name'),'Album');assert.equal(run('currentTrackData.duration_ms'),120000);
+});
