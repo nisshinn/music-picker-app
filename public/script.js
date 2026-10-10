@@ -748,8 +748,6 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   track = normalizeTrack(track);
   const card = document.createElement("div");
   card.className = "track-card";
-  // Playlist detail retains its existing artwork layout and explicit controls.
-  const compact = !onPlay;
 
   // 一覧の中の曲を押したら、その一覧を再生リストにして次/前の曲に進めるようにする
   const playFromCard = () => {
@@ -765,9 +763,9 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   img.onerror = () => (img.style.visibility = "hidden");
   if (!track.image) img.style.visibility = "hidden";
 
-  const info = document.createElement(compact ? "span" : "div");
+  const info = document.createElement("span");
   info.className = "track-info";
-  const textTag = compact ? "span" : "div";
+  const textTag = "span";
   info.innerHTML = `
     <${textTag} class="track-title">${escapeHtml(track.title)}</${textTag}>
     <${textTag} class="track-artist">${escapeHtml(getArtistText(track))}</${textTag}>
@@ -781,27 +779,15 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
     }
   `;
 
-  if (compact) {
-    info.title = [track.title, getArtistText(track), track.reason].filter(Boolean).join(" · ");
-  }
+  info.title = [track.title, getArtistText(track), track.reason].filter(Boolean).join(" · ");
   const actions = document.createElement("div");
   actions.className = "track-actions";
-
-  const playBtn = document.createElement("button");
-  playBtn.className = "track-play-button";
-  playBtn.textContent = "▶";
-  playBtn.type = "button";
-  playBtn.setAttribute("aria-label", `${track.title}を再生`);
-  playBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    playFromCard();
-  });
 
   const favBtn = document.createElement("button");
   favBtn.className = "favorite-button";
   favBtn.type = "button";
   favBtn.dataset.uri = track.uri || "";
-  favBtn.dataset.compact = String(compact);
+  favBtn.dataset.compact = "true";
   updateFavoriteButton(favBtn, track);
   favBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -816,24 +802,18 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   spotLink.href = track.spotifyUrl || `https://open.spotify.com/track/${track.id}`;
   spotLink.addEventListener("click", (e) => e.stopPropagation());
 
-  if (!compact) actions.appendChild(playBtn);
-  else setPlayerIcon(spotLink, "spotify", "Spotifyで開く");
+  setPlayerIcon(spotLink, "spotify", "Spotifyで開く");
   actions.appendChild(favBtn);
   actions.appendChild(spotLink);
 
-  if (compact) {
-    const main = document.createElement("button");
-    main.className = "track-main";
-    main.type = "button";
-    main.setAttribute("aria-label", `${track.title} — ${getArtistText(track)}を再生`);
-    img.alt = "";
-    main.appendChild(img);
-    main.appendChild(info);
-    card.appendChild(main);
-  } else {
-    card.appendChild(img);
-    card.appendChild(info);
-  }
+  const main = document.createElement("button");
+  main.className = "track-main";
+  main.type = "button";
+  main.setAttribute("aria-label", `${track.title} — ${getArtistText(track)}を再生`);
+  img.alt = "";
+  main.appendChild(img);
+  main.appendChild(info);
+  card.appendChild(main);
   card.appendChild(actions);
 
   card.addEventListener("click", () => {
