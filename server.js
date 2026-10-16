@@ -273,14 +273,12 @@ async function searchSpotifyTracks(token, query, limit = 10, offset = 0) {
 
 async function get80Tracks(token, query) {
   const all = [];
-  for (let offset = 0; offset < 80; offset += 10) {
+  for (let offset = 0; offset < 80; offset += 50) {
     try {
-      const data = await searchSpotifyTracks(token, query, 10, offset);
+      const data = await searchSpotifyTracks(token, query, 50, offset);
       const tracks = data.tracks?.items || [];
       all.push(...tracks);
-      if (offset < 70) {
-        await new Promise((r) => setTimeout(r, 200));
-      }
+      if (tracks.length < 50) break;
     } catch (e) {
       if (e.status === 429) throw e;
       break;
@@ -687,10 +685,70 @@ app.get("/api/artist-tracks", async (req, res) => {
       headers: { Authorization: `Bearer ${token}` },
     });
     const items = await get80Tracks(token, `artist:"${artist.name}"`);
-    const tracks = items
+    let tracks = items
       .filter((track) => track.artists?.some((a) => a.id === artistId) && matchesRecordingVersion(track, req.query.recordingVersion))
       .map(formatTrack);
-    res.json(uniqueTracks(tracks).slice(0, 80));
+    tracks = uniqueTracks(tracks);
+
+    const excludedParam = req.query.excluded ? req.query.excluded.split(",").filter((u) => u.startsWith("spotify:track:")) : [];
+    if (excludedParam.length > 0) {
+      const excSet = new Set(excludedParam);
+      const remaining = tracks.filter((t) => !excSet.has(t.uri));
+      if (remaining.length >= 5) {
+        tracks = remaining;
+      }
+    }
+
+    const mood = String(req.query.mood || "").trim();
+    if (mood && tracks.length >= 5 && process.env.GEMINI_API_KEY) {
+      try {
+        const candidateSubset = tracks.slice(0, 30);
+        const rankPrompt = `ユーザーの今の気分・シチュエーション: 「${mood}」
+アーティスト: 「${artist.name}」
+
+候補曲リスト（インデックス付き）:
+${JSON.stringify(candidateSubset.map((c, i) => ({ index: i, title: c.title })))}
+
+上記候補曲リストの中から、今の気分「${mood}」に最もよく合う5曲を厳選してください。
+気分が「楽しい」「テンション高い」ならアップテンポや明るい・盛り上がる曲、「落ち着きたい」なら静かでリラックスできる曲・バラード、「しんみり」なら切ない曲・心に染みる曲など、気分の感情・テンポ・世界観に最もふさわしい曲を選んで、その順に並べてください。
+各曲について、今の気分に合う推薦理由(reason: 日本語で2〜3文)と雰囲気タグ(vibeKeywords: 3つ)をつけて、以下のJSONフォーマットのみで出力してください:
+{
+  "curatorNote": "気分の特徴と選曲理由のメッセージ（1〜2文）",
+  "selected": [
+    {
+      "index": 候補のインデックス番号,
+      "reason": "推薦理由",
+      "vibeKeywords": ["タグ1", "タグ2", "タグ3"]
+    }
+  ]
+}`;
+
+        const raw = await generateContentWithRetry(rankPrompt, "あなたはプロの音楽キュレーターAIです。必ず提示された候補曲リストから、今の気分に最も調和する5曲を選定してください。");
+        const parsed = JSON.parse(raw.replace(/^```json/i, "").replace(/```$/i, "").trim());
+        if (Array.isArray(parsed.selected) && parsed.selected.length > 0) {
+          const selectedTracks = [];
+          const usedUris = new Set();
+          for (const item of parsed.selected) {
+            const cand = candidateSubset[item.index];
+            if (cand && !usedUris.has(cand.uri)) {
+              usedUris.add(cand.uri);
+              cand.reason = item.reason || `「${mood}」の気分に調和するおすすめの曲です。`;
+              cand.vibeKeywords = item.vibeKeywords || [];
+              selectedTracks.push(cand);
+            }
+            if (selectedTracks.length >= 5) break;
+          }
+          if (selectedTracks.length > 0) {
+            const remaining = tracks.filter((t) => !usedUris.has(t.uri));
+            tracks = [...selectedTracks, ...remaining];
+          }
+        }
+      } catch (aiError) {
+        console.warn("AI mood selection for artist tracks error:", aiError.message);
+      }
+    }
+
+    res.json(tracks.slice(0, 80));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -914,9 +972,27 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
     const genreName = String(genre || "").trim().slice(0, 80).replace(/["\\]/g, "");
     const genreFilter = genreName ? ` genre:"${genreName}"` : "";
 
-    if (artistId) {
-      const items = await get80Tracks(token, `artist:"${String(artistName || "").replace(/["\\]/g, "")}"${genreFilter}`);
-      rawTracks = items.filter((t) => t.artists?.some((a) => a.id === artistId));
+    const artists = Array.isArray(req.body.artists) && req.body.artists.length > 0
+      ? req.body.artists
+      : (artistId ? [{ id: artistId, name: artistName }] : []);
+
+    if (artists.length > 0) {
+      if (artists.length === 1) {
+        const items = await get80Tracks(token, `artist:"${String(artists[0].name || "").replace(/["\\]/g, "")}"${genreFilter}`);
+        rawTracks = items.filter((t) => !artists[0].id || t.artists?.some((a) => a.id === artists[0].id));
+      } else {
+        const results = await Promise.all(
+          artists.map(async (art) => {
+            try {
+              const items = await get80Tracks(token, `artist:"${String(art.name || "").replace(/["\\]/g, "")}"${genreFilter}`);
+              return items.filter((t) => !art.id || t.artists?.some((a) => a.id === art.id));
+            } catch {
+              return [];
+            }
+          })
+        );
+        rawTracks = results.flat();
+      }
     } else {
       const qList = [
         `${genreFilter || "J-Pop"} ${(analysis.keywords || []).join(" ")}`,
@@ -937,13 +1013,14 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
       return res.status(404).json({ error: version !== "all" ? "指定したバージョンの候補が不足しています。条件を変えるか、曲のバージョンを「指定なし」にしてください。" : excluded.size ? "最近聴いた曲を除くと候補が不足しています。条件を変えるか、「最近聴いた曲を除外」をオフにしてください。" : "候補曲が不足しています。ジャンルを「おまかせ」に戻すか、別の気分やアーティストをお試しください。" });
     }
 
+    const artistMixLabel = artists.length > 1 ? `希望アーティスト（ミックス）: 「${artists.map((a) => a.name).join(" × ")}」\n` : (artists.length === 1 ? `希望アーティスト: 「${artists[0].name}」\n` : "");
     const rankPrompt = `ユーザーの気分: 「${text}」
 希望ジャンル: ${genreName || "指定なし"}
-分析データ: ${JSON.stringify(analysis)}
+${artistMixLabel}分析データ: ${JSON.stringify(analysis)}
 Spotify候補曲リスト:
 ${JSON.stringify(candidates.map((c, i) => ({ index: i, title: c.title, artist: c.artist })))}
 
-上記候補曲リストの中から、今の気分に最も合う5曲を厳選し、各曲の推薦理由(reason: 日本語で2〜3文)と雰囲気タグ(vibeKeywords: 3つ)をつけて以下のJSONのみで出力してください:
+上記候補曲リストの中から、今の気分に最も合う5曲を厳選し、${artists.length > 1 ? "指定されたアーティストの楽曲をできるだけバランスよくミックスして選定し、" : ""}各曲の推薦理由(reason: 日本語で2〜3文)と雰囲気タグ(vibeKeywords: 3つ)をつけて以下のJSONのみで出力してください:
 {
   "curatorNote": "この選曲がリスナーにもたらす効果についての短いメッセージ",
   "selected": [

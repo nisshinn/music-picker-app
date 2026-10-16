@@ -32,6 +32,7 @@ let selectedGenre = "all";
 let selectedArtistId = "";
 let selectedArtistName = "";
 let selectedArtistImage = "";
+let selectedArtists = [];
 
 let previousSongs = [];
 let currentPlaylist = [];
@@ -589,9 +590,18 @@ function initArtistSearch() {
           item.className = "artist-result";
           item.innerHTML = `${a.image ? `<img src="${escapeHtml(a.image)}" alt="">` : ""}<span>${escapeHtml(a.name)}</span>`;
           item.addEventListener("click", () => {
-            selectedArtistId = a.id;
-            selectedArtistName = a.name;
-            selectedArtistImage = a.image || "";
+            if (selectedArtists.some((x) => x.id === a.id)) {
+              showToast(`✓ ${a.name} は既に選択されています`);
+              return;
+            }
+            if (selectedArtists.length >= 3) {
+              showToast("アーティストは最大3組まで選択できます");
+              return;
+            }
+            selectedArtists.push({ id: a.id, name: a.name, image: a.image || "" });
+            selectedArtistId = selectedArtists[0].id;
+            selectedArtistName = selectedArtists.map((x) => x.name).join(" × ");
+            selectedArtistImage = selectedArtists[0].image || "";
             results.innerHTML = "";
             input.value = "";
             renderSelectedArtist();
@@ -606,15 +616,49 @@ function initArtistSearch() {
 function renderSelectedArtist() {
   const s = document.getElementById("selectedArtist");
   if (!s) return;
+  if (!selectedArtists.length && selectedArtistId) {
+    selectedArtists = [{ id: selectedArtistId, name: selectedArtistName || "Artist", image: selectedArtistImage || "" }];
+  }
+  if (!selectedArtists.length) {
+    s.innerHTML = "";
+    s.style.display = "none";
+    return;
+  }
   s.style.display = "flex";
+  s.className = "selected-artists-container";
   s.innerHTML = `
-    ${selectedArtistImage ? `<img src="${escapeHtml(selectedArtistImage)}" alt="">` : ""}
-    <span class="selected-artist-name">✓ 選択中: ${escapeHtml(selectedArtistName)}</span>
-    <button type="button" class="selected-artist-clear" aria-label="選択を解除" onclick="clearSelectedArtist()">×</button>
+    <div class="selected-artists-list">
+      ${selectedArtists
+        .map(
+          (a, idx) => `
+        <span class="selected-artist-chip">
+          ${a.image ? `<img src="${escapeHtml(a.image)}" alt="" class="chip-avatar">` : ""}
+          <span class="chip-name">${escapeHtml(a.name)}</span>
+          <button type="button" class="chip-remove-btn" aria-label="${escapeHtml(a.name)}を解除" onclick="removeSelectedArtist(${idx})">×</button>
+        </span>
+      `
+        )
+        .join("")}
+      ${
+        selectedArtists.length < 3
+          ? `<span class="artist-add-hint">（最大3組・あと${3 - selectedArtists.length}組追加できます）</span>`
+          : ""
+      }
+    </div>
+    <button type="button" class="selected-artist-clear-all" aria-label="全解除" onclick="clearSelectedArtist()">すべて解除</button>
   `;
 }
 
+window.removeSelectedArtist = function (index) {
+  selectedArtists.splice(index, 1);
+  selectedArtistId = selectedArtists[0]?.id || "";
+  selectedArtistName = selectedArtists.map((x) => x.name).join(" × ");
+  selectedArtistImage = selectedArtists[0]?.image || "";
+  renderSelectedArtist();
+};
+
 window.clearSelectedArtist = function () {
+  selectedArtists = [];
   selectedArtistId = "";
   selectedArtistName = "";
   selectedArtistImage = "";
@@ -628,37 +672,48 @@ window.clearSelectedArtist = function () {
 // -------------------------------------------------------------
 // Make Playlist: AI Curator & Hybrid Logic
 // -------------------------------------------------------------
-async function makePlaylist() {
+async function makePlaylist(options = {}) {
   const text = aiMoodText || selectedMood;
   if (!text) {
     alert("気分を選択するか、自由に入力してください。");
     return;
   }
 
-  const excludedTrackUris = getRecentTrackUris();
+  const isReshuffle = options?.reshuffle === true;
+  let excludedTrackUris = getRecentTrackUris();
+  if (isReshuffle && Array.isArray(options?.currentTracks)) {
+    const currentUris = options.currentTracks.map((t) => t.uri).filter(Boolean);
+    excludedTrackUris = [...new Set([...excludedTrackUris, ...currentUris])];
+  }
+
   const excluded = new Set(excludedTrackUris);
   const shouldExclude = excludeRecent;
   const version = recordingVersion;
   const btn = document.getElementById("makePlaylist");
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "選曲中...";
+    btn.textContent = isReshuffle ? "🎲 AIが再選曲中..." : "🤖 AIが選曲中...";
   }
 
   try {
     let tracks = [];
     aiCuratorNote = "";
 
-    // 1. If user entered free text mood, use Hybrid Gemini Recommendation
-    if (aiMoodText || !selectedArtistId || selectedGenre !== "all") {
+    const artistsToUse = selectedArtists.length > 0
+      ? selectedArtists
+      : (selectedArtistId ? [{ id: selectedArtistId, name: selectedArtistName || "Artist", image: selectedArtistImage || "" }] : []);
+
+    // 1. If multi-artist, free text mood, no artist, or specific genre: use Hybrid Gemini Recommendation
+    if (artistsToUse.length > 1 || aiMoodText || artistsToUse.length === 0 || selectedGenre !== "all") {
       const res = await fetch("/api/gemini/recommend-from-mood", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: text,
           analysis: aiMoodAnalysis,
-          artistId: selectedArtistId,
-          artistName: selectedArtistName,
+          artistId: artistsToUse[0]?.id || "",
+          artistName: artistsToUse.map((a) => a.name).join(" × "),
+          artists: artistsToUse,
           genre: selectedGenre !== "all" ? selectedGenre : "",
           excludedTrackUris,
           recordingVersion: version,
@@ -669,12 +724,18 @@ async function makePlaylist() {
       if (!res.ok) throw new Error(data.error || "選曲に失敗しました。");
       tracks = data.tracks || [];
       aiCuratorNote = data.curatorNote || "";
-    } else if (selectedArtistId) {
-      // 2. Direct artist catalogue query
-      const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(selectedArtistId)}&mood=${encodeURIComponent(text)}&recordingVersion=${encodeURIComponent(version)}`);
+    } else if (artistsToUse.length === 1) {
+      // 2. Direct artist catalogue query with AI mood ranking
+      const excParam = excludedTrackUris.length ? `&excluded=${encodeURIComponent(excludedTrackUris.join(','))}` : '';
+      const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(artistsToUse[0].id)}&mood=${encodeURIComponent(text)}&recordingVersion=${encodeURIComponent(version)}${excParam}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "選曲に失敗しました。");
-      tracks = data;
+      tracks = Array.isArray(data) ? data : (data.tracks || []);
+      if (data.curatorNote) {
+        aiCuratorNote = data.curatorNote;
+      } else if (tracks[0]?.reason) {
+        aiCuratorNote = `${artistsToUse[0].name}の楽曲の中から、「${text}」の気分にぴったりな5曲をAIが厳選しました。`;
+      }
     }
 
     tracks = normalizeTracks(tracks).filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
@@ -691,7 +752,7 @@ async function makePlaylist() {
     }
 
     displayPlaylist(tracks);
-    showToast("🎵 新しいおすすめ5曲を作りました！");
+    showToast(isReshuffle ? "🎲 別の5曲を引き直しました！" : "🎵 新しいおすすめ5曲を作りました！");
   } catch (err) {
     alert(err.message || "プレイリスト作成に失敗しました。");
   } finally {
@@ -711,8 +772,11 @@ function displayPlaylist(playlist) {
     const note = document.createElement("div");
     note.className = "ai-curator-note";
     note.innerHTML = `
-      <div class="ai-curator-note-title">✨ Gemini AI キュレーターのメッセージ</div>
-      <div>${escapeHtml(aiCuratorNote)}</div>
+      <div class="ai-curator-note-header">
+        <span class="ai-curator-badge">✨ Gemini AI キュレーター</span>
+        <span class="ai-curator-mood-tag">${escapeHtml(selectedMood || "AIおすすめ")}</span>
+      </div>
+      <div class="ai-curator-message">${escapeHtml(aiCuratorNote)}</div>
     `;
     container.appendChild(note);
   }
@@ -720,15 +784,36 @@ function displayPlaylist(playlist) {
   const header = document.createElement("div");
   header.className = "playlist-header";
   header.innerHTML = `
-    <h2 style="font-size:16px;margin:0;">🎵 ${escapeHtml(selectedMood || "AIおすすめ")} プレイリスト</h2>
+    <h2 class="playlist-title" style="font-size:17px;margin:0;">🎵 ${escapeHtml(selectedMood || "AIおすすめ")} プレイリスト</h2>
   `;
+
+  const headerActions = document.createElement("div");
+  headerActions.className = "playlist-header-actions";
+
   const playAll = document.createElement("button");
   playAll.textContent = "▶ まとめて再生";
   playAll.className = "play-all-button playlist-play-all";
   playAll.addEventListener("click", () => {
     startTrackList(playlist);
   });
-  header.appendChild(playAll);
+  headerActions.appendChild(playAll);
+
+  const reshuffleBtn = document.createElement("button");
+  reshuffleBtn.type = "button";
+  reshuffleBtn.className = "reshuffle-button";
+  reshuffleBtn.innerHTML = "🔄 別の5曲を引き直す";
+  reshuffleBtn.title = "同じ条件でAIに別の5曲を選び直してもらいます";
+  reshuffleBtn.addEventListener("click", () => {
+    reshuffleBtn.disabled = true;
+    reshuffleBtn.textContent = "🎲 再選曲中...";
+    makePlaylist({ reshuffle: true, currentTracks: playlist }).finally(() => {
+      reshuffleBtn.disabled = false;
+      reshuffleBtn.textContent = "🔄 別の5曲を引き直す";
+    });
+  });
+  headerActions.appendChild(reshuffleBtn);
+
+  header.appendChild(headerActions);
   container.appendChild(header);
 
   // Spotify 一括保存ボタン
@@ -755,13 +840,23 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
     startTrackList(queue?.length ? queue : [track], queue?.length ? index : 0);
   };
 
+  const imgWrapper = document.createElement("div");
+  imgWrapper.className = "track-image-wrapper";
+
   const img = document.createElement("img");
   img.className = "track-image";
   img.src = track.image || "";
   img.alt = track.title || "";
-  // 画像が無い曲でもカードの列幅が崩れないよう、非表示ではなく透明にする
   img.onerror = () => (img.style.visibility = "hidden");
   if (!track.image) img.style.visibility = "hidden";
+  imgWrapper.appendChild(img);
+
+  const rankBadge = document.createElement("span");
+  rankBadge.className = "track-rank-badge";
+  rankBadge.textContent = `#${index + 1}`;
+  imgWrapper.appendChild(rankBadge);
+
+  card.appendChild(imgWrapper);
 
   const info = document.createElement("span");
   info.className = "track-info";
@@ -769,7 +864,7 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   info.innerHTML = `
     <${textTag} class="track-title">${escapeHtml(track.title)}</${textTag}>
     <${textTag} class="track-artist">${escapeHtml(getArtistText(track))}</${textTag}>
-    ${track.reason ? `<${textTag} class="track-reason">💡 ${escapeHtml(track.reason)}</${textTag}>` : ""}
+    ${track.reason ? `<${textTag} class="track-reason"><strong class="track-reason-label">💡 なぜこの曲？</strong> <span class="track-reason-body">${escapeHtml(track.reason)}</span></${textTag}>` : ""}
     ${
       track.vibeKeywords && track.vibeKeywords.length
         ? `<${textTag} class="track-tags">${track.vibeKeywords

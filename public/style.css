@@ -1210,3 +1210,247 @@ body .player-button .player-icon, body .menu-player-button .player-icon { width:
 }
 
 .volume-hint { font-size: 12px; line-height: 1.5; color: inherit; text-align: center; }
+
+/* ============================================================ */
+/* Enhanced AI Curator, Multi-Artist & Playlist Header Styles   */
+/* ============================================================ */
+
+/* AI Curator Note Card */
+.ai-curator-note {
+  background: linear-gradient(135deg, rgba(214, 0, 43, 0.07), rgba(45, 82, 99, 0.12) 60%, rgba(20, 25, 30, 0.05));
+  border: 1px solid rgba(214, 0, 43, 0.25);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+:root[data-theme="night"] .ai-curator-note {
+  background: linear-gradient(135deg, rgba(255, 93, 118, 0.12), rgba(30, 42, 56, 0.35) 60%, rgba(24, 24, 28, 0.8));
+  border-color: rgba(255, 93, 118, 0.3);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+.ai-curator-note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.ai-curator-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.02em;
+}
+.ai-curator-mood-tag {
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(214, 0, 43, 0.2);
+}
+.ai-curator-message {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Playlist Header & Reshuffle Button */
+.playlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.playlist-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.reshuffle-button {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+.reshuffle-button:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--accent-text);
+  color: var(--accent-text);
+  transform: translateY(-1px);
+}
+.reshuffle-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.playlist-play-all {
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 13px;
+}
+
+/* Multi-Artist Selection Chips */
+.selected-artists-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.selected-artists-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.selected-artist-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 4px 10px 4px 5px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  transition: transform 0.15s ease;
+}
+.selected-artist-chip:hover {
+  border-color: var(--accent-text);
+}
+.chip-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.chip-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.chip-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 3px;
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+.chip-remove-btn:hover {
+  color: var(--accent-text);
+}
+.artist-add-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  align-self: center;
+}
+.selected-artist-clear-all {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11.5px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin-top: 2px;
+}
+.selected-artist-clear-all:hover {
+  color: var(--accent-text);
+}
+
+/* Track Card Enhancements: Rank Badge & Reason */
+.track-image-wrapper {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+}
+.track-image-wrapper .track-image {
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.track-rank-badge {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  background: var(--solid);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  line-height: 1.1;
+}
+.track-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  transition: background 0.2s, transform 0.15s;
+}
+.track-card:hover {
+  transform: translateY(-1px);
+}
+.track-reason {
+  display: block;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--input);
+  border-left: 3px solid var(--accent-text);
+  border-radius: 0 6px 6px 0;
+  padding: 7px 11px;
+  margin-top: 7px;
+}
+.track-reason-label {
+  color: var(--accent-text);
+  font-weight: 700;
+  margin-right: 4px;
+}
+.track-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+.track-tag {
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--sub);
+  padding: 2px 9px;
+  border-radius: 12px;
+  transition: all 0.15s;
+}
+.track-tag:hover {
+  border-color: var(--accent-text);
+  color: var(--accent-text);
+}
+
