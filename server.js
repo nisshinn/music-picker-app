@@ -680,9 +680,8 @@ app.get("/api/artist-details", async (req, res) => {
         }
 
         if (topTracksRes.status === "fulfilled" && topTracksRes.value?.tracks) {
-          topTracks = (topTracksRes.value.tracks || []).slice(0, 10).map((t, idx) => ({
+          topTracks = (topTracksRes.value.tracks || []).map((t) => ({
             id: t.id,
-            rank: idx + 1,
             name: t.name,
             artists: (t.artists || []).map((art) => art.name).join(", "),
             albumName: t.album?.name || "",
@@ -694,6 +693,39 @@ app.get("/api/artist-details", async (req, res) => {
             popularity: t.popularity || 0,
           }));
         }
+
+        // Augment up to 20 tracks using search if top-tracks had fewer than 20
+        if (topTracks.length < 20 && artistName) {
+          try {
+            const moreTracksRes = await spotifyFetch(
+              `https://api.spotify.com/v1/search?q=${encodeURIComponent(`artist:"${artistName}"`)}&type=track&limit=50&market=JP`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const extraItems = moreTracksRes.tracks?.items || [];
+            const existingIds = new Set(topTracks.map((t) => t.id));
+            for (const item of extraItems) {
+              if (topTracks.length >= 20) break;
+              if (!existingIds.has(item.id)) {
+                existingIds.add(item.id);
+                topTracks.push({
+                  id: item.id,
+                  name: item.name,
+                  artists: (item.artists || []).map((art) => art.name).join(", "),
+                  albumName: item.album?.name || "",
+                  image: item.album?.images?.[0]?.url || image || "",
+                  previewUrl: item.preview_url || "",
+                  uri: item.uri || `spotify:track:${item.id}`,
+                  spotifyUrl: item.external_urls?.spotify || "",
+                  durationMs: item.duration_ms || 0,
+                  popularity: item.popularity || 0,
+                });
+              }
+            }
+          } catch {
+            // Ignore non-critical search error
+          }
+        }
+        topTracks = topTracks.slice(0, 20).map((t, idx) => ({ ...t, rank: idx + 1 }));
 
         if (albumsRes.status === "fulfilled" && albumsRes.value?.items?.length) {
           const alb = albumsRes.value.items[0];
@@ -712,11 +744,11 @@ app.get("/api/artist-details", async (req, res) => {
       // If top tracks still empty, try fallback search
       if (topTracks.length === 0 && artistName) {
         const searchTracks = await spotifyFetch(
-          `https://api.spotify.com/v1/search?q=${encodeURIComponent(`artist:"${artistName}"`)}&type=track&limit=10&market=JP`,
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(`artist:"${artistName}"`)}&type=track&limit=50&market=JP`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (searchTracks.tracks?.items?.length) {
-          topTracks = searchTracks.tracks.items.slice(0, 10).map((t, idx) => ({
+          topTracks = searchTracks.tracks.items.slice(0, 20).map((t, idx) => ({
             id: t.id,
             rank: idx + 1,
             name: t.name,

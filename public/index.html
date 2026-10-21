@@ -436,10 +436,10 @@
 
             <!-- 人気曲ランキング (Top Songs >) -->
             <div class="artist-section-group">
-                <div class="artist-group-header">
-                    <h2>Top Songs</h2>
-                    <span class="group-arrow">›</span>
-                </div>
+                <button type="button" class="artist-group-header artist-group-toggle" id="artistTopSongsToggle" aria-expanded="false" aria-controls="artistTopSongsContainer" title="曲数を切り替える (5曲 ⇄ 20曲)">
+                    <h2 id="artistTopSongsTitle">Top Songs</h2>
+                    <span class="group-arrow" id="artistTopSongsArrow" aria-hidden="true">›</span>
+                </button>
                 <div id="artistTopSongsContainer" class="artist-top-songs-list" aria-live="polite"></div>
             </div>
 

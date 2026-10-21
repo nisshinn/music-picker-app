@@ -1138,6 +1138,8 @@ window.toggleArtistPageTrackPreview = function (previewUrl, trackId, event) {
   }
 };
 
+let artistTopSongsExpanded = false;
+
 window.playArtistTopSong = function (idx, event) {
   if (event && (event.target.closest("a") || event.target.closest(".song-action-pill-btn"))) {
     return;
@@ -1160,6 +1162,7 @@ window.openArtistDetailPage = async function (artist) {
   const artistName = artist.name || "";
   const artistImage = artist.image || "";
 
+  artistTopSongsExpanded = false;
   stopArtistPagePreview();
   if (typeof stopModalPreview === "function") stopModalPreview();
 
@@ -1393,43 +1396,75 @@ function renderArtistDetailPageContent(data) {
     }
   }
 
-  // Top Songs List (Top Songs >) - 10 tracks with click-to-play
-  if (topSongsContainer) {
-    const tracks = (Array.isArray(data.topTracks) ? data.topTracks : []).slice(0, 10);
+  // Top Songs List (Top Songs >) - 5 tracks initially, expands to 20 tracks on toggle
+  const topSongsToggleBtn = document.getElementById("artistTopSongsToggle");
+  const topSongsTitle = document.getElementById("artistTopSongsTitle");
+  const topSongsArrow = document.getElementById("artistTopSongsArrow");
+
+  const updateTopSongsDisplay = () => {
+    if (!topSongsContainer) return;
+    const allTracks = Array.isArray(data.topTracks) ? data.topTracks : [];
+    const limit = artistTopSongsExpanded ? 20 : 5;
+    const tracks = allTracks.slice(0, limit);
+
+    if (topSongsToggleBtn) {
+      topSongsToggleBtn.setAttribute("aria-expanded", String(artistTopSongsExpanded));
+      topSongsToggleBtn.title = artistTopSongsExpanded
+        ? "5曲表示に戻す"
+        : `人気曲をさらに表示 (全${Math.min(allTracks.length, 20)}曲)`;
+    }
+    if (topSongsTitle) {
+      topSongsTitle.textContent = `Top Songs (${tracks.length} / ${Math.min(allTracks.length, 20)})`;
+    }
+    if (topSongsArrow) {
+      topSongsArrow.textContent = artistTopSongsExpanded ? "‹" : "›";
+      topSongsArrow.style.transform = artistTopSongsExpanded ? "rotate(-90deg)" : "none";
+    }
+
     if (tracks.length === 0) {
       topSongsContainer.innerHTML = `<div class="artist-top-songs-empty">人気曲の情報を取得できませんでした</div>`;
-    } else {
-      topSongsContainer.innerHTML = tracks
-        .map(
-          (t, idx) => `
-        <div class="artist-top-song-row" data-track-id="${escapeHtml(t.id)}" role="button" tabindex="0" aria-label="${escapeHtml(t.name)}を再生" onclick="window.playArtistTopSong(${idx}, event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.playArtistTopSong(${idx}, event);}">
-          <div class="song-rank">${idx + 1}</div>
-          <div class="song-art-wrap">
-            ${t.image ? `<img src="${escapeHtml(t.image)}" alt="" class="song-art" onerror="this.style.display='none'">` : `<span class="song-art-fallback">♫</span>`}
-            <button type="button" class="song-preview-overlay-btn" id="artistPagePlayBtn-${escapeHtml(t.id)}" aria-label="${escapeHtml(t.name)}を再生">
-              <span class="preview-play-icon">▶</span>
-            </button>
-          </div>
-          <div class="song-info-col">
-            <div class="song-title">${escapeHtml(t.name)}</div>
-            <div class="song-sub">${escapeHtml(t.albumName || t.artists || data.name)}</div>
-          </div>
-          <div class="song-actions-col">
-            ${t.previewUrl ? `
-              <button type="button" class="song-action-pill-btn" id="artistPagePlayPill-${escapeHtml(t.id)}" onclick="window.toggleArtistPageTrackPreview('${escapeHtml(t.previewUrl)}', '${escapeHtml(t.id)}', event)">
-                試聴
-              </button>
-            ` : ""}
-            ${t.spotifyUrl ? `
-              <a href="${escapeHtml(t.spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="song-action-ext-btn" title="Spotifyで聴く" onclick="event.stopPropagation()">↗</a>
-            ` : ""}
-          </div>
-        </div>
-      `
-        )
-        .join("");
+      return;
     }
+
+    topSongsContainer.innerHTML = tracks
+      .map(
+        (t, idx) => `
+      <div class="artist-top-song-row" data-track-id="${escapeHtml(t.id)}" role="button" tabindex="0" aria-label="${escapeHtml(t.name)}を再生" onclick="window.playArtistTopSong(${idx}, event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.playArtistTopSong(${idx}, event);}">
+        <div class="song-rank">${idx + 1}</div>
+        <div class="song-art-wrap">
+          ${t.image ? `<img src="${escapeHtml(t.image)}" alt="" class="song-art" onerror="this.style.display='none'">` : `<span class="song-art-fallback">♫</span>`}
+          <button type="button" class="song-preview-overlay-btn" id="artistPagePlayBtn-${escapeHtml(t.id)}" aria-label="${escapeHtml(t.name)}を再生">
+            <span class="preview-play-icon">▶</span>
+          </button>
+        </div>
+        <div class="song-info-col">
+          <div class="song-title">${escapeHtml(t.name)}</div>
+          <div class="song-sub">${escapeHtml(t.albumName || t.artists || data.name)}</div>
+        </div>
+        <div class="song-actions-col">
+          ${t.previewUrl ? `
+            <button type="button" class="song-action-pill-btn" id="artistPagePlayPill-${escapeHtml(t.id)}" onclick="window.toggleArtistPageTrackPreview('${escapeHtml(t.previewUrl)}', '${escapeHtml(t.id)}', event)">
+              試聴
+            </button>
+          ` : ""}
+          ${t.spotifyUrl ? `
+            <a href="${escapeHtml(t.spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="song-action-ext-btn" title="Spotifyで聴く" onclick="event.stopPropagation()">↗</a>
+          ` : ""}
+        </div>
+      </div>
+    `
+      )
+      .join("");
+  };
+
+  if (topSongsToggleBtn) {
+    topSongsToggleBtn.onclick = () => {
+      artistTopSongsExpanded = !artistTopSongsExpanded;
+      updateTopSongsDisplay();
+    };
   }
+
+  updateTopSongsDisplay();
 
   // About Section (AI Curator Insight)
   if (catchphrase) catchphrase.textContent = data.summary || "";

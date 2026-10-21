@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for tracklist density redesign (Apple Music layout), home artist click-to-add with dedicated profile button, search page artist integration, and artist top 10 playback.",
-  "updatedAt":  "2026-10-21T15:13:49.211193777Z",
+  "summary":  "Implementation plan to fix track row duration/heart/Spotify button overlap, improve lyrics single-fetch reliability, and add 5/20 track toggle on artist top songs.",
+  "updatedAt":  "2026-10-21T16:07:16.640538424Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
