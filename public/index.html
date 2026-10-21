@@ -366,6 +366,13 @@
             <h2>収録曲</h2>
             <span>お気に入りの一曲から、はじめよう。</span>
         </div>
+        <div id="playlistTracksHeader" class="apple-track-table-header" style="display:none;">
+            <span class="th-col-title">曲</span>
+            <span class="th-col-artist">アーティスト</span>
+            <span class="th-col-album">アルバム</span>
+            <span class="th-col-duration">時間</span>
+            <span class="th-col-actions"></span>
+        </div>
         <div id="playlistTracks" aria-live="polite"></div>
     </section>
 
@@ -467,10 +474,16 @@
         <div class="page-header">
             <h1>設定</h1>
         </div>
+
+
+
         <section class="content-box settings-box">
-            <button id="clearFavorites" class="danger-button">お気に入りをすべて削除</button>
-            <button id="clearHistory" class="danger-button">履歴を全部削除</button>
-            <button id="logoutButton" class="logout-button">Spotifyからログアウト</button>
+            <h2>データ管理 & アカウント</h2>
+            <div class="settings-button-group">
+                <button id="clearFavorites" class="danger-button">お気に入りをすべて削除</button>
+                <button id="clearHistory" class="danger-button">履歴を全部削除</button>
+                <button id="logoutButton" class="logout-button">Spotifyからログアウト</button>
+            </div>
         </section>
     </section>
 </main>
@@ -614,6 +627,8 @@
         <div id="fpQueueList" class="fp-queue-list"></div>
     </aside>
 </div>
+
+
 
 <!-- アーティスト詳細モーダル（バイオグラフィー & 人気曲） -->
 <div id="artistModal" class="artist-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="artistModalName">

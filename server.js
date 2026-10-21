@@ -1,9 +1,34 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const { GoogleGenAI, Type } = require("@google/genai");
 
 dotenv.config();
+
+// Fallback to .env.example if user wrote credentials there directly
+if ((!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) && fs.existsSync(".env.example")) {
+  try {
+    const exampleParsed = dotenv.parse(fs.readFileSync(".env.example"));
+    if (!process.env.SPOTIFY_CLIENT_ID && exampleParsed.SPOTIFY_CLIENT_ID) {
+      process.env.SPOTIFY_CLIENT_ID = exampleParsed.SPOTIFY_CLIENT_ID;
+    }
+    if (!process.env.SPOTIFY_CLIENT_SECRET && exampleParsed.SPOTIFY_CLIENT_SECRET) {
+      process.env.SPOTIFY_CLIENT_SECRET = exampleParsed.SPOTIFY_CLIENT_SECRET;
+    }
+    if (!process.env.SPOTIFY_REDIRECT_URI && exampleParsed.SPOTIFY_REDIRECT_URI) {
+      process.env.SPOTIFY_REDIRECT_URI = exampleParsed.SPOTIFY_REDIRECT_URI;
+    }
+    if (!process.env.GEMINI_API_KEY && exampleParsed.GEMINI_API_KEY) {
+      process.env.GEMINI_API_KEY = exampleParsed.GEMINI_API_KEY;
+    }
+  } catch (err) {
+    if (typeof console !== "undefined" && typeof console.warn === "function") {
+      console.warn("Could not read fallback from .env.example:", err.message);
+    }
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;

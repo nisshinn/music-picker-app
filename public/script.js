@@ -608,59 +608,63 @@ function initArtistSearch() {
           item.className = "artist-result";
           item.setAttribute("role", "button");
           item.setAttribute("tabindex", "0");
-          item.setAttribute("aria-label", `${a.name}のアーティストページを開く`);
+          item.setAttribute("aria-label", `${a.name}を選曲条件に追加`);
           item.innerHTML = `
             <div class="artist-result-identity">
               ${a.image ? `<img src="${escapeHtml(a.image)}" alt="" class="artist-result-avatar" onerror="this.style.display='none'">` : `<span class="artist-result-avatar-fallback">♫</span>`}
               <span class="artist-result-name">${escapeHtml(a.name)}</span>
             </div>
             <div class="artist-result-actions">
-              <button type="button" class="artist-result-quick-add" title="選曲リストに追加" aria-label="${escapeHtml(a.name)}を選曲リストに追加">+</button>
+              <button type="button" class="artist-result-page-btn" title="${escapeHtml(a.name)}のアーティストページを開く" aria-label="${escapeHtml(a.name)}のアーティストページを開く">
+                <span class="artist-page-btn-icon">👤</span>
+                <span class="artist-page-btn-arrow">›</span>
+              </button>
             </div>
           `;
 
-          // Clicking the artist item opens their dedicated Apple Music-style artist page
-          item.addEventListener("click", (e) => {
-            if (e.target.closest(".artist-result-quick-add")) return;
+          // 1. One-click selection: clicking row or icon directly adds artist to search conditions
+          const addArtistToSelection = () => {
+            if (selectedArtists.some((x) => x.id === a.id)) {
+              showToast(`✓ ${a.name} は既に選択されています`);
+              return;
+            }
+            if (selectedArtists.length >= 3) {
+              showToast("アーティストは最大3組まで選択できます");
+              return;
+            }
+            selectedArtists.push({ id: a.id, name: a.name, image: a.image || "" });
+            selectedArtistId = selectedArtists[0].id;
+            selectedArtistName = selectedArtists.map((x) => x.name).join(" × ");
+            selectedArtistImage = selectedArtists[0].image || "";
             results.innerHTML = "";
             input.value = "";
-            if (typeof window.openArtistDetailPage === "function") {
-              window.openArtistDetailPage(a);
-            }
+            renderSelectedArtist();
+            showToast(`✓ ${a.name} を選曲条件に追加しました`);
+          };
+
+          item.addEventListener("click", (e) => {
+            if (e.target.closest(".artist-result-page-btn")) return;
+            addArtistToSelection();
           });
 
           item.addEventListener("keydown", (e) => {
             if (e.key === "Enter" || e.key === " ") {
+              if (document.activeElement?.classList?.contains("artist-result-page-btn")) return;
               e.preventDefault();
+              addArtistToSelection();
+            }
+          });
+
+          // 2. Right-hand button with profile icon: navigates to dedicated artist page
+          const pageBtn = item.querySelector(".artist-result-page-btn");
+          if (pageBtn) {
+            pageBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
               results.innerHTML = "";
               input.value = "";
               if (typeof window.openArtistDetailPage === "function") {
                 window.openArtistDetailPage(a);
               }
-            }
-          });
-
-          // Quick add shortcut button: adds directly to selectedArtists without leaving home
-          const quickAddBtn = item.querySelector(".artist-result-quick-add");
-          if (quickAddBtn) {
-            quickAddBtn.addEventListener("click", (e) => {
-              e.stopPropagation();
-              if (selectedArtists.some((x) => x.id === a.id)) {
-                showToast(`✓ ${a.name} は既に選択されています`);
-                return;
-              }
-              if (selectedArtists.length >= 3) {
-                showToast("アーティストは最大3組まで選択できます");
-                return;
-              }
-              selectedArtists.push({ id: a.id, name: a.name, image: a.image || "" });
-              selectedArtistId = selectedArtists[0].id;
-              selectedArtistName = selectedArtists.map((x) => x.name).join(" × ");
-              selectedArtistImage = selectedArtists[0].image || "";
-              results.innerHTML = "";
-              input.value = "";
-              renderSelectedArtist();
-              showToast(`✓ ${a.name} を選曲リストに追加しました`);
             });
           }
 
@@ -1134,6 +1138,22 @@ window.toggleArtistPageTrackPreview = function (previewUrl, trackId, event) {
   }
 };
 
+window.playArtistTopSong = function (idx, event) {
+  if (event && (event.target.closest("a") || event.target.closest(".song-action-pill-btn"))) {
+    return;
+  }
+  const tracks = currentArtistPageData?.topTracks || [];
+  const track = tracks[idx];
+  if (!track) return;
+
+  const normalized = tracks.map((t) => normalizeTrack(t));
+  stopArtistPagePreview();
+  startTrackList(normalized, idx);
+  if (typeof showToast === "function") {
+    showToast(`「${track.title || track.name}」を再生開始`);
+  }
+};
+
 window.openArtistDetailPage = async function (artist) {
   if (typeof document === "undefined" || !artist) return;
   const artistId = artist.id || "";
@@ -1373,24 +1393,22 @@ function renderArtistDetailPageContent(data) {
     }
   }
 
-  // Top Songs List (Top Songs >)
+  // Top Songs List (Top Songs >) - 10 tracks with click-to-play
   if (topSongsContainer) {
-    const tracks = Array.isArray(data.topTracks) ? data.topTracks : [];
+    const tracks = (Array.isArray(data.topTracks) ? data.topTracks : []).slice(0, 10);
     if (tracks.length === 0) {
       topSongsContainer.innerHTML = `<div class="artist-top-songs-empty">人気曲の情報を取得できませんでした</div>`;
     } else {
       topSongsContainer.innerHTML = tracks
         .map(
           (t, idx) => `
-        <div class="artist-top-song-row" data-track-id="${escapeHtml(t.id)}">
+        <div class="artist-top-song-row" data-track-id="${escapeHtml(t.id)}" role="button" tabindex="0" aria-label="${escapeHtml(t.name)}を再生" onclick="window.playArtistTopSong(${idx}, event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.playArtistTopSong(${idx}, event);}">
           <div class="song-rank">${idx + 1}</div>
           <div class="song-art-wrap">
             ${t.image ? `<img src="${escapeHtml(t.image)}" alt="" class="song-art" onerror="this.style.display='none'">` : `<span class="song-art-fallback">♫</span>`}
-            ${t.previewUrl ? `
-              <button type="button" class="song-preview-overlay-btn" id="artistPagePlayBtn-${escapeHtml(t.id)}" onclick="window.toggleArtistPageTrackPreview('${escapeHtml(t.previewUrl)}', '${escapeHtml(t.id)}', event)" aria-label="${escapeHtml(t.name)}の試聴を再生">
-                <span class="preview-play-icon">▶</span>
-              </button>
-            ` : ""}
+            <button type="button" class="song-preview-overlay-btn" id="artistPagePlayBtn-${escapeHtml(t.id)}" aria-label="${escapeHtml(t.name)}を再生">
+              <span class="preview-play-icon">▶</span>
+            </button>
           </div>
           <div class="song-info-col">
             <div class="song-title">${escapeHtml(t.name)}</div>
@@ -1403,7 +1421,7 @@ function renderArtistDetailPageContent(data) {
               </button>
             ` : ""}
             ${t.spotifyUrl ? `
-              <a href="${escapeHtml(t.spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="song-action-ext-btn" title="Spotifyで聴く">↗</a>
+              <a href="${escapeHtml(t.spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="song-action-ext-btn" title="Spotifyで聴く" onclick="event.stopPropagation()">↗</a>
             ` : ""}
           </div>
         </div>
@@ -1592,6 +1610,19 @@ function displayPlaylist(playlist) {
   container.appendChild(saveBtn);
 
   // 曲カード
+  if (playlist.length) {
+    const tableHeader = document.createElement("div");
+    tableHeader.className = "apple-track-table-header";
+    tableHeader.innerHTML = `
+      <span class="th-col-title">曲</span>
+      <span class="th-col-artist">アーティスト</span>
+      <span class="th-col-album">アルバム</span>
+      <span class="th-col-duration">時間</span>
+      <span class="th-col-actions"></span>
+    `;
+    container.appendChild(tableHeader);
+  }
+
   playlist.forEach((track, index) => {
     container.appendChild(createTrackCard(track, index, playlist));
   });
@@ -1600,7 +1631,10 @@ function displayPlaylist(playlist) {
 function createTrackCard(track, index, queue = null, onPlay = null) {
   track = normalizeTrack(track);
   const card = document.createElement("div");
-  card.className = "track-card";
+  card.className = "track-card apple-track-card";
+  card.setAttribute("role", "button");
+  card.setAttribute("tabindex", "0");
+  card.setAttribute("data-uri", track.uri || "");
 
   // 一覧の中の曲を押したら、その一覧を再生リストにして次/前の曲に進めるようにする
   const playFromCard = () => {
@@ -1608,41 +1642,63 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
     startTrackList(queue?.length ? queue : [track], queue?.length ? index : 0);
   };
 
-  const imgWrapper = document.createElement("div");
-  imgWrapper.className = "track-image-wrapper";
-
   const img = document.createElement("img");
   img.className = "track-image";
   img.src = track.image || "";
-  img.alt = track.title || "";
-  img.onerror = () => (img.style.visibility = "hidden");
-  if (!track.image) img.style.visibility = "hidden";
+  img.alt = "";
+  img.onerror = () => {
+    img.style.display = "none";
+    if (fallback) fallback.style.display = "flex";
+  };
+  if (!track.image) img.style.display = "none";
+
+  const fallback = document.createElement("span");
+  fallback.className = "track-art-fallback";
+  fallback.textContent = "♫";
+  if (track.image) fallback.style.display = "none";
+
+  const playHover = document.createElement("span");
+  playHover.className = "track-hover-play";
+  playHover.textContent = "▶";
+
+  const imgWrapper = document.createElement("div");
+  imgWrapper.className = "track-image-wrapper";
   imgWrapper.appendChild(img);
+  imgWrapper.appendChild(fallback);
+  imgWrapper.appendChild(playHover);
 
-  const rankBadge = document.createElement("span");
-  rankBadge.className = "track-rank-badge";
-  rankBadge.textContent = `#${index + 1}`;
-  imgWrapper.appendChild(rankBadge);
+  const artistText = getArtistText(track);
+  const albumText = track.albumName || "";
+  const durationText = track.durationMs > 0 ? formatTime(track.durationMs) : "";
 
-  card.appendChild(imgWrapper);
-
-  const info = document.createElement("span");
+  const info = document.createElement("div");
   info.className = "track-info";
-  const textTag = "span";
   info.innerHTML = `
-    <${textTag} class="track-title">${escapeHtml(track.title)}</${textTag}>
-    <${textTag} class="track-artist">${escapeHtml(getArtistText(track))}</${textTag}>
-    ${track.reason ? `<${textTag} class="track-reason"><strong class="track-reason-label">💡 なぜこの曲？</strong> <span class="track-reason-body">${escapeHtml(track.reason)}</span></${textTag}>` : ""}
-    ${
-      track.vibeKeywords && track.vibeKeywords.length
-        ? `<${textTag} class="track-tags">${track.vibeKeywords
-            .map((k) => `<span class="track-tag">#${escapeHtml(k)}</span>`)
-            .join("")}</${textTag}>`
-        : ""
-    }
+    <div class="track-col-title-group">
+      <span class="track-title">${escapeHtml(track.title)}</span>
+      <span class="track-artist-mobile">${escapeHtml(artistText)}</span>
+      ${track.reason ? `<div class="track-reason"><strong class="track-reason-label">💡 なぜこの曲？</strong> <span class="track-reason-body">${escapeHtml(track.reason)}</span></div>` : ""}
+      ${
+        track.vibeKeywords && track.vibeKeywords.length
+          ? `<div class="track-tags">${track.vibeKeywords
+              .map((k) => `<span class="track-tag">#${escapeHtml(k)}</span>`)
+              .join("")}</div>`
+          : ""
+      }
+    </div>
+    <div class="track-col-artist">${escapeHtml(artistText) || "—"}</div>
+    <div class="track-col-album">${escapeHtml(albumText) || "—"}</div>
+    <div class="track-col-duration">${durationText}</div>
   `;
+  info.title = [track.title, artistText, albumText, track.reason].filter(Boolean).join(" · ");
 
-  info.title = [track.title, getArtistText(track), track.reason].filter(Boolean).join(" · ");
+  const main = document.createElement("button");
+  main.className = "track-main";
+  main.type = "button";
+  main.setAttribute("aria-label", `${track.title} — ${artistText}を再生`);
+  main.appendChild(imgWrapper);
+  main.appendChild(info);
+
   const actions = document.createElement("div");
   actions.className = "track-actions";
 
@@ -1669,18 +1725,18 @@ function createTrackCard(track, index, queue = null, onPlay = null) {
   actions.appendChild(favBtn);
   actions.appendChild(spotLink);
 
-  const main = document.createElement("button");
-  main.className = "track-main";
-  main.type = "button";
-  main.setAttribute("aria-label", `${track.title} — ${getArtistText(track)}を再生`);
-  img.alt = "";
-  main.appendChild(img);
-  main.appendChild(info);
   card.appendChild(main);
   card.appendChild(actions);
 
   card.addEventListener("click", () => {
     playFromCard();
+  });
+
+  card.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      playFromCard();
+    }
   });
 
   return card;
@@ -2435,6 +2491,13 @@ function normalizeTrack(track) {
     track.album?.images?.[1]?.url ||
     track.images?.[0]?.url ||
     "";
+  const albumName =
+    track.albumName ||
+    (typeof track.album === "string" ? track.album : track.album?.name) ||
+    "";
+  const durationMs =
+    track.durationMs || track.duration_ms || track.duration || 0;
+
   return {
     ...track,
     id,
@@ -2443,6 +2506,8 @@ function normalizeTrack(track) {
     artist: artistName,
     artists,
     image,
+    albumName,
+    durationMs,
     spotifyUrl: track.spotifyUrl || `https://open.spotify.com/track/${id}`,
   };
 }
@@ -2779,7 +2844,8 @@ async function openSpotifyPlaylist(playlist, sourcePage = "favoritesPage") {
   link.href = `https://open.spotify.com/playlist/${encodeURIComponent(playlist.id)}`;
   play.disabled = true;
   play.onclick = null;
-  retry.hidden = true;
+  const initialHeader = document.getElementById("playlistTracksHeader");
+  if (initialHeader) initialHeader.style.display = "none";
   box.innerHTML = '<div class="empty-message" role="status">曲を読み込み中...</div>';
   try {
     const items = await fetchSpotifyPages(`https://api.spotify.com/v1/playlists/${encodeURIComponent(playlist.id)}/items?limit=50`, () => requestId !== playlistDetailLoadId);
@@ -2788,11 +2854,19 @@ async function openSpotifyPlaylist(playlist, sourcePage = "favoritesPage") {
       .filter(({ track }) => track?.type === "track" && !track.is_local && track.is_playable !== false && track.uri?.startsWith("spotify:track:"));
     setText("playlistMeta", `${items.length}曲・再生可能な曲 ${tracks.length}曲${playlist.owner?.display_name ? ` · ${playlist.owner.display_name}` : ""}`);
     box.innerHTML = "";
-    if (!tracks.length) box.innerHTML = '<div class="empty-message">再生できる曲がありません。Spotifyで開いて確認できます。</div>';
-    tracks.forEach(({ track, position }, index) => box.appendChild(createTrackCard(track, index, null, () => playSpotifyPlaylist(playlist, position, tracks))));
+    const tracksHeader = document.getElementById("playlistTracksHeader");
+    if (!tracks.length) {
+      if (tracksHeader) tracksHeader.style.display = "none";
+      box.innerHTML = '<div class="empty-message">再生できる曲がありません。Spotifyで開いて確認できます。</div>';
+    } else {
+      if (tracksHeader) tracksHeader.style.display = "grid";
+      tracks.forEach(({ track, position }, index) => box.appendChild(createTrackCard(track, index, null, () => playSpotifyPlaylist(playlist, position, tracks))));
+    }
     play.disabled = !tracks.length;
     play.onclick = () => playSpotifyPlaylist(playlist, tracks[0].position, tracks);
   } catch (error) {
+    const tracksHeader = document.getElementById("playlistTracksHeader");
+    if (tracksHeader) tracksHeader.style.display = "none";
     if (requestId !== playlistDetailLoadId) return;
     box.innerHTML = `<div class="empty-message" role="alert">${escapeHtml(spotifyReadError(error))}</div>`;
     retry.hidden = false;
@@ -2864,19 +2938,102 @@ async function runSongSearch(query, box) {
   }
 
   try {
-    const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const [searchRes, fallbackArtistRes] = await Promise.allSettled([
+      fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track,artist&limit=10`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+      fetch(`/api/artists?q=${encodeURIComponent(query)}`),
+    ]);
+
     if (reqId !== searchRequestId) return;
-    if (!res.ok) throw new Error(`検索に失敗しました (${res.status})`);
-    const data = await res.json();
-    const tracks = normalizeTracks(data.tracks?.items || []);
+
+    let tracks = [];
+    let matchedArtist = null;
+
+    if (searchRes.status === "fulfilled" && searchRes.value.ok) {
+      const data = await searchRes.value.json();
+      tracks = normalizeTracks(data.tracks?.items || []);
+      const artistsList = data.artists?.items || [];
+      if (artistsList.length) {
+        matchedArtist = artistsList[0];
+      }
+    }
+
+    if (!matchedArtist && fallbackArtistRes.status === "fulfilled" && fallbackArtistRes.value.ok) {
+      try {
+        const fallbackArtists = await fallbackArtistRes.value.json();
+        if (Array.isArray(fallbackArtists) && fallbackArtists.length) {
+          matchedArtist = fallbackArtists[0];
+        }
+      } catch {}
+    }
+
     box.innerHTML = "";
-    if (!tracks.length) {
-      box.innerHTML = `<div class="empty-message">「${escapeHtml(query)}」に一致する曲が見つかりませんでした</div>`;
+
+    if (!matchedArtist && !tracks.length) {
+      box.innerHTML = `<div class="empty-message">「${escapeHtml(query)}」に一致する曲やアーティストが見つかりませんでした</div>`;
       return;
     }
-    tracks.forEach((t, i) => box.appendChild(createTrackCard(t, i, tracks)));
+
+    // 1. Apple Music-styled Artist Card at the top (as requested)
+    if (matchedArtist) {
+      const artImg = matchedArtist.images?.[0]?.url || matchedArtist.image || "";
+      const artCard = document.createElement("div");
+      artCard.className = "search-artist-card";
+      artCard.setAttribute("role", "button");
+      artCard.setAttribute("tabindex", "0");
+      artCard.setAttribute("aria-label", `${matchedArtist.name}のアーティストページを開く`);
+      artCard.innerHTML = `
+        <div class="search-artist-left">
+          ${artImg ? `<img src="${escapeHtml(artImg)}" alt="" class="search-artist-avatar">` : `<span class="search-artist-avatar-fallback">♫</span>`}
+          <div class="search-artist-text">
+            <span class="search-artist-kicker">アーティスト</span>
+            <span class="search-artist-name">${escapeHtml(matchedArtist.name)}</span>
+            <span class="search-artist-meta">${matchedArtist.followers?.total ? `${Number(matchedArtist.followers.total).toLocaleString()} 人のフォロワー` : "アーティスト専用ページを表示"}</span>
+          </div>
+        </div>
+        <div class="search-artist-arrow-btn">
+          <span>詳細</span>
+          <span class="arrow-glyph">›</span>
+        </div>
+      `;
+      artCard.addEventListener("click", () => {
+        if (typeof window.openArtistDetailPage === "function") {
+          window.openArtistDetailPage({
+            id: matchedArtist.id,
+            name: matchedArtist.name,
+            image: artImg,
+          });
+        }
+      });
+      artCard.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          artCard.click();
+        }
+      });
+      box.appendChild(artCard);
+    }
+
+    // 2. Matching Tracks in Apple Music table layout (without #1 badges)
+    if (tracks.length) {
+      const trackSection = document.createElement("div");
+      trackSection.className = "search-tracks-section";
+
+      const tableHeader = document.createElement("div");
+      tableHeader.className = "apple-track-table-header";
+      tableHeader.innerHTML = `
+        <span class="th-col-title">曲</span>
+        <span class="th-col-artist">アーティスト</span>
+        <span class="th-col-album">アルバム</span>
+        <span class="th-col-duration">時間</span>
+        <span class="th-col-actions"></span>
+      `;
+      trackSection.appendChild(tableHeader);
+
+      tracks.forEach((t, i) => trackSection.appendChild(createTrackCard(t, i, tracks)));
+      box.appendChild(trackSection);
+    }
   } catch (e) {
     if (reqId === searchRequestId) box.innerHTML = `<div class="empty-message">${escapeHtml(e.message)}</div>`;
   }

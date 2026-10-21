@@ -521,7 +521,7 @@ function exclusionServer() {
   const routes = new Map();
   const expressApp = { set() {}, use() {}, listen() {}, get(path, handler) { routes.set(path, handler); }, post(path, handler) { routes.set(path, handler); } };
   const express = Object.assign(() => expressApp, { json: () => {}, static: () => {} });
-  const context = vm.createContext({console:{log(){},error(){}},process:{env:{}},Buffer,URLSearchParams,AbortSignal,
+  const context = vm.createContext({console:{log(){},error(){},warn(){}},process:{env:{}},Buffer,URLSearchParams,AbortSignal,
     require(name) { if(name==='express')return express;if(name==='dotenv')return {config(){}};if(name==='@google/genai')return {};return require(name); }
   });
   vm.runInContext(fs.readFileSync('server.js','utf8'),context);
