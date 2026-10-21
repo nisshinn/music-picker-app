@@ -1,9 +1,32 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const { GoogleGenAI, Type } = require("@google/genai");
 
 dotenv.config();
+
+// Fallback to .env.example if user wrote credentials there directly
+if ((!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) && fs.existsSync(".env.example")) {
+  try {
+    const exampleParsed = dotenv.parse(fs.readFileSync(".env.example"));
+    if (!process.env.SPOTIFY_CLIENT_ID && exampleParsed.SPOTIFY_CLIENT_ID) {
+      process.env.SPOTIFY_CLIENT_ID = exampleParsed.SPOTIFY_CLIENT_ID;
+    }
+    if (!process.env.SPOTIFY_CLIENT_SECRET && exampleParsed.SPOTIFY_CLIENT_SECRET) {
+      process.env.SPOTIFY_CLIENT_SECRET = exampleParsed.SPOTIFY_CLIENT_SECRET;
+    }
+    if (!process.env.SPOTIFY_REDIRECT_URI && exampleParsed.SPOTIFY_REDIRECT_URI) {
+      process.env.SPOTIFY_REDIRECT_URI = exampleParsed.SPOTIFY_REDIRECT_URI;
+    }
+    if (!process.env.GEMINI_API_KEY && exampleParsed.GEMINI_API_KEY) {
+      process.env.GEMINI_API_KEY = exampleParsed.GEMINI_API_KEY;
+    }
+  } catch (err) {
+    console.warn("Could not read fallback from .env.example:", err.message);
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -580,6 +603,225 @@ app.get("/api/artists", async (req, res) => {
       spotifyUrl: artist.external_urls?.spotify || "",
     }));
     res.json(artists);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// -------------------------------------------------------------
+// Artist Details: Biography, Insights & Top Tracks
+// -------------------------------------------------------------
+const artistDetailsCache = new Map();
+
+app.get("/api/artist-details", async (req, res) => {
+  try {
+    const artistId = String(req.query.id || "").trim();
+    let artistName = String(req.query.name || "").trim();
+    if (!artistId && !artistName) {
+      return res.status(400).json({ error: "artist id or name is required" });
+    }
+
+    const cacheKey = `${artistId || "no-id"}:${artistName.toLowerCase()}`;
+    const cached = artistDetailsCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 3600_000) {
+      return res.json(cached.data);
+    }
+
+    let genres = [];
+    let image = "";
+    let spotifyUrl = "";
+    let followers = 0;
+    let popularity = 0;
+    let topTracks = [];
+    let latestRelease = null;
+
+    // 1. Fetch Spotify data if available
+    try {
+      const token = await getSpotifyToken();
+      let resolvedId = artistId;
+
+      // If no valid artistId, resolve by searching
+      if (!resolvedId && artistName) {
+        const searchRes = await spotifyFetch(
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1&market=JP`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const found = searchRes.artists?.items?.[0];
+        if (found) {
+          resolvedId = found.id;
+          image = found.images?.[0]?.url || "";
+        }
+      }
+
+      if (resolvedId && /^[a-zA-Z0-9]+$/.test(resolvedId.replace(/^spotify:artist:/, ""))) {
+        const cleanId = resolvedId.replace(/^spotify:artist:/, "");
+        const [artistRes, topTracksRes, albumsRes] = await Promise.allSettled([
+          spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/top-tracks?market=JP`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=5`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        if (artistRes.status === "fulfilled" && artistRes.value && !artistRes.value.error) {
+          const a = artistRes.value;
+          artistName = a.name || artistName;
+          genres = a.genres || [];
+          image = a.images?.[0]?.url || image;
+          spotifyUrl = a.external_urls?.spotify || `https://open.spotify.com/artist/${cleanId}`;
+          followers = a.followers?.total || 0;
+          popularity = a.popularity || 0;
+        }
+
+        if (topTracksRes.status === "fulfilled" && topTracksRes.value?.tracks) {
+          topTracks = (topTracksRes.value.tracks || []).slice(0, 10).map((t, idx) => ({
+            id: t.id,
+            rank: idx + 1,
+            name: t.name,
+            artists: (t.artists || []).map((art) => art.name).join(", "),
+            albumName: t.album?.name || "",
+            image: t.album?.images?.[0]?.url || image || "",
+            previewUrl: t.preview_url || "",
+            uri: t.uri || `spotify:track:${t.id}`,
+            spotifyUrl: t.external_urls?.spotify || "",
+            durationMs: t.duration_ms || 0,
+            popularity: t.popularity || 0,
+          }));
+        }
+
+        if (albumsRes.status === "fulfilled" && albumsRes.value?.items?.length) {
+          const alb = albumsRes.value.items[0];
+          latestRelease = {
+            id: alb.id,
+            name: alb.name,
+            releaseDate: alb.release_date || "",
+            totalTracks: alb.total_tracks || 1,
+            type: alb.album_type === "single" ? "Single" : "Album",
+            image: alb.images?.[0]?.url || image || "",
+            spotifyUrl: alb.external_urls?.spotify || `https://open.spotify.com/album/${alb.id}`,
+          };
+        }
+      }
+
+      // If top tracks still empty, try fallback search
+      if (topTracks.length === 0 && artistName) {
+        const searchTracks = await spotifyFetch(
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(`artist:"${artistName}"`)}&type=track&limit=10&market=JP`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (searchTracks.tracks?.items?.length) {
+          topTracks = searchTracks.tracks.items.slice(0, 10).map((t, idx) => ({
+            id: t.id,
+            rank: idx + 1,
+            name: t.name,
+            artists: (t.artists || []).map((art) => art.name).join(", "),
+            albumName: t.album?.name || "",
+            image: t.album?.images?.[0]?.url || image || "",
+            previewUrl: t.preview_url || "",
+            uri: t.uri || `spotify:track:${t.id}`,
+            spotifyUrl: t.external_urls?.spotify || "",
+            durationMs: t.duration_ms || 0,
+            popularity: t.popularity || 0,
+          }));
+        }
+      }
+    } catch (spotifyErr) {
+      console.warn("Spotify artist fetch non-fatal:", spotifyErr.message);
+    }
+
+    // 2. AI Biography and Highlights via Gemini
+    let bio = "";
+    let summary = "";
+    let highlights = [];
+    let representativeSongs = [];
+
+    if (process.env.GEMINI_API_KEY && artistName) {
+      try {
+        const systemInstruction = "あなたは音楽キュレーター・音楽評論家です。指定されたアーティストについて、リスナーがその魅力・個性をすぐに理解できる洗練された日本語の紹介文を作成し、JSON形式で返してください。";
+        const prompt = `アーティスト名: 「${artistName}」
+ジャンル: ${genres.length ? genres.join(", ") : "J-POP / ポップス / ロック"}
+以下のJSON形式で回答してください:
+{
+  "summary": "1文で表すアーティストのキャッチコピー（例: 叙情的なメロディと圧倒的な表現力で時代を牽引するフロントランナー）",
+  "bio": "生い立ちや音楽的特徴、魅力や現在の音楽シーンでの立ち位置を簡潔かつ魅力的にまとめた紹介文（150〜220文字程度、2〜3文）",
+  "highlights": ["音楽的特徴や魅力のキーワード1", "キーワード2", "キーワード3"],
+  "representativeSongs": ["代表曲1", "代表曲2", "代表曲3", "代表曲4", "代表曲5"]
+}`;
+        const raw = await generateContentWithRetry(prompt, systemInstruction);
+        const parsed = JSON.parse(raw.replace(/^```json/i, "").replace(/```$/i, "").trim());
+        bio = parsed.bio || "";
+        summary = parsed.summary || "";
+        highlights = Array.isArray(parsed.highlights) ? parsed.highlights : [];
+        representativeSongs = Array.isArray(parsed.representativeSongs) ? parsed.representativeSongs : [];
+      } catch (geminiErr) {
+        console.warn("Gemini artist bio generation non-fatal:", geminiErr.message);
+      }
+    }
+
+    // Fallbacks if AI bio empty
+    if (!bio) {
+      const genreLabel = genres.slice(0, 3).join("・") || "J-POP / ロック";
+      bio = `${artistName}は、${genreLabel}を中心に多くのリスナーから高い評価と支持を集めている注目のアーティストです。独自のメロディセンスと心に響くサウンドが魅力です。`;
+      summary = `${artistName}のアーティストプロファイル`;
+      highlights = genres.length ? genres.slice(0, 3) : ["メロディセンス", "独自の世界観", "注目アーティスト"];
+    }
+
+    // If top tracks empty, populate from representative songs
+    if (topTracks.length === 0 && representativeSongs.length > 0) {
+      topTracks = representativeSongs.map((songTitle, idx) => ({
+        id: `song-${idx + 1}`,
+        rank: idx + 1,
+        name: songTitle,
+        artists: artistName,
+        albumName: "Popular Track",
+        image: image || "",
+        previewUrl: "",
+        uri: "",
+        spotifyUrl: spotifyUrl || `https://open.spotify.com/search/${encodeURIComponent(`${artistName} ${songTitle}`)}`,
+        durationMs: 0,
+        popularity: 80 - idx * 5,
+      }));
+    }
+
+    if (!latestRelease && topTracks.length > 0) {
+      const first = topTracks[0];
+      latestRelease = {
+        id: first.id,
+        name: first.albumName || first.name,
+        releaseDate: "",
+        totalTracks: 1,
+        type: "Single",
+        image: first.image || image || "",
+        spotifyUrl: first.spotifyUrl || spotifyUrl,
+      };
+    }
+
+    const payload = {
+      id: artistId,
+      name: artistName,
+      image,
+      genres,
+      followers,
+      popularity,
+      spotifyUrl: spotifyUrl || (artistId ? `https://open.spotify.com/artist/${artistId}` : ""),
+      bio,
+      summary,
+      highlights,
+      topTracks,
+      latestRelease,
+    };
+
+    artistDetailsCache.set(cacheKey, { timestamp: Date.now(), data: payload });
+    if (artistDetailsCache.size > 200) {
+      const firstKey = artistDetailsCache.keys().next().value;
+      artistDetailsCache.delete(firstKey);
+    }
+
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

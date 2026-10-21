@@ -249,10 +249,16 @@ function initMenu() {
   });
 }
 
+let lastPageBeforeArtistDetail = "homePage";
+
 function showPage(pageId) {
   if (!document.getElementById(pageId)) return;
   if (pageId !== "playlistDetailPage") playlistDetailLoadId++;
-  const navPage = pageId === "playlistDetailPage" ? "favoritesPage" : pageId;
+  if (pageId !== "artistDetailPage") {
+    lastPageBeforeArtistDetail = pageId;
+    if (typeof stopArtistPagePreview === "function") stopArtistPagePreview();
+  }
+  const navPage = pageId === "playlistDetailPage" ? "favoritesPage" : (pageId === "artistDetailPage" ? (lastPageBeforeArtistDetail || "homePage") : pageId);
   document.querySelectorAll(".page").forEach((p) => p.classList.remove("active-page"));
   const page = document.getElementById(pageId);
   if (page) page.classList.add("active-page");
@@ -376,8 +382,12 @@ function applySelectionPreset(preset) {
   selectedArtistId = preset.artistId;
   selectedArtistName = preset.artistName;
   selectedArtistImage = "";
-  if (selectedArtistId) renderSelectedArtist();
-  else window.clearSelectedArtist();
+  if (selectedArtistId) {
+    selectedArtists = [{ id: selectedArtistId, name: selectedArtistName || "Artist", image: "" }];
+    renderSelectedArtist();
+  } else {
+    window.clearSelectedArtist();
+  }
   const genres = [...document.querySelectorAll('input[name="detailedGenre"]')];
   setSelectedGenre(genres.some((o) => o.value === preset.genre) ? preset.genre : "all");
   recordingVersion = ["studio", "live"].includes(preset.recordingVersion) ? preset.recordingVersion : "all";
@@ -565,6 +575,15 @@ function initArtistSearch() {
   const results = document.getElementById("artistResults");
   if (!input || !results) return;
 
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const first = results.querySelector(".artist-result");
+      if (first) {
+        e.preventDefault();
+        first.click();
+      }
+    }
+  });
 
   input.addEventListener("input", () => {
     clearTimeout(artistSearchTimer);
@@ -585,27 +604,66 @@ function initArtistSearch() {
           return;
         }
         artists.forEach((a) => {
-          const item = document.createElement("button");
-          item.type = "button";
+          const item = document.createElement("div");
           item.className = "artist-result";
-          item.innerHTML = `${a.image ? `<img src="${escapeHtml(a.image)}" alt="">` : ""}<span>${escapeHtml(a.name)}</span>`;
-          item.addEventListener("click", () => {
-            if (selectedArtists.some((x) => x.id === a.id)) {
-              showToast(`✓ ${a.name} は既に選択されています`);
-              return;
-            }
-            if (selectedArtists.length >= 3) {
-              showToast("アーティストは最大3組まで選択できます");
-              return;
-            }
-            selectedArtists.push({ id: a.id, name: a.name, image: a.image || "" });
-            selectedArtistId = selectedArtists[0].id;
-            selectedArtistName = selectedArtists.map((x) => x.name).join(" × ");
-            selectedArtistImage = selectedArtists[0].image || "";
+          item.setAttribute("role", "button");
+          item.setAttribute("tabindex", "0");
+          item.setAttribute("aria-label", `${a.name}のアーティストページを開く`);
+          item.innerHTML = `
+            <div class="artist-result-identity">
+              ${a.image ? `<img src="${escapeHtml(a.image)}" alt="" class="artist-result-avatar" onerror="this.style.display='none'">` : `<span class="artist-result-avatar-fallback">♫</span>`}
+              <span class="artist-result-name">${escapeHtml(a.name)}</span>
+            </div>
+            <div class="artist-result-actions">
+              <button type="button" class="artist-result-quick-add" title="選曲リストに追加" aria-label="${escapeHtml(a.name)}を選曲リストに追加">+</button>
+            </div>
+          `;
+
+          // Clicking the artist item opens their dedicated Apple Music-style artist page
+          item.addEventListener("click", (e) => {
+            if (e.target.closest(".artist-result-quick-add")) return;
             results.innerHTML = "";
             input.value = "";
-            renderSelectedArtist();
+            if (typeof window.openArtistDetailPage === "function") {
+              window.openArtistDetailPage(a);
+            }
           });
+
+          item.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              results.innerHTML = "";
+              input.value = "";
+              if (typeof window.openArtistDetailPage === "function") {
+                window.openArtistDetailPage(a);
+              }
+            }
+          });
+
+          // Quick add shortcut button: adds directly to selectedArtists without leaving home
+          const quickAddBtn = item.querySelector(".artist-result-quick-add");
+          if (quickAddBtn) {
+            quickAddBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              if (selectedArtists.some((x) => x.id === a.id)) {
+                showToast(`✓ ${a.name} は既に選択されています`);
+                return;
+              }
+              if (selectedArtists.length >= 3) {
+                showToast("アーティストは最大3組まで選択できます");
+                return;
+              }
+              selectedArtists.push({ id: a.id, name: a.name, image: a.image || "" });
+              selectedArtistId = selectedArtists[0].id;
+              selectedArtistName = selectedArtists.map((x) => x.name).join(" × ");
+              selectedArtistImage = selectedArtists[0].image || "";
+              results.innerHTML = "";
+              input.value = "";
+              renderSelectedArtist();
+              showToast(`✓ ${a.name} を選曲リストに追加しました`);
+            });
+          }
+
           results.appendChild(item);
         });
       } catch {}
@@ -626,26 +684,34 @@ function renderSelectedArtist() {
   }
   s.style.display = "flex";
   s.className = "selected-artists-container";
+  s.setAttribute("aria-label", "選択中のアーティスト");
+
+  const remaining = 3 - selectedArtists.length;
+  const hintText = remaining > 0 ? `（あと${remaining}組追加可能）` : `（最大3組選択中）`;
+
   s.innerHTML = `
-    <div class="selected-artists-list">
+    <div class="selected-artists-list" role="list">
       ${selectedArtists
         .map(
           (a, idx) => `
-        <span class="selected-artist-chip">
-          ${a.image ? `<img src="${escapeHtml(a.image)}" alt="" class="chip-avatar">` : ""}
+        <span class="selected-artist-chip" role="button" tabindex="0"
+              aria-label="${escapeHtml(a.name)}のアーティストページを表示"
+              title="${escapeHtml(a.name)}をクリックしてアーティスト専用ページを表示"
+              onclick="if(typeof openArtistDetailPage==='function'){openArtistDetailPage({id:'${escapeHtml(a.id)}',name:'${escapeHtml(a.name)}',image:'${escapeHtml(a.image||'')}'})}else{openArtistModal('${escapeHtml(a.id)}','${escapeHtml(a.name)}','${escapeHtml(a.image||'')}')}"
+              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();if(typeof openArtistDetailPage==='function'){openArtistDetailPage({id:'${escapeHtml(a.id)}',name:'${escapeHtml(a.name)}',image:'${escapeHtml(a.image||'')}'})}else{openArtistModal('${escapeHtml(a.id)}','${escapeHtml(a.name)}','${escapeHtml(a.image||'')}')}}">
+          ${a.image ? `<img src="${escapeHtml(a.image)}" alt="" class="chip-avatar" onerror="this.style.display='none'">` : `<span class="chip-avatar-fallback">🎵</span>`}
           <span class="chip-name">${escapeHtml(a.name)}</span>
-          <button type="button" class="chip-remove-btn" aria-label="${escapeHtml(a.name)}を解除" onclick="removeSelectedArtist(${idx})">×</button>
+          <span class="chip-info-cue" title="専用ページを見る" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </span>
+          <button type="button" class="chip-remove-btn" aria-label="${escapeHtml(a.name)}を解除" title="${escapeHtml(a.name)}を解除" onclick="event.stopPropagation(); removeSelectedArtist(${idx});">×</button>
         </span>
       `
         )
         .join("")}
-      ${
-        selectedArtists.length < 3
-          ? `<span class="artist-add-hint">（最大3組・あと${3 - selectedArtists.length}組追加できます）</span>`
-          : ""
-      }
+      <span class="artist-add-hint">${hintText}</span>
+      <button type="button" class="selected-artist-clear-all" aria-label="すべてのアーティスト選択を解除" onclick="clearSelectedArtist()">すべて解除</button>
     </div>
-    <button type="button" class="selected-artist-clear-all" aria-label="全解除" onclick="clearSelectedArtist()">すべて解除</button>
   `;
 }
 
@@ -668,6 +734,708 @@ window.clearSelectedArtist = function () {
     s.style.display = "none";
   }
 };
+
+// -------------------------------------------------------------
+// Artist Biography & Top Tracks Modal Controller
+// -------------------------------------------------------------
+const clientArtistDetailsCache = new Map();
+let modalAudioPreview = null;
+let modalPlayingTrackId = null;
+
+window.openArtistModal = async function (id, name, image) {
+  if (typeof document === "undefined") return;
+  const modal = document.getElementById("artistModal");
+  const content = document.getElementById("artistModalContent");
+  if (!modal || !content) return;
+
+  stopModalPreview();
+
+  modal.setAttribute("aria-hidden", "false");
+  modal.classList.add("active");
+  if (document.body) {
+    document.body.classList.add("modal-open");
+  }
+
+  // Initial skeleton with existing data
+  content.innerHTML = `
+    <div class="artist-modal-header-hero">
+      <div class="artist-modal-avatar-frame">
+        ${image ? `<img src="${escapeHtml(image)}" alt="" class="artist-modal-avatar" onerror="this.style.display='none'">` : `<div class="artist-modal-avatar-fallback">🎵</div>`}
+      </div>
+      <div class="artist-modal-hero-info">
+        <div class="artist-modal-label">ARTIST PROFILE</div>
+        <h2 id="artistModalName" class="artist-modal-title">${escapeHtml(name)}</h2>
+        <div class="artist-modal-loading-badge">
+          <span class="artist-modal-spinner"></span>
+          <span>AIバイオグラフィー & 人気曲を読み込み中...</span>
+        </div>
+      </div>
+    </div>
+    <div class="artist-modal-loading-skeleton">
+      <div class="skeleton-shimmer" style="height: 18px; width: 45%; margin-bottom: 12px; border-radius: 6px;"></div>
+      <div class="skeleton-shimmer" style="height: 14px; width: 100%; margin-bottom: 8px; border-radius: 6px;"></div>
+      <div class="skeleton-shimmer" style="height: 14px; width: 92%; margin-bottom: 8px; border-radius: 6px;"></div>
+      <div class="skeleton-shimmer" style="height: 14px; width: 75%; margin-bottom: 24px; border-radius: 6px;"></div>
+      <div class="skeleton-shimmer" style="height: 18px; width: 35%; margin-bottom: 14px; border-radius: 6px;"></div>
+      <div class="skeleton-shimmer" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 10px;"></div>
+      <div class="skeleton-shimmer" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 10px;"></div>
+    </div>
+  `;
+
+  const cacheKey = `${id || "no-id"}:${(name || "").toLowerCase()}`;
+  let data = clientArtistDetailsCache.get(cacheKey);
+
+  if (!data) {
+    try {
+      const url = `/api/artist-details?id=${encodeURIComponent(id || "")}&name=${encodeURIComponent(name || "")}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        data = await res.json();
+        clientArtistDetailsCache.set(cacheKey, data);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch artist details:", e);
+    }
+  }
+
+  if (!data) {
+    data = {
+      id,
+      name,
+      image,
+      genres: [],
+      followers: 0,
+      popularity: 0,
+      spotifyUrl: id ? `https://open.spotify.com/artist/${id}` : "",
+      bio: `${name}は、独自の音楽性でリスナーを魅了するアーティストです。SpotifyやGemini AIで厳選された楽曲をお楽しみいただけます。`,
+      summary: `${name}のアーティスト情報`,
+      highlights: ["アーティスト", "ミュージック"],
+      topTracks: [],
+    };
+  }
+
+  renderArtistModalContent(data);
+};
+
+window.closeArtistModal = function () {
+  stopModalPreview();
+  if (typeof document === "undefined") return;
+  const modal = document.getElementById("artistModal");
+  if (modal) {
+    modal.setAttribute("aria-hidden", "true");
+    modal.classList.remove("active");
+  }
+  if (document.body) {
+    document.body.classList.remove("modal-open");
+  }
+};
+
+function stopModalPreview() {
+  if (modalAudioPreview) {
+    try {
+      modalAudioPreview.pause();
+      modalAudioPreview.currentTime = 0;
+    } catch {}
+    modalAudioPreview = null;
+  }
+  modalPlayingTrackId = null;
+  if (typeof document !== "undefined") {
+    document.querySelectorAll(".modal-track-play-btn").forEach((btn) => {
+      btn.classList.remove("is-playing");
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+      btn.setAttribute("aria-label", "試聴を再生");
+    });
+  }
+}
+
+window.toggleModalTrackPreview = function (previewUrl, trackId, event) {
+  if (event) event.stopPropagation();
+  if (!previewUrl) {
+    if (typeof showToast === "function") showToast("この曲には試聴プレビューが提供されていません");
+    return;
+  }
+
+  const btn = document.getElementById(`modalPlayBtn-${trackId}`);
+
+  if (modalAudioPreview && modalPlayingTrackId === trackId) {
+    stopModalPreview();
+    return;
+  }
+
+  stopModalPreview();
+
+  try {
+    if (typeof Audio === "undefined") return;
+    modalAudioPreview = new Audio(previewUrl);
+    modalPlayingTrackId = trackId;
+    modalAudioPreview.volume = 0.7;
+
+    if (btn) {
+      btn.classList.add("is-playing");
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+      btn.setAttribute("aria-label", "試聴を一時停止");
+    }
+
+    modalAudioPreview.play().catch((err) => {
+      console.warn("Audio preview playback blocked:", err);
+      stopModalPreview();
+      if (typeof showToast === "function") showToast("プレビュー再生を開始できませんでした");
+    });
+
+    modalAudioPreview.onended = () => {
+      stopModalPreview();
+    };
+    modalAudioPreview.onerror = () => {
+      stopModalPreview();
+      if (typeof showToast === "function") showToast("プレビューの読み込みに失敗しました");
+    };
+  } catch (err) {
+    console.error("Preview error:", err);
+    stopModalPreview();
+  }
+};
+
+window.playModalTrackInApp = function (trackJsonStr) {
+  try {
+    const track = JSON.parse(decodeURIComponent(trackJsonStr));
+    if (typeof playTrack === "function") {
+      playTrack(track, 0, false);
+      if (typeof showToast === "function") showToast(`「${track.name}」を再生開始`);
+      window.closeArtistModal();
+    }
+  } catch (err) {
+    console.error("Failed to play track from modal:", err);
+  }
+};
+
+function renderArtistModalContent(data) {
+  const content = document.getElementById("artistModalContent");
+  if (!content) return;
+
+  const followersStr = data.followers > 0 ? `${Number(data.followers).toLocaleString()} 人のフォロワー` : "";
+  const genresHtml = Array.isArray(data.genres) && data.genres.length > 0
+    ? data.genres.slice(0, 4).map((g) => `<span class="artist-modal-genre-tag">${escapeHtml(g)}</span>`).join("")
+    : "";
+
+  const highlightsHtml = Array.isArray(data.highlights) && data.highlights.length > 0
+    ? `<div class="artist-modal-highlights">
+        ${data.highlights.map((h) => `<span class="artist-highlight-pill">✨ ${escapeHtml(h)}</span>`).join("")}
+       </div>`
+    : "";
+
+  const topTracksList = Array.isArray(data.topTracks) ? data.topTracks : [];
+  const topTracksHtml = topTracksList.length > 0
+    ? `
+      <div class="artist-modal-section">
+        <div class="artist-modal-section-title">
+          <span>🔥 人気曲・代表曲 TOP ${topTracksList.length}</span>
+          <span class="artist-modal-section-subtitle">クリックで試聴・Spotify連携</span>
+        </div>
+        <div class="artist-modal-track-list">
+          ${topTracksList
+            .map((t) => {
+              const safeTrackObj = encodeURIComponent(
+                JSON.stringify({
+                  id: t.id,
+                  name: t.name,
+                  artists: t.artists || data.name,
+                  albumName: t.albumName,
+                  image: t.image || data.image,
+                  uri: t.uri,
+                  preview_url: t.previewUrl,
+                  spotifyUrl: t.spotifyUrl,
+                })
+              );
+              return `
+              <div class="modal-track-row" id="modalTrackRow-${escapeHtml(t.id)}">
+                <span class="modal-track-rank">${t.rank}</span>
+                <div class="modal-track-art-wrap">
+                  ${t.image ? `<img src="${escapeHtml(t.image)}" alt="" class="modal-track-art" onerror="this.src='/icon.png'">` : `<div class="modal-track-art-fallback">🎵</div>`}
+                  ${t.previewUrl ? `
+                    <button type="button" class="modal-track-play-btn" id="modalPlayBtn-${escapeHtml(t.id)}" aria-label="試聴プレビューを再生" onclick="toggleModalTrackPreview('${escapeHtml(t.previewUrl)}', '${escapeHtml(t.id)}', event)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                  ` : ""}
+                </div>
+                <div class="modal-track-info" onclick="playModalTrackInApp('${safeTrackObj}')" title="アプリで再生">
+                  <div class="modal-track-title">${escapeHtml(t.name)}</div>
+                  <div class="modal-track-meta">${escapeHtml(t.albumName || t.artists || data.name)}</div>
+                </div>
+                <div class="modal-track-actions">
+                  ${t.previewUrl ? `
+                    <button type="button" class="modal-action-preview-pill" onclick="toggleModalTrackPreview('${escapeHtml(t.previewUrl)}', '${escapeHtml(t.id)}', event)" title="30秒プレビュー試聴">
+                      試聴
+                    </button>
+                  ` : ""}
+                  ${t.spotifyUrl ? `
+                    <a href="${escapeHtml(t.spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="modal-track-spotify-btn" title="Spotifyで開く" aria-label="${escapeHtml(t.name)}をSpotifyで開く">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.347-1.434-5.303-1.758-8.784-.963-.335.077-.67-.133-.746-.468-.077-.334.132-.67.467-.746 3.807-.87 7.076-.505 9.713 1.113.294.18.386.563.207.857zm1.224-2.72c-.227.369-.712.484-1.08.257-2.686-1.65-6.782-2.128-9.96-1.163-.414.125-.853-.112-.979-.526-.125-.413.112-.852.526-.978 3.633-1.103 8.146-.57 11.236 1.33.369.227.484.712.257 1.08zm.106-2.835C14.692 8.95 9.375 8.775 6.297 9.71c-.494.15-1.018-.13-1.168-.624-.15-.494.13-1.018.624-1.168 3.532-1.072 9.404-.866 13.115 1.338.445.264.59.838.327 1.282-.264.444-.838.59-1.282.327z"/></svg>
+                    </a>
+                  ` : ""}
+                </div>
+              </div>
+            `;
+            })
+            .join("")}
+        </div>
+      </div>
+    `
+    : `
+      <div class="artist-modal-section">
+        <div class="artist-modal-empty-tracks">代表曲の取得が完了していません</div>
+      </div>
+    `;
+
+  content.innerHTML = `
+    <div class="artist-modal-header-hero">
+      <div class="artist-modal-avatar-frame">
+        ${data.image ? `<img src="${escapeHtml(data.image)}" alt="${escapeHtml(data.name)}" class="artist-modal-avatar" onerror="this.src='/icon.png'">` : `<div class="artist-modal-avatar-fallback">🎵</div>`}
+      </div>
+      <div class="artist-modal-hero-info">
+        <div class="artist-modal-hero-top-row">
+          <span class="artist-modal-badge">ARTIST PROFILE</span>
+          ${followersStr ? `<span class="artist-modal-followers">${followersStr}</span>` : ""}
+        </div>
+        <h2 id="artistModalName" class="artist-modal-title">${escapeHtml(data.name)}</h2>
+        ${data.summary ? `<p class="artist-modal-summary">${escapeHtml(data.summary)}</p>` : ""}
+        ${genresHtml ? `<div class="artist-modal-genres">${genresHtml}</div>` : ""}
+      </div>
+    </div>
+
+    <!-- AI Biography Section -->
+    <div class="artist-modal-section artist-modal-bio-card">
+      <div class="artist-modal-bio-header">
+        <span class="artist-modal-ai-tag">✨ AI バイオグラフィー & 魅力</span>
+        ${data.spotifyUrl ? `<a href="${escapeHtml(data.spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="artist-modal-spotify-link">Spotifyで開く ↗</a>` : ""}
+      </div>
+      <p class="artist-modal-bio-text">${escapeHtml(data.bio)}</p>
+      ${highlightsHtml}
+    </div>
+
+    <!-- Top Tracks Section -->
+    ${topTracksHtml}
+
+    <!-- Modal Footer Actions -->
+    <div class="artist-modal-footer">
+      ${data.spotifyUrl ? `<a href="${escapeHtml(data.spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="artist-modal-btn artist-modal-btn-spotify">Spotifyで全曲を聴く ↗</a>` : ""}
+      <button type="button" class="artist-modal-btn artist-modal-btn-secondary" onclick="closeArtistModal()">閉じる</button>
+    </div>
+  `;
+}
+
+// Modal event listeners setup
+if (typeof document !== "undefined") {
+  const closeBtn = document.getElementById("artistModalClose");
+  const backdrop = document.getElementById("artistModalBackdrop");
+  const modal = document.getElementById("artistModal");
+  if (closeBtn) closeBtn.addEventListener("click", () => window.closeArtistModal());
+  if (backdrop) backdrop.addEventListener("click", () => window.closeArtistModal());
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) window.closeArtistModal();
+    });
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const m = document.getElementById("artistModal");
+      if (m && m.classList.contains("active")) {
+        window.closeArtistModal();
+      }
+    }
+  });
+}
+
+// -------------------------------------------------------------
+// Artist Detail Page (Apple Music iOS Style) Controller
+// -------------------------------------------------------------
+let artistPageAudioPreview = null;
+let artistPagePlayingTrackId = null;
+let currentArtistPageData = null;
+
+function stopArtistPagePreview() {
+  if (artistPageAudioPreview) {
+    try {
+      artistPageAudioPreview.pause();
+      artistPageAudioPreview.currentTime = 0;
+    } catch {}
+    artistPageAudioPreview = null;
+  }
+  artistPagePlayingTrackId = null;
+  if (typeof document !== "undefined") {
+    document.querySelectorAll(".artist-top-song-row").forEach((row) => {
+      row.classList.remove("is-playing");
+    });
+    document.querySelectorAll(".song-preview-overlay-btn").forEach((btn) => {
+      btn.innerHTML = `<span class="preview-play-icon">▶</span>`;
+      btn.classList.remove("is-playing");
+      btn.setAttribute("aria-label", "試聴を再生");
+    });
+    document.querySelectorAll(".song-action-pill-btn").forEach((pill) => {
+      pill.textContent = "試聴";
+      pill.classList.remove("is-playing");
+    });
+  }
+}
+
+window.stopArtistPagePreview = stopArtistPagePreview;
+
+window.toggleArtistPageTrackPreview = function (previewUrl, trackId, event) {
+  if (event) event.stopPropagation();
+  if (!previewUrl) {
+    if (typeof showToast === "function") showToast("この曲には試聴プレビューが提供されていません");
+    return;
+  }
+
+  if (artistPageAudioPreview && artistPagePlayingTrackId === trackId) {
+    stopArtistPagePreview();
+    return;
+  }
+
+  stopArtistPagePreview();
+  if (typeof stopModalPreview === "function") stopModalPreview();
+
+  try {
+    if (typeof Audio === "undefined") return;
+    artistPageAudioPreview = new Audio(previewUrl);
+    artistPagePlayingTrackId = trackId;
+    artistPageAudioPreview.volume = 0.7;
+
+    const row = document.querySelector(`.artist-top-song-row[data-track-id="${trackId}"]`);
+    if (row) row.classList.add("is-playing");
+
+    const btn = document.getElementById(`artistPagePlayBtn-${trackId}`);
+    if (btn) {
+      btn.innerHTML = `<span class="preview-play-icon">❚❚</span>`;
+      btn.classList.add("is-playing");
+      btn.setAttribute("aria-label", "試聴を一時停止");
+    }
+    const pill = document.getElementById(`artistPagePlayPill-${trackId}`);
+    if (pill) {
+      pill.textContent = "停止";
+      pill.classList.add("is-playing");
+    }
+
+    artistPageAudioPreview.play().catch((err) => {
+      console.warn("Artist page preview audio playback blocked:", err);
+      stopArtistPagePreview();
+      if (typeof showToast === "function") showToast("プレビュー再生を開始できませんでした");
+    });
+
+    artistPageAudioPreview.onended = () => {
+      stopArtistPagePreview();
+    };
+    artistPageAudioPreview.onerror = () => {
+      stopArtistPagePreview();
+      if (typeof showToast === "function") showToast("プレビュー音源の読み込みに失敗しました");
+    };
+  } catch (err) {
+    console.error("Artist page preview error:", err);
+    stopArtistPagePreview();
+  }
+};
+
+window.openArtistDetailPage = async function (artist) {
+  if (typeof document === "undefined" || !artist) return;
+  const artistId = artist.id || "";
+  const artistName = artist.name || "";
+  const artistImage = artist.image || "";
+
+  stopArtistPagePreview();
+  if (typeof stopModalPreview === "function") stopModalPreview();
+
+  // Switch to artistDetailPage view
+  showPage("artistDetailPage");
+
+  // DOM Elements
+  const backdrop = document.getElementById("artistHeroBackdrop");
+  const heroName = document.getElementById("artistHeroName");
+  const navTitle = document.getElementById("artistNavTitle");
+  const heroGenres = document.getElementById("artistHeroGenres");
+  const spotifyLink = document.getElementById("artistSpotifyLink");
+  const pickFiveBtn = document.getElementById("artistPickFiveBtn");
+  const addToListBtn = document.getElementById("artistAddToListBtn");
+  const releaseCard = document.getElementById("artistLatestReleaseCard");
+  const topSongsContainer = document.getElementById("artistTopSongsContainer");
+  const catchphrase = document.getElementById("artistCatchphrase");
+  const bioBody = document.getElementById("artistBioBody");
+  const highlightTags = document.getElementById("artistHighlightTags");
+
+  // Set initial placeholders
+  if (heroName) heroName.textContent = artistName || "アーティスト";
+  if (navTitle) navTitle.textContent = artistName || "";
+  if (heroGenres) heroGenres.textContent = "読み込み中...";
+  if (catchphrase) catchphrase.textContent = "";
+  if (bioBody) bioBody.textContent = "AIバイオグラフィー & 人気曲を取得しています...";
+  if (highlightTags) highlightTags.innerHTML = "";
+  if (releaseCard) releaseCard.style.display = "none";
+
+  if (backdrop) {
+    if (artistImage) {
+      backdrop.src = artistImage;
+      backdrop.style.opacity = "0.75";
+    } else {
+      backdrop.src = "";
+      backdrop.style.opacity = "0";
+    }
+  }
+
+  // Top Songs Skeleton
+  if (topSongsContainer) {
+    topSongsContainer.innerHTML = `
+      <div class="artist-page-skeleton">
+        <div class="skeleton-shimmer" style="height: 52px; width: 100%; margin-bottom: 10px; border-radius: 12px;"></div>
+        <div class="skeleton-shimmer" style="height: 52px; width: 100%; margin-bottom: 10px; border-radius: 12px;"></div>
+        <div class="skeleton-shimmer" style="height: 52px; width: 100%; margin-bottom: 10px; border-radius: 12px;"></div>
+        <div class="skeleton-shimmer" style="height: 52px; width: 100%; margin-bottom: 10px; border-radius: 12px;"></div>
+        <div class="skeleton-shimmer" style="height: 52px; width: 100%; margin-bottom: 10px; border-radius: 12px;"></div>
+      </div>
+    `;
+  }
+
+  // Update "Add to List" button initial state
+  const isAlreadySelected = selectedArtists.some((x) => x.id === artistId);
+  if (addToListBtn) {
+    if (isAlreadySelected) {
+      addToListBtn.innerHTML = `<span class="btn-icon">✓</span> 選択中 (${selectedArtists.length}/3)`;
+    } else {
+      addToListBtn.innerHTML = `<span class="btn-icon">+</span> 選曲リストに追加`;
+    }
+  }
+
+  // Fetch full details
+  const cacheKey = `${artistId || "no-id"}:${artistName.toLowerCase()}`;
+  let data = clientArtistDetailsCache.get(cacheKey);
+
+  if (!data) {
+    try {
+      const url = `/api/artist-details?id=${encodeURIComponent(artistId)}&name=${encodeURIComponent(artistName)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        data = await res.json();
+        clientArtistDetailsCache.set(cacheKey, data);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch artist details for page:", err);
+    }
+  }
+
+  if (!data) {
+    data = {
+      id: artistId,
+      name: artistName,
+      image: artistImage,
+      genres: [],
+      followers: 0,
+      popularity: 0,
+      spotifyUrl: artistId ? `https://open.spotify.com/artist/${artistId}` : "",
+      bio: `${artistName}は独自の音楽性で多くのリスナーから高い評価を得ているアーティストです。`,
+      summary: `${artistName}のアーティストプロファイル`,
+      highlights: ["メロディセンス", "独自の世界観"],
+      topTracks: [],
+      latestRelease: null,
+    };
+  }
+
+  currentArtistPageData = data;
+  renderArtistDetailPageContent(data);
+};
+
+function renderArtistDetailPageContent(data) {
+  const backdrop = document.getElementById("artistHeroBackdrop");
+  const heroName = document.getElementById("artistHeroName");
+  const navTitle = document.getElementById("artistNavTitle");
+  const heroGenres = document.getElementById("artistHeroGenres");
+  const spotifyLink = document.getElementById("artistSpotifyLink");
+  const pickFiveBtn = document.getElementById("artistPickFiveBtn");
+  const addToListBtn = document.getElementById("artistAddToListBtn");
+  const releaseCard = document.getElementById("artistLatestReleaseCard");
+  const topSongsContainer = document.getElementById("artistTopSongsContainer");
+  const catchphrase = document.getElementById("artistCatchphrase");
+  const bioBody = document.getElementById("artistBioBody");
+  const highlightTags = document.getElementById("artistHighlightTags");
+
+  if (heroName) heroName.textContent = data.name || "アーティスト";
+  if (navTitle) navTitle.textContent = data.name || "";
+
+  // Backdrop image
+  if (backdrop) {
+    const bgUrl = data.image || "";
+    if (bgUrl) {
+      backdrop.src = bgUrl;
+      backdrop.style.opacity = "0.85";
+    } else {
+      backdrop.style.opacity = "0";
+    }
+  }
+
+  // Genres & Followers
+  if (heroGenres) {
+    const metaParts = [];
+    if (data.followers > 0) metaParts.push(`${Number(data.followers).toLocaleString()} フォロワー`);
+    if (Array.isArray(data.genres) && data.genres.length > 0) {
+      metaParts.push(...data.genres.slice(0, 3));
+    }
+    heroGenres.textContent = metaParts.join(" · ") || "Music Artist";
+  }
+
+  // Spotify Link
+  if (spotifyLink) {
+    spotifyLink.href = data.spotifyUrl || (data.id ? `https://open.spotify.com/artist/${data.id}` : "https://open.spotify.com");
+  }
+
+  // Wire "Pick 5 Songs" CTA
+  if (pickFiveBtn) {
+    pickFiveBtn.onclick = () => {
+      stopArtistPagePreview();
+      selectedArtists = [{ id: data.id, name: data.name, image: data.image || "" }];
+      selectedArtistId = data.id;
+      selectedArtistName = data.name;
+      selectedArtistImage = data.image || "";
+      renderSelectedArtist();
+      showPage("homePage");
+      showToast(`✦ ${data.name} の気分に合わせた5曲を選曲中...`);
+      const makeBtn = document.getElementById("makePlaylist");
+      if (makeBtn) {
+        makeBtn.click();
+      }
+    };
+  }
+
+  // Wire "Add to List" CTA
+  if (addToListBtn) {
+    const isAlreadySelected = selectedArtists.some((x) => x.id === data.id);
+    if (isAlreadySelected) {
+      addToListBtn.innerHTML = `<span class="btn-icon">✓</span> 選択中 (${selectedArtists.length}/3)`;
+    } else {
+      addToListBtn.innerHTML = `<span class="btn-icon">+</span> 選曲リストに追加`;
+    }
+
+    addToListBtn.onclick = () => {
+      const idx = selectedArtists.findIndex((x) => x.id === data.id);
+      if (idx >= 0) {
+        selectedArtists.splice(idx, 1);
+        selectedArtistId = selectedArtists[0]?.id || "";
+        selectedArtistName = selectedArtists.map((x) => x.name).join(" × ");
+        selectedArtistImage = selectedArtists[0]?.image || "";
+        renderSelectedArtist();
+        addToListBtn.innerHTML = `<span class="btn-icon">+</span> 選曲リストに追加`;
+        showToast(`${data.name} を選曲リストから解除しました`);
+        return;
+      }
+      if (selectedArtists.length >= 3) {
+        showToast("アーティストは最大3組まで選択できます");
+        return;
+      }
+      selectedArtists.push({ id: data.id, name: data.name, image: data.image || "" });
+      selectedArtistId = selectedArtists[0].id;
+      selectedArtistName = selectedArtists.map((x) => x.name).join(" × ");
+      selectedArtistImage = selectedArtists[0].image || "";
+      renderSelectedArtist();
+      addToListBtn.innerHTML = `<span class="btn-icon">✓</span> 選択中 (${selectedArtists.length}/3)`;
+      showToast(`✓ ${data.name} を選曲リストに追加しました (${selectedArtists.length}/3)`);
+    };
+  }
+
+  // Latest Release Card (Apple Music iOS mockup style)
+  if (releaseCard) {
+    const rel = data.latestRelease;
+    if (rel && (rel.name || rel.image)) {
+      releaseCard.style.display = "flex";
+      const relImg = document.getElementById("artistReleaseImage");
+      const relFallback = releaseCard.querySelector(".release-art-fallback");
+      if (relImg) {
+        if (rel.image) {
+          relImg.src = rel.image;
+          relImg.style.display = "block";
+          if (relFallback) relFallback.style.display = "none";
+        } else {
+          relImg.style.display = "none";
+          if (relFallback) relFallback.style.display = "flex";
+        }
+      }
+      const kicker = document.getElementById("artistReleaseKicker");
+      if (kicker) kicker.textContent = rel.type ? `LATEST ${rel.type.toUpperCase()}` : "LATEST RELEASE";
+      const title = document.getElementById("artistReleaseTitle");
+      if (title) title.textContent = rel.name || "最新作";
+      const meta = document.getElementById("artistReleaseMeta");
+      if (meta) {
+        const parts = [];
+        if (rel.releaseDate) parts.push(rel.releaseDate.slice(0, 4));
+        if (rel.totalTracks) parts.push(`${rel.totalTracks} 曲`);
+        meta.textContent = parts.join(" · ") || "Single / Album";
+      }
+      const act = document.getElementById("artistReleaseAction");
+      if (act) {
+        act.href = rel.spotifyUrl || data.spotifyUrl || "https://open.spotify.com";
+      }
+    } else {
+      releaseCard.style.display = "none";
+    }
+  }
+
+  // Top Songs List (Top Songs >)
+  if (topSongsContainer) {
+    const tracks = Array.isArray(data.topTracks) ? data.topTracks : [];
+    if (tracks.length === 0) {
+      topSongsContainer.innerHTML = `<div class="artist-top-songs-empty">人気曲の情報を取得できませんでした</div>`;
+    } else {
+      topSongsContainer.innerHTML = tracks
+        .map(
+          (t, idx) => `
+        <div class="artist-top-song-row" data-track-id="${escapeHtml(t.id)}">
+          <div class="song-rank">${idx + 1}</div>
+          <div class="song-art-wrap">
+            ${t.image ? `<img src="${escapeHtml(t.image)}" alt="" class="song-art" onerror="this.style.display='none'">` : `<span class="song-art-fallback">♫</span>`}
+            ${t.previewUrl ? `
+              <button type="button" class="song-preview-overlay-btn" id="artistPagePlayBtn-${escapeHtml(t.id)}" onclick="window.toggleArtistPageTrackPreview('${escapeHtml(t.previewUrl)}', '${escapeHtml(t.id)}', event)" aria-label="${escapeHtml(t.name)}の試聴を再生">
+                <span class="preview-play-icon">▶</span>
+              </button>
+            ` : ""}
+          </div>
+          <div class="song-info-col">
+            <div class="song-title">${escapeHtml(t.name)}</div>
+            <div class="song-sub">${escapeHtml(t.albumName || t.artists || data.name)}</div>
+          </div>
+          <div class="song-actions-col">
+            ${t.previewUrl ? `
+              <button type="button" class="song-action-pill-btn" id="artistPagePlayPill-${escapeHtml(t.id)}" onclick="window.toggleArtistPageTrackPreview('${escapeHtml(t.previewUrl)}', '${escapeHtml(t.id)}', event)">
+                試聴
+              </button>
+            ` : ""}
+            ${t.spotifyUrl ? `
+              <a href="${escapeHtml(t.spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="song-action-ext-btn" title="Spotifyで聴く">↗</a>
+            ` : ""}
+          </div>
+        </div>
+      `
+        )
+        .join("");
+    }
+  }
+
+  // About Section (AI Curator Insight)
+  if (catchphrase) catchphrase.textContent = data.summary || "";
+  if (bioBody) bioBody.textContent = data.bio || `${data.name}のバイオグラフィー`;
+  if (highlightTags) {
+    const tags = Array.isArray(data.highlights) ? data.highlights : [];
+    if (tags.length > 0) {
+      highlightTags.innerHTML = tags.map((h) => `<span class="artist-highlight-tag">✦ ${escapeHtml(h)}</span>`).join("");
+    } else {
+      highlightTags.innerHTML = "";
+    }
+  }
+}
+
+// Navigation back button listener
+if (typeof document !== "undefined") {
+  const pageBackBtn = document.getElementById("artistPageBack");
+  if (pageBackBtn) {
+    pageBackBtn.addEventListener("click", () => {
+      stopArtistPagePreview();
+      showPage(lastPageBeforeArtistDetail || "homePage");
+    });
+  }
+}
 
 // -------------------------------------------------------------
 // Make Playlist: AI Curator & Hybrid Logic

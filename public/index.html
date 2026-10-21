@@ -148,6 +148,7 @@
             </div>
             <section class="spotify-box" aria-label="Spotify接続">
                 <div id="spotifyStatus" class="spotify-status">Spotify未接続</div>
+                <button id="spotifyConfigButton" class="spotify-config-btn" type="button" aria-label="Spotify Client ID設定">🔑 Spotify ID設定</button>
                 <button id="spotifyLoginButton" class="spotify-login-button" type="button">ログイン</button>
             </section>
         </header>
@@ -369,6 +370,88 @@
         <div id="playlistTracks" aria-live="polite"></div>
     </section>
 
+    <!-- アーティスト専用詳細ページ (Apple Music iOS Style) -->
+    <section id="artistDetailPage" class="page artist-detail-page" aria-labelledby="artistHeroName">
+        <!-- ヒーローヘッダー（シネマティックアートワーク + グラデーション） -->
+        <div class="artist-hero-header">
+            <div class="artist-hero-backdrop-container">
+                <img id="artistHeroBackdrop" class="artist-hero-backdrop" alt="" aria-hidden="true">
+                <div class="artist-hero-overlay"></div>
+            </div>
+
+            <!-- トップナビゲーション（戻るボタン & アクション） -->
+            <div class="artist-hero-nav">
+                <button id="artistPageBack" class="artist-nav-back" type="button" aria-label="戻る">
+                    <span class="back-icon" aria-hidden="true">‹</span>
+                </button>
+                <div class="artist-nav-center">
+                    <span id="artistNavTitle" class="artist-nav-title"></span>
+                </div>
+                <div class="artist-nav-actions">
+                    <a id="artistSpotifyLink" class="artist-nav-pill" target="_blank" rel="noopener noreferrer">
+                        <span class="spotify-logo-dot"></span> Spotify ↗
+                    </a>
+                </div>
+            </div>
+
+            <!-- ヒーローメイン情報 -->
+            <div class="artist-hero-info">
+                <div class="artist-status-tag" id="artistStatusTag">PROFILE</div>
+                <h1 id="artistHeroName" class="artist-hero-title">アーティスト名</h1>
+                <p id="artistHeroGenres" class="artist-hero-genres"></p>
+
+                <!-- ヒーローアクション（「このアーティストで5曲選曲」「選曲リストに追加」） -->
+                <div class="artist-hero-actions">
+                    <button id="artistPickFiveBtn" class="artist-action-btn primary" type="button">
+                        <span class="btn-icon">✦</span> このアーティストで5曲選曲
+                    </button>
+                    <button id="artistAddToListBtn" class="artist-action-btn secondary" type="button">
+                        <span class="btn-icon">+</span> 選曲リストに追加
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- メインコンテンツ領域 -->
+        <div class="artist-detail-body">
+            <!-- 最新リリース / 代表アルバムカード (Apple Music iOSモック準拠) -->
+            <div id="artistLatestReleaseCard" class="artist-glass-card artist-latest-release" style="display:none;">
+                <div class="release-art-wrap">
+                    <img id="artistReleaseImage" class="release-art" alt="">
+                    <span class="release-art-fallback" aria-hidden="true">♫</span>
+                </div>
+                <div class="release-meta">
+                    <span class="release-kicker" id="artistReleaseKicker">LATEST RELEASE</span>
+                    <h3 class="release-title" id="artistReleaseTitle">アルバム名</h3>
+                    <p class="release-sub" id="artistReleaseMeta"></p>
+                </div>
+                <a id="artistReleaseAction" class="release-ext-btn" target="_blank" rel="noopener noreferrer" title="Spotifyで聴く">↗</a>
+            </div>
+
+            <!-- 人気曲ランキング (Top Songs >) -->
+            <div class="artist-section-group">
+                <div class="artist-group-header">
+                    <h2>Top Songs</h2>
+                    <span class="group-arrow">›</span>
+                </div>
+                <div id="artistTopSongsContainer" class="artist-top-songs-list" aria-live="polite"></div>
+            </div>
+
+            <!-- アーティスト・バイオグラフィー & AIインサイト -->
+            <div class="artist-section-group">
+                <div class="artist-group-header">
+                    <h2>About</h2>
+                    <span class="ai-badge-pill">AI Curator Insight</span>
+                </div>
+                <div class="artist-glass-card artist-about-card">
+                    <div id="artistCatchphrase" class="artist-about-catchphrase"></div>
+                    <p id="artistBioBody" class="artist-about-body"></p>
+                    <div id="artistHighlightTags" class="artist-highlight-tags"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- 履歴 -->
     <section id="historyPage" class="page">
         <div class="page-header">
@@ -385,10 +468,63 @@
         <div class="page-header">
             <h1>設定</h1>
         </div>
+
+        <!-- Spotify API 連携設定 (Client ID / Secret 入力) -->
+        <section class="content-box settings-spotify-card" aria-labelledby="spotifySettingsTitle">
+            <div class="settings-card-header">
+                <div class="settings-card-title-group">
+                    <span class="settings-card-icon">🔑</span>
+                    <div>
+                        <h2 id="spotifySettingsTitle">Spotify API 連携設定</h2>
+                        <p class="settings-card-sub">Spotify Client IDを入力してフル機能（曲の再生・検索・プレイリスト・アーティスト詳細）を有効化します。</p>
+                    </div>
+                </div>
+                <span id="spotifyConfigBadge" class="status-badge badge-warning">未設定</span>
+            </div>
+
+            <div class="settings-form-grid">
+                <div class="settings-form-row">
+                    <label for="settingsClientId">Spotify Client ID <span class="required-badge">必須</span></label>
+                    <div class="input-wrapper">
+                        <input type="text" id="settingsClientId" class="settings-text-input" placeholder="例: 32桁の英数字 (4c...)" autocomplete="off" spellcheck="false">
+                    </div>
+                    <span class="field-hint">Spotify Developer Dashboardで作成したアプリの「Client ID」を入力してください。</span>
+                </div>
+
+                <div class="settings-form-row">
+                    <label for="settingsClientSecret">Spotify Client Secret <span class="optional-badge">推奨</span></label>
+                    <div class="input-wrapper with-action">
+                        <input type="password" id="settingsClientSecret" class="settings-text-input" placeholder="Client Secretを入力 (アーティスト情報やアルバムの自動補完用)" autocomplete="off" spellcheck="false">
+                        <button type="button" id="toggleSecretVisibilityBtn" class="field-action-btn" title="表示/非表示">👁️</button>
+                    </div>
+                    <span class="field-hint">サーバー間通信でのトークン取得・アーティスト曲情報取得に使用されます。</span>
+                </div>
+
+                <div class="settings-form-row">
+                    <label for="settingsRedirectUri">Redirect URI (Spotifyダッシュボード登録用)</label>
+                    <div class="input-wrapper with-action">
+                        <input type="text" id="settingsRedirectUri" class="settings-text-input readonly-input" readonly value="">
+                        <button type="button" id="copyRedirectUriBtn" class="field-action-btn copy-btn" title="URLをコピー">コピー</button>
+                    </div>
+                    <span class="field-hint">Spotifyダッシュボードの「Edit Settings」→「Redirect URIs」にこのURLを追加してください。</span>
+                </div>
+            </div>
+
+            <div class="settings-card-actions">
+                <button type="button" id="saveSpotifySettingsBtn" class="primary-btn-save">設定を保存する</button>
+                <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" class="external-portal-btn">Spotify Developer Dashboardを開く ↗</a>
+            </div>
+
+            <div id="settingsFeedback" class="settings-feedback-banner" style="display:none;" role="status"></div>
+        </section>
+
         <section class="content-box settings-box">
-            <button id="clearFavorites" class="danger-button">お気に入りをすべて削除</button>
-            <button id="clearHistory" class="danger-button">履歴を全部削除</button>
-            <button id="logoutButton" class="logout-button">Spotifyからログアウト</button>
+            <h2>データ管理 & アカウント</h2>
+            <div class="settings-button-group">
+                <button id="clearFavorites" class="danger-button">お気に入りをすべて削除</button>
+                <button id="clearHistory" class="danger-button">履歴を全部削除</button>
+                <button id="logoutButton" class="logout-button">Spotifyからログアウト</button>
+            </div>
         </section>
     </section>
 </main>
@@ -531,6 +667,75 @@
         </div>
         <div id="fpQueueList" class="fp-queue-list"></div>
     </aside>
+</div>
+
+<!-- Spotify Client ID 設定モーダル (いつでもどこでも開けるポップアップ) -->
+<div id="spotifyConfigModal" class="spotify-config-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalSpotifyConfigTitle">
+    <div class="spotify-config-modal-backdrop" id="spotifyConfigModalBackdrop"></div>
+    <div class="spotify-config-modal-card">
+        <div class="spotify-modal-header">
+            <div class="spotify-modal-title-group">
+                <span class="spotify-modal-icon">🔑</span>
+                <div>
+                    <h2 id="modalSpotifyConfigTitle">Spotify Client ID 設定</h2>
+                    <p class="spotify-modal-sub">Spotify Client IDを入力して連携機能を有効化します</p>
+                </div>
+            </div>
+            <button id="spotifyConfigModalClose" class="spotify-modal-close-btn" type="button" aria-label="閉じる">✕</button>
+        </div>
+
+        <div class="spotify-modal-body">
+            <div class="spotify-modal-guide-box">
+                <span class="guide-title">📌 かんたん3ステップ:</span>
+                <ol>
+                    <li><a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Spotify Developer Dashboard ↗</a> で無料アプリを作成</li>
+                    <li>ダッシュボードの「Edit Settings」で下記の <strong>Redirect URI</strong> を登録</li>
+                    <li>取得した <strong>Client ID</strong> をここに入力して「保存」！</li>
+                </ol>
+            </div>
+
+            <div class="settings-form-row">
+                <label for="modalClientId">Spotify Client ID <span class="required-badge">必須</span></label>
+                <div class="input-wrapper">
+                    <input type="text" id="modalClientId" class="settings-text-input" placeholder="例: 32桁の英数字 (4c0b8...)" autocomplete="off" spellcheck="false">
+                </div>
+            </div>
+
+            <div class="settings-form-row">
+                <label for="modalClientSecret">Spotify Client Secret <span class="optional-badge">推奨</span></label>
+                <div class="input-wrapper with-action">
+                    <input type="password" id="modalClientSecret" class="settings-text-input" placeholder="Client Secretを入力 (アーティスト情報自動取得用)" autocomplete="off" spellcheck="false">
+                    <button type="button" id="toggleModalSecretVisibilityBtn" class="field-action-btn" title="表示/非表示">👁️</button>
+                </div>
+            </div>
+
+            <div class="settings-form-row">
+                <label for="modalRedirectUri">Redirect URI (Spotifyダッシュボードに登録)</label>
+                <div class="input-wrapper with-action">
+                    <input type="text" id="modalRedirectUri" class="settings-text-input readonly-input" readonly value="">
+                    <button type="button" id="copyModalRedirectUriBtn" class="field-action-btn copy-btn" title="URLをコピー">コピー</button>
+                </div>
+            </div>
+
+            <div id="modalConfigFeedback" class="settings-feedback-banner" style="display:none;" role="status"></div>
+        </div>
+
+        <div class="spotify-modal-footer">
+            <button type="button" id="saveModalSpotifyConfigBtn" class="primary-btn-save">設定を保存する</button>
+            <button type="button" id="spotifyConfigModalCancelBtn" class="secondary-btn-cancel">閉じる</button>
+        </div>
+    </div>
+</div>
+
+<!-- アーティスト詳細モーダル（バイオグラフィー & 人気曲） -->
+<div id="artistModal" class="artist-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="artistModalName">
+    <div class="artist-modal-backdrop" id="artistModalBackdrop"></div>
+    <div class="artist-modal-container">
+        <button id="artistModalClose" class="artist-modal-close" type="button" aria-label="モーダルを閉じる">✕</button>
+        <div id="artistModalContent" class="artist-modal-body">
+            <!-- 動的コンテンツ（バイオグラフィー・人気曲） -->
+        </div>
+    </div>
 </div>
 
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
