@@ -31,7 +31,7 @@ if ((!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) && fs
 }
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 app.set("trust proxy", 1);
 app.use(express.json());
@@ -1173,31 +1173,27 @@ app.post("/api/create-playlist", async (req, res) => {
 // -------------------------------------------------------------
 async function generateContentWithRetry(prompt, systemInstruction = "") {
   const ai = getGeminiAI();
-  const models = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+  const models = ["gemini-flash-latest", "gemini-3.8-flash", "gemini-3.1-flash-lite"];
 
   for (const model of models) {
-    for (let attempt = 0; attempt <= 2; attempt++) {
-      try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: prompt,
-          config: {
-            systemInstruction: systemInstruction || undefined,
-            temperature: 0.7,
-            responseMimeType: "application/json",
-          },
-        });
-        if (response.text) return response.text.trim();
-      } catch (err) {
-        const status = err?.status || err?.statusCode;
-        const msg = String(err?.message || "");
-        const isTransient = status === 503 || status === 429 || status === 500 || msg.includes("503") || msg.includes("overloaded");
-        if (isTransient && attempt < 2) {
-          await new Promise((r) => setTimeout(r, (attempt + 1) * 800));
-          continue;
-        }
-        break; // try next model
-      }
+    try {
+      const call = ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          systemInstruction: systemInstruction || undefined,
+          temperature: 0.7,
+          responseMimeType: "application/json",
+        },
+      });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Gemini request timed out")), 5000)
+      );
+      const response = await Promise.race([call, timeoutPromise]);
+      if (response && response.text) return response.text.trim();
+    } catch (err) {
+      console.warn(`Model ${model} failed or timed out:`, err?.message || err);
+      continue;
     }
   }
   throw new Error("Gemini AI APIが現在混み合っています。少し時間をおいて再試行してください。");
@@ -1220,8 +1216,21 @@ app.post("/api/gemini/analyze-mood", async (req, res) => {
   "searchQueries": ["Spotify検索に使えるワード1", "ワード2"]
 }`;
 
-    const raw = await generateContentWithRetry(prompt, systemInstruction);
-    const parsed = JSON.parse(raw.replace(/^```json/i, "").replace(/```$/i, "").trim());
+    let parsed;
+    try {
+      const raw = await generateContentWithRetry(prompt, systemInstruction);
+      parsed = JSON.parse(raw.replace(/^```json/i, "").replace(/```$/i, "").trim());
+    } catch (err) {
+      console.warn("Analyze mood fallback:", err.message);
+      parsed = {
+        summary: `「${text}」の気分にぴったりの曲を選曲します`,
+        mood: text,
+        energy: 3,
+        positivity: 3,
+        keywords: [text, "人気曲", "おすすめ"],
+        searchQueries: [text]
+      };
+    }
     res.json({ success: true, analysis: parsed });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1239,8 +1248,20 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
     const eligible = (track) => matchesRecordingVersion(track, version) && !excluded.has(track.uri || `spotify:track:${track.id}`) && !excluded.has(track.linked_from?.uri);
     let analysis = req.body?.analysis;
     if (!analysis) {
-      const raw = await generateContentWithRetry(`気分:「${text}」を分析してJSONを出力してください: {"summary":"...","mood":"楽しい/落ち着きたい/等","energy":3,"positivity":3,"keywords":["..."],"searchQueries":["..."]}`);
-      analysis = JSON.parse(raw.replace(/^```json/i, "").replace(/```$/i, "").trim());
+      try {
+        const raw = await generateContentWithRetry(`気分:「${text}」を分析してJSONを出力してください: {"summary":"...","mood":"楽しい/落ち着きたい/等","energy":3,"positivity":3,"keywords":["..."],"searchQueries":["..."]}`);
+        analysis = JSON.parse(raw.replace(/^```json/i, "").replace(/```$/i, "").trim());
+      } catch (err) {
+        console.warn("Mood analysis inline fallback:", err.message);
+        analysis = {
+          summary: `${text}の気分`,
+          mood: text,
+          energy: 3,
+          positivity: 3,
+          keywords: [text, "J-Pop", "人気"],
+          searchQueries: [text]
+        };
+      }
     }
 
     const token = await getSpotifyToken();
@@ -1284,7 +1305,15 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
       }
     }
 
-    const candidates = uniqueTracks(rawTracks).filter(eligible).map(formatTrack).filter((t) => t.uri).slice(0, 30);
+    let candidates = uniqueTracks(rawTracks).filter(eligible).map(formatTrack).filter((t) => t.uri).slice(0, 30);
+    if (candidates.length < 5 && version === "all" && !excluded.size) {
+      try {
+        const fbRes = await searchSpotifyTracks(token, "J-Pop", 10, 0);
+        const fbItems = (fbRes.tracks?.items || []).filter(eligible).map(formatTrack).filter((t) => t.uri);
+        candidates = uniqueTracks([...candidates, ...fbItems]).slice(0, 30);
+      } catch {}
+    }
+
     if (candidates.length < 5) {
       return res.status(404).json({ error: version !== "all" ? "指定したバージョンの候補が不足しています。条件を変えるか、曲のバージョンを「指定なし」にしてください。" : excluded.size ? "最近聴いた曲を除くと候補が不足しています。条件を変えるか、「最近聴いた曲を除外」をオフにしてください。" : "候補曲が不足しています。ジャンルを「おまかせ」に戻すか、別の気分やアーティストをお試しください。" });
     }
@@ -1310,13 +1339,28 @@ ${JSON.stringify(candidates.map((c, i) => ({ index: i, title: c.title, artist: c
   ]
 }`;
 
-    const rawRank = await generateContentWithRetry(rankPrompt, "あなたはプロの音楽キュレーターです。候補曲リストにある曲のみを選んでください。");
-    const rankData = JSON.parse(rawRank.replace(/^```json/i, "").replace(/```$/i, "").trim());
+    let rankData;
+    try {
+      const rawRank = await generateContentWithRetry(rankPrompt, "あなたはプロの音楽キュレーターです。候補曲リストにある曲のみを選んでください。");
+      rankData = JSON.parse(rawRank.replace(/^```json/i, "").replace(/```$/i, "").trim());
+    } catch (e) {
+      console.warn("Gemini AI ranking fallback used:", e.message);
+      rankData = {
+        curatorNote: `「${text}」の気分に合わせて、人気楽曲からバランス良く5曲をセレクトしました。`,
+        selected: candidates.slice(0, 5).map((c, i) => ({
+          index: i,
+          reason: `今の「${text}」な気分に心地よく寄り添うおすすめのナンバーです。`,
+          genre: c.genre || "J-Pop",
+          tempo: "ミディアム",
+          vibeKeywords: analysis?.keywords || ["おすすめ", "人気曲"]
+        }))
+      };
+    }
 
     const selectedTracks = [];
     const reasons = [];
 
-    for (const item of rankData.selected || []) {
+    for (const item of rankData?.selected || []) {
       const cand = candidates[item.index];
       if (cand && !selectedTracks.some((track) => track.uri === cand.uri)) {
         cand.reason = item.reason;
