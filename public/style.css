@@ -3192,3 +3192,75 @@ button.artist-group-header.artist-group-toggle:hover .group-arrow {
 
 
 input[type="search"] { -webkit-appearance: none; appearance: none; }
+
+/* Artist Albums Grid */
+.artist-albums-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.artist-album-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.artist-album-card:hover {
+  background: var(--hover);
+  border-color: var(--green);
+  transform: translateY(-2px);
+}
+.artist-album-art-wrap {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--input);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.artist-album-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.artist-album-art-fallback {
+  font-size: 24px;
+  color: var(--muted);
+}
+.artist-album-info {
+  min-width: 0;
+}
+.artist-album-title {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.artist-album-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Track row bottom separator lines (Apple Music / Spotify compact style) */
+.track-card,
+.artist-top-song-row,
+.modal-track-row,
+.library-track-item {
+  border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08)) !important;
+}
+

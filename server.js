@@ -905,6 +905,35 @@ app.get("/api/artist-details", async (req, res) => {
       };
     }
 
+    let albums = [];
+    if (cleanId) {
+      try {
+        const albRes = await spotifyFetch(
+          `https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=50`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        albums = (albRes.items || []).map((alb) => ({
+          id: alb.id,
+          name: alb.name,
+          releaseDate: alb.release_date || "",
+          totalTracks: alb.total_tracks || 1,
+          type: alb.album_type === "single" ? "Single" : "Album",
+          image: alb.images?.[0]?.url || alb.images?.[1]?.url || image || "",
+          spotifyUrl: alb.external_urls?.spotify || `https://open.spotify.com/album/${alb.id}`,
+        }));
+        albums.sort((a, b) => new Date(b.releaseDate || "1970") - new Date(a.releaseDate || "1970"));
+        const seenNames = new Set();
+        albums = albums.filter(a => {
+          const key = a.name.toLowerCase().trim();
+          if (seenNames.has(key)) return false;
+          seenNames.add(key);
+          return true;
+        });
+      } catch (err) {
+        console.warn("Spotify artist albums fetch error:", err.message);
+      }
+    }
+
     const payload = {
       id: artistId,
       name: artistName,
@@ -918,6 +947,7 @@ app.get("/api/artist-details", async (req, res) => {
       highlights,
       topTracks,
       latestRelease,
+      albums,
     };
 
     artistDetailsCache.set(cacheKey, { timestamp: Date.now(), data: payload });
@@ -1117,11 +1147,11 @@ app.get("/api/genre-tracks", async (req, res) => {
 app.get("/api/search", async (req, res) => {
   try {
     const q = String(req.query.q || "").trim().slice(0, 200);
-    if (!q) return res.json({ tracks: [], artists: [], next: false });
+    if (!q) return res.json({ tracks: [], artists: [], albums: [], next: false });
     const offset = Math.min(Math.max(parseInt(req.query.offset, 10) || 0, 0), 1000);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 10); // Spotifyは1回10件まで
     const token = await getSpotifyToken();
-    const type = offset === 0 ? "track,artist" : "track";
+    const type = offset === 0 ? "track,artist,album" : "track";
     const data = await spotifyFetch(
       `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=${type}&limit=${limit}&offset=${offset}&market=JP`,
       { headers: { Authorization: `Bearer ${token}` } }
@@ -1133,6 +1163,16 @@ app.get("/api/search", async (req, res) => {
         name: a.name,
         image: a.images?.[0]?.url || "",
         spotifyUrl: a.external_urls?.spotify || "",
+      })),
+      albums: (data.albums?.items || []).map((alb) => ({
+        id: alb.id,
+        name: alb.name,
+        releaseDate: alb.release_date || "",
+        totalTracks: alb.total_tracks || 1,
+        type: alb.album_type === "single" ? "Single" : "Album",
+        artistName: (alb.artists || []).map(a => a.name).join(", "),
+        image: alb.images?.[0]?.url || alb.images?.[1]?.url || "",
+        spotifyUrl: alb.external_urls?.spotify || `https://open.spotify.com/album/${alb.id}`,
       })),
       next: Boolean(data.tracks?.next),
       offset,

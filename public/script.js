@@ -1466,6 +1466,31 @@ function renderArtistDetailPageContent(data) {
 
   updateTopSongsDisplay();
 
+  // Artist Albums (Newest First)
+  const albumsContainer = document.getElementById("artistAlbumsContainer");
+  if (albumsContainer) {
+    const albums = Array.isArray(data.albums) ? data.albums : [];
+    if (albums.length === 0) {
+      albumsContainer.innerHTML = `<div class="empty-message">アルバム情報はありません</div>`;
+    } else {
+      albumsContainer.innerHTML = albums
+        .map(
+          (alb) => `
+        <a href="${escapeHtml(alb.spotifyUrl || data.spotifyUrl || "https://open.spotify.com")}" target="_blank" rel="noopener noreferrer" class="artist-album-card" title="${escapeHtml(alb.name)}をSpotifyで開く">
+          <div class="artist-album-art-wrap">
+            ${alb.image ? `<img src="${escapeHtml(alb.image)}" alt="" class="artist-album-art" onerror="this.style.display='none'">` : `<span class="artist-album-art-fallback">♫</span>`}
+          </div>
+          <div class="artist-album-info">
+            <div class="artist-album-title">${escapeHtml(alb.name)}</div>
+            <div class="artist-album-meta">${escapeHtml(alb.releaseDate ? alb.releaseDate.slice(0, 4) : "")}${alb.totalTracks ? ` · ${alb.totalTracks}曲` : ""}</div>
+          </div>
+        </a>
+      `
+        )
+        .join("");
+    }
+  }
+
   // About Section (AI Curator Insight)
   if (catchphrase) catchphrase.textContent = data.summary || "";
   if (bioBody) bioBody.textContent = data.bio || `${data.name}のバイオグラフィー`;
@@ -3021,17 +3046,27 @@ async function fetchSearchPage(query, offset, token, signal) {
     const res = await fetchWithRetry(`/api/search?q=${encodeURIComponent(query)}&offset=${offset}&limit=${SEARCH_PAGE_SIZE}`, { signal });
     if (!res.ok) throw Object.assign(new Error(`Search ${res.status}`), { status: res.status });
     const data = await res.json();
-    return { tracks: data.tracks || [], artist: data.artists?.[0] || null, next: Boolean(data.next) };
+    return { tracks: data.tracks || [], artist: data.artists?.[0] || null, albums: data.albums || [], next: Boolean(data.next) };
   };
   if (!token) return viaServer();
 
-  const type = offset === 0 ? "track,artist" : "track";
+  const type = offset === 0 ? "track,artist,album" : "track";
   const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=${type}&limit=${SEARCH_PAGE_SIZE}&offset=${offset}&market=JP`;
   const res = await fetchWithRetry(url, { headers: { Authorization: `Bearer ${token}` }, signal });
   if (res.status === 401) return viaServer(); // トークン切れでも検索自体は続ける
   if (!res.ok) throw Object.assign(new Error(`Spotify ${res.status}`), { status: res.status });
   const data = await res.json();
-  return { tracks: data.tracks?.items || [], artist: data.artists?.items?.[0] || null, next: Boolean(data.tracks?.next) };
+  const albums = (data.albums?.items || []).map((alb) => ({
+    id: alb.id,
+    name: alb.name,
+    releaseDate: alb.release_date || "",
+    totalTracks: alb.total_tracks || 1,
+    type: alb.album_type === "single" ? "Single" : "Album",
+    artistName: (alb.artists || []).map(a => a.name).join(", "),
+    image: alb.images?.[0]?.url || alb.images?.[1]?.url || "",
+    spotifyUrl: alb.external_urls?.spotify || `https://open.spotify.com/album/${alb.id}`,
+  }));
+  return { tracks: data.tracks?.items || [], artist: data.artists?.items?.[0] || null, albums, next: Boolean(data.tracks?.next) };
 }
 
 function dedupeNormalizedTracks(rawTracks, seen = new Set()) {
@@ -3078,18 +3113,40 @@ function renderSearchArtistCard(matchedArtist, box) {
   box.appendChild(artCard);
 }
 
-// 検索結果（アーティストカード + 曲の表 + 続きを読み込むセンサー）を描画する
+// 検索結果（アーティストカード + アルバムセクション + 曲の表 + 続きを読み込むセンサー）を描画する
 function renderSearchResults(query, state, box) {
   if (searchMoreObserver) {
     searchMoreObserver.disconnect();
     searchMoreObserver = null;
   }
   box.innerHTML = "";
-  if (!state.artist && !state.tracks.length) {
-    box.innerHTML = `<div class="empty-message">「${escapeHtml(query)}」に一致する曲やアーティストが見つかりませんでした</div>`;
+  if (!state.artist && !state.tracks.length && (!state.albums || state.albums.length === 0)) {
+    box.innerHTML = `<div class="empty-message">「${escapeHtml(query)}」に一致する曲、アーティスト、アルバムが見つかりませんでした</div>`;
     return;
   }
   if (state.artist) renderSearchArtistCard(state.artist, box);
+
+  if (Array.isArray(state.albums) && state.albums.length > 0) {
+    const albumSection = document.createElement("div");
+    albumSection.className = "search-albums-section";
+    albumSection.innerHTML = `
+      <div class="search-section-title" style="font-size:14px;font-weight:700;margin:12px 0 8px;color:var(--text);">アルバム</div>
+      <div class="artist-albums-grid">
+        ${state.albums.map(alb => `
+          <a href="${escapeHtml(alb.spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="artist-album-card" title="${escapeHtml(alb.name)}をSpotifyで開く">
+            <div class="artist-album-art-wrap">
+              ${alb.image ? `<img src="${escapeHtml(alb.image)}" alt="" class="artist-album-art" onerror="this.style.display='none'">` : `<span class="artist-album-art-fallback">♫</span>`}
+            </div>
+            <div class="artist-album-info">
+              <div class="artist-album-title">${escapeHtml(alb.name)}</div>
+              <div class="artist-album-meta">${escapeHtml(alb.artistName || "")} · ${escapeHtml(alb.releaseDate ? alb.releaseDate.slice(0, 4) : "")}</div>
+            </div>
+          </a>
+        `).join("")}
+      </div>
+    `;
+    box.appendChild(albumSection);
+  }
 
   if (state.tracks.length) {
     const trackSection = document.createElement("div");
@@ -3220,7 +3277,8 @@ async function runSongSearch(query, box) {
 
     const seen = new Set();
     const tracks = dedupeNormalizedTracks(pages.flatMap((p) => p.tracks), seen);
-    const state = { tracks, seen, artist, next, offset: pages.length * SEARCH_PAGE_SIZE, loadingMore: false };
+    const albums = pages[0]?.albums || [];
+    const state = { tracks, seen, artist, albums, next, offset: pages.length * SEARCH_PAGE_SIZE, loadingMore: false };
     searchCacheSet(query, state);
     renderSearchResults(query, state, box);
   } catch (e) {
