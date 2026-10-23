@@ -64,7 +64,7 @@ button,a,input,select,textarea { font:inherit}
 
 .playlist-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
 
-.track-card { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6px 12px; min-height:50px; border-radius:8px; background:transparent; border-bottom:1px solid rgba(255,255,255,.05); margin-bottom:2px; transition:background 0.15s}
+.track-card { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6px 12px; min-height:50px; border-radius:8px; background:transparent; border-bottom:1px solid var(--line); margin-bottom:2px; transition:background 0.15s}
 
 .track-card:hover { background:var(--hover, #192020)}
 
@@ -423,7 +423,7 @@ body .make-playlist-button:disabled { opacity: .6; cursor: wait !important; }
 /* ===== おすすめ結果 / 曲カード ===== */
 body .ai-curator-note { background: var(--note-bg); border-color: var(--note-border); color: var(--note-text); }
 body .ai-curator-note-title { color: var(--accent-text); }
-body .track-card { background: var(--card); border-color: var(--border); }
+body .track-card { background: var(--card); border-color: var(--line); }
 body .track-card:hover { background: var(--hover); }
 .track-info { min-width: 0; }
 body .track-title { color: var(--text); }
@@ -772,7 +772,7 @@ body #favoritesList, body #historyList { grid-template-columns: repeat(auto-fit,
   --text: #1d1d1f; --muted: #707076; --sub: #57575d; --border: #e4e4e7;
   --sidebar: #f6f6f7; --hover: #ececef; --green: #d6002b; --solid: #d6002b;
   --solid-text: #fff; --accent-text: #d6002b; --accent-soft: #fce9ee; --btn: #eeeef0;
-  --shadow: transparent; --panel-shadow: none;
+  --shadow: transparent; --panel-shadow: none; --line: #c4c4cb;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
   background: var(--bg) !important;
 }
@@ -780,7 +780,7 @@ body #favoritesList, body #historyList { grid-template-columns: repeat(auto-fit,
   --bg: #1c1c1e; --panel: #1c1c1e; --card: #29292c; --input: #29292c;
   --text: #f5f5f7; --muted: #a5a5ad; --sub: #c4c4ca; --border: #38383c;
   --sidebar: #242426; --hover: #343437; --green: #ff5d76; --solid: #e02240;
-  --accent-text: #ff5d76; --accent-soft: #44242c; --btn: #343437;
+  --accent-text: #ff5d76; --accent-soft: #44242c; --btn: #343437; --line: #5a5a60;
 }
 body #app { padding: 44px 48px 200px !important; }
 #homePage { max-width: 1100px; }
@@ -919,6 +919,7 @@ body .menu-link[data-page="settingsPage"] { --home-nav-icon: url("data:image/svg
   --input: #0e1415;
   --sidebar: #182022;
   --border: rgba(255,255,255,.10);
+  --line: rgba(255,255,255,.24);
   --text: #f4f7f7;
   --muted: #8a9595;
   --sub: #aeb8b8;
@@ -951,6 +952,7 @@ body .menu-link[data-page="settingsPage"] { --home-nav-icon: url("data:image/svg
   --input: #ffffff;
   --sidebar: #ffffff;
   --border: rgba(0,0,0,.14);
+  --line: rgba(0,0,0,.28);
   --text: #162022;
   --muted: #5a6769;
   --sub: #3a4749;
@@ -996,7 +998,7 @@ body .spotify-playlist-name { font-weight: 500 !important; }
 body .spotify-playlist-count { margin-top: 4px !important; }
 body .spotify-playlist-arrow { display: none; }
 body #favoritesList, body #historyList { display: block !important; }
-.page .track-card { padding: 8px 0; background: transparent; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; margin: 0; }
+.page .track-card { padding: 8px 0; background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; margin: 0; }
 .track-main { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; min-width: 0; min-height: 44px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
 .track-main .track-image { width: 44px; height: 44px; border-radius: 5px; }
 .track-main .track-title, .track-main .track-artist { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
@@ -1578,7 +1580,7 @@ body .player-button .player-icon, body .menu-player-button .player-icon { width:
   justify-content: space-between !important;
   gap: 12px;
   padding: 8px 12px 10px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--line);
   margin-bottom: 4px;
   font-size: 11.5px;
   font-weight: 700;
@@ -1633,7 +1635,7 @@ body .player-button .player-icon, body .menu-player-button .player-icon { width:
   border-radius: 8px !important;
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid var(--line) !important;
   box-shadow: none !important;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -3189,3 +3191,4 @@ button.artist-group-header.artist-group-toggle:hover .group-arrow {
 
 
 
+input[type="search"] { -webkit-appearance: none; appearance: none; }

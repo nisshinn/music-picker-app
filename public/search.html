@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>検索 - Music Picker</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="icon" type="image/png" href="icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#d6002b">
+    <link rel="apple-touch-icon" href="/icon-192.png">
 </head>
 <body>
     <button id="menuButton" class="menu-button">☰</button>
@@ -21,23 +23,23 @@
 
     <main class="sub-page search-page">
         <div class="page-header">
-            <button class="back-button" onclick="location.href='index.html'">←</button>
+            <button class="back-button" type="button" aria-label="ホームに戻る" onclick="location.href='index.html'">←</button>
             <h1>🔍 検索</h1>
         </div>
         <p class="subtitle">曲やアーティストを検索</p>
 
-        <div class="music-search-box">
-            <input type="text" id="musicSearchInput" placeholder="曲名・アーティスト名を入力..." autocomplete="off">
+        <div class="music-search-box" role="search">
+            <input type="search" id="musicSearchInput" placeholder="曲名・アーティスト名を入力..." autocomplete="off" enterkeyhint="search" aria-label="曲名・アーティスト名で検索">
         </div>
 
-        <section id="searchResults" class="search-results">
+        <section id="searchResults" class="search-results" aria-live="polite" aria-busy="false">
             <p class="search-message">曲名やアーティスト名を入力して検索してください</p>
         </section>
     </main>
 
-    <nav class="bottom-nav">
+    <nav class="bottom-nav" aria-label="メインメニュー">
         <button onclick="location.href='index.html'" class="nav-item"><span>🏠</span><small>ホーム</small></button>
-        <button onclick="location.href='search.html'" class="nav-item active"><span>🔍</span><small>検索</small></button>
+        <button onclick="location.href='search.html'" class="nav-item active" aria-current="page"><span>🔍</span><small>検索</small></button>
         <button onclick="location.href='favorites.html'" class="nav-item"><span>❤️</span><small>お気に入り</small></button>
         <button onclick="location.href='top-tracks.html'" class="nav-item"><span>🔥</span><small>TOP曲</small></button>
     </nav>

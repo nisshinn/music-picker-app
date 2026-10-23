@@ -7,9 +7,7 @@
     <meta name="description" content="A web application to discover and pick music using Spotify and Google Gemini AI.">
     <meta property="og:title" content="Music Picker - Spotify × Gemini AI">
     <meta property="og:description" content="A web application to discover and pick music using Spotify and Google Gemini AI.">
-    <link rel="icon" type="image/svg+xml" href="/icon.svg">
     <link rel="icon" type="image/png" href="/icon.png">
-    <link rel="apple-touch-icon" href="/icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Music Picker">
     <link rel="stylesheet" href="/style.css">
@@ -18,6 +16,9 @@
         try { document.documentElement.dataset.theme = localStorage.getItem("music_picker_theme") === "night" ? "night" : "ocean"; }
         catch (e) { document.documentElement.dataset.theme = "ocean"; }
     </script>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#d6002b">
+    <link rel="apple-touch-icon" href="/icon-192.png">
 </head>
 <body>
 
@@ -305,7 +306,7 @@
             <p>Spotify公式カタログから曲を探します</p>
         </div>
         <section class="content-box">
-            <input type="text" id="songSearchInput" class="big-search" placeholder="曲名・アーティスト名を入力..." autocomplete="off">
+            <input type="search" id="songSearchInput" class="big-search" placeholder="曲名・アーティスト名を入力..." autocomplete="off" enterkeyhint="search" aria-label="曲名・アーティスト名で検索">
             <button id="songSearchButton" class="search-button">検索</button>
             <div id="searchResults" class="search-results"></div>
         </section>

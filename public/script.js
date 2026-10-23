@@ -2862,10 +2862,13 @@ async function fetchSpotifyPages(url, cancelled = () => false) {
 }
 
 function spotifyReadError(error) {
-  if (error.status === 401) return "Spotifyにログインし直してください。";
-  if (error.status === 403) return "この内容へのアクセスが許可されていません。Spotifyの権限やプレイリストの共有設定を確認してください。";
-  if (error.status === 404) return "プレイリストが見つからないか、曲の取得に対応していません。Spotifyで開いて確認してください。";
-  if (error.status === 429) return "Spotifyへのアクセスが集中しています。時間をおいて再度お試しください。";
+  const status = error?.status;
+  if (status === 401) return "Spotifyにログインし直してください。";
+  if (status === 403) return "この内容へのアクセスが許可されていません。Spotifyの権限やプレイリストの共有設定を確認してください。";
+  if (status === 404) return "プレイリストが見つからないか、曲の取得に対応していません。Spotifyで開いて確認してください。";
+  if (status === 429) return "Spotifyへのアクセスが集中しています。時間をおいて再度お試しください。";
+  if (status >= 500) return "Spotify側で一時的な問題が起きています。しばらくしてからお試しください。";
+  if (error?.name === "TypeError") return "インターネットに接続できません。通信状況を確認してください。";
   return "取得に失敗しました。通信状況を確認して再度お試しください。";
 }
 
@@ -2985,139 +2988,244 @@ function initSearch() {
   });
 }
 
-// Spotifyの検索は1回10件までなので、offsetをずらして複数ページ取得し、20曲以上そろえる
+// Spotifyの検索は1回10件までなので、offsetをずらして取得する。
+// 最初に20曲を表示し、下までスクロールしたら続きを自動で読み込む（無限スクロール）。
 const SEARCH_PAGE_SIZE = 10;
-const SEARCH_PAGES = 3; // 10 x 3 = 最大30曲
+const SEARCH_INITIAL_PAGES = 2; // 10 x 2 = まず20曲
+const SEARCH_MAX_TRACKS = 200; // 読み込みすぎ防止の上限
+const SEARCH_CACHE_MAX = 30;
+const searchCache = new Map(); // 同じ検索語は再取得しない
+let searchAbort = null;
+let searchMoreObserver = null;
+
+function searchCacheSet(key, value) {
+  if (searchCache.has(key)) searchCache.delete(key);
+  searchCache.set(key, value);
+  while (searchCache.size > SEARCH_CACHE_MAX) searchCache.delete(searchCache.keys().next().value);
+}
+
+// 429(混雑)のときは Retry-After を見て短く待ち、1回だけ再試行する
+async function fetchWithRetry(url, options = {}, retries = 1) {
+  const response = await fetch(url, options);
+  if (response.status === 429 && retries > 0 && !options.signal?.aborted) {
+    const wait = Math.min(Number(response.headers?.get?.("Retry-After")) || 1, 3);
+    await new Promise((resolve) => setTimeout(resolve, wait * 1000));
+    return fetchWithRetry(url, options, retries - 1);
+  }
+  return response;
+}
+
+// 1ページ分を取得する。ログイン中はSpotifyへ直接、未ログインやトークン失効時はサーバーの /api/search を使う
+async function fetchSearchPage(query, offset, token, signal) {
+  const viaServer = async () => {
+    const res = await fetchWithRetry(`/api/search?q=${encodeURIComponent(query)}&offset=${offset}&limit=${SEARCH_PAGE_SIZE}`, { signal });
+    if (!res.ok) throw Object.assign(new Error(`Search ${res.status}`), { status: res.status });
+    const data = await res.json();
+    return { tracks: data.tracks || [], artist: data.artists?.[0] || null, next: Boolean(data.next) };
+  };
+  if (!token) return viaServer();
+
+  const type = offset === 0 ? "track,artist" : "track";
+  const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=${type}&limit=${SEARCH_PAGE_SIZE}&offset=${offset}&market=JP`;
+  const res = await fetchWithRetry(url, { headers: { Authorization: `Bearer ${token}` }, signal });
+  if (res.status === 401) return viaServer(); // トークン切れでも検索自体は続ける
+  if (!res.ok) throw Object.assign(new Error(`Spotify ${res.status}`), { status: res.status });
+  const data = await res.json();
+  return { tracks: data.tracks?.items || [], artist: data.artists?.items?.[0] || null, next: Boolean(data.tracks?.next) };
+}
+
+function dedupeNormalizedTracks(rawTracks, seen = new Set()) {
+  return normalizeTracks(rawTracks).filter((t) => {
+    const key = t.id || t.uri;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function renderSearchArtistCard(matchedArtist, box) {
+  const artImg = matchedArtist.images?.[0]?.url || matchedArtist.image || "";
+  const artCard = document.createElement("div");
+  artCard.className = "search-artist-card";
+  artCard.setAttribute("role", "button");
+  artCard.setAttribute("tabindex", "0");
+  artCard.setAttribute("aria-label", `${matchedArtist.name}のアーティストページを開く`);
+  artCard.innerHTML = `
+    <div class="search-artist-left">
+      ${artImg ? `<img src="${escapeHtml(artImg)}" alt="" class="search-artist-avatar">` : `<span class="search-artist-avatar-fallback">♫</span>`}
+      <div class="search-artist-text">
+        <span class="search-artist-kicker">アーティスト</span>
+        <span class="search-artist-name">${escapeHtml(matchedArtist.name)}</span>
+        <span class="search-artist-meta">${matchedArtist.followers?.total ? `${Number(matchedArtist.followers.total).toLocaleString()} 人のフォロワー` : "アーティスト専用ページを表示"}</span>
+      </div>
+    </div>
+    <div class="search-artist-arrow-btn">
+      <span>詳細</span>
+      <span class="arrow-glyph">›</span>
+    </div>
+  `;
+  artCard.addEventListener("click", () => {
+    if (typeof window.openArtistDetailPage === "function") {
+      window.openArtistDetailPage({ id: matchedArtist.id, name: matchedArtist.name, image: artImg });
+    }
+  });
+  artCard.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      artCard.click();
+    }
+  });
+  box.appendChild(artCard);
+}
+
+// 検索結果（アーティストカード + 曲の表 + 続きを読み込むセンサー）を描画する
+function renderSearchResults(query, state, box) {
+  if (searchMoreObserver) {
+    searchMoreObserver.disconnect();
+    searchMoreObserver = null;
+  }
+  box.innerHTML = "";
+  if (!state.artist && !state.tracks.length) {
+    box.innerHTML = `<div class="empty-message">「${escapeHtml(query)}」に一致する曲やアーティストが見つかりませんでした</div>`;
+    return;
+  }
+  if (state.artist) renderSearchArtistCard(state.artist, box);
+
+  if (state.tracks.length) {
+    const trackSection = document.createElement("div");
+    trackSection.className = "search-tracks-section";
+    const tableHeader = document.createElement("div");
+    tableHeader.className = "apple-track-table-header";
+    tableHeader.innerHTML = `
+      <span class="th-col-title">曲</span>
+      <span class="th-col-artist">アーティスト</span>
+      <span class="th-col-album">アルバム</span>
+      <span class="th-col-duration">時間</span>
+      <span class="th-col-actions"></span>
+    `;
+    trackSection.appendChild(tableHeader);
+    // state.tracks を再生キューとして共有するので、後から追加した曲も続けて再生できる
+    state.tracks.forEach((t, i) => trackSection.appendChild(createTrackCard(t, i, state.tracks)));
+    box.appendChild(trackSection);
+
+    const more = document.createElement("div");
+    more.className = "search-more";
+    more.style.cssText = "text-align:center;padding:16px 0;color:var(--muted);font-size:12px;";
+    box.appendChild(more);
+    state.trackSection = trackSection;
+    state.moreEl = more;
+    updateSearchMore(query, state, box);
+  }
+}
+
+function updateSearchMore(query, state, box) {
+  const more = state.moreEl;
+  if (!more) return;
+  if (!state.next || state.tracks.length >= SEARCH_MAX_TRACKS) {
+    more.textContent = state.tracks.length ? `${state.tracks.length}曲` : "";
+    return;
+  }
+  more.innerHTML = "";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "search-more-button";
+  btn.textContent = state.loadingMore ? "読み込み中..." : "もっと見る";
+  btn.style.cssText = "padding:10px 22px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;font-size:13px;";
+  btn.addEventListener("click", () => loadMoreSearch(query, state, box));
+  more.appendChild(btn);
+  // 画面の下に来たら自動で続きを読み込む
+  if (typeof IntersectionObserver === "function") {
+    searchMoreObserver = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) loadMoreSearch(query, state, box);
+    }, { rootMargin: "300px" });
+    searchMoreObserver.observe(more);
+  }
+}
+
+async function loadMoreSearch(query, state, box) {
+  if (state.loadingMore || !state.next) return;
+  if (searchCache.get(query) !== state) return; // 別の検索に切り替わった
+  state.loadingMore = true;
+  if (searchMoreObserver) searchMoreObserver.disconnect();
+  updateSearchMore(query, state, box);
+  const signal = searchAbort?.signal;
+  try {
+    const token = await getFreshSpotifyToken(false);
+    const page = await fetchSearchPage(query, state.offset, token, signal);
+    if (signal?.aborted || searchCache.get(query) !== state) return;
+    state.offset += SEARCH_PAGE_SIZE;
+    state.next = page.next;
+    const fresh = dedupeNormalizedTracks(page.tracks, state.seen);
+    const startIndex = state.tracks.length;
+    state.tracks.push(...fresh);
+    fresh.forEach((t, i) => state.trackSection.appendChild(createTrackCard(t, startIndex + i, state.tracks)));
+  } catch (e) {
+    if (e?.name === "AbortError") return;
+    state.moreEl.textContent = spotifyReadError(e);
+    state.loadingMore = false;
+    return;
+  }
+  state.loadingMore = false;
+  updateSearchMore(query, state, box);
+}
 
 async function runSongSearch(query, box) {
   if (!query) {
+    searchAbort?.abort();
     box.innerHTML = `<div class="empty-message">曲名やアーティスト名を入力してください</div>`;
     return;
   }
   const reqId = ++searchRequestId;
+  // 入力のたびに前の通信を中断する（古い結果が後から表示されるのも防ぐ）
+  searchAbort?.abort();
+  searchAbort = typeof AbortController === "function" ? new AbortController() : null;
+  const signal = searchAbort?.signal;
+
+  const cached = searchCache.get(query);
+  if (cached) {
+    renderSearchResults(query, cached, box);
+    return;
+  }
   // 前の結果が出ている間は表示を消さない（入力中のちらつき防止）
   if (!box.querySelector(".search-tracks-section, .search-artist-card")) {
     box.innerHTML = `<div class="empty-message">🔄 検索中...</div>`;
   }
 
-  const token = await getFreshSpotifyToken(false);
-  if (reqId !== searchRequestId) return;
-  if (!token) {
-    box.innerHTML = `<div class="empty-message">Spotifyにログインすると検索できます</div>`;
-    return;
-  }
-
   try {
-    const authHeaders = { Authorization: `Bearer ${token}` };
-    const pageUrl = (offset) =>
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=${offset === 0 ? "track,artist" : "track"}&limit=${SEARCH_PAGE_SIZE}&offset=${offset}&market=JP`;
-    const [fallbackArtistRes, ...pageResults] = await Promise.allSettled([
-      fetch(`/api/artists?q=${encodeURIComponent(query)}`),
-      ...Array.from({ length: SEARCH_PAGES }, (_, i) =>
-        fetch(pageUrl(i * SEARCH_PAGE_SIZE), { headers: authHeaders }).then((r) => (r.ok ? r.json() : null))
-      ),
-    ]);
-
+    const token = await getFreshSpotifyToken(false); // 未ログイン(null)でも /api/search で検索できる
     if (reqId !== searchRequestId) return;
 
-    let tracks = [];
-    let matchedArtist = null;
+    const pages = [];
+    let next = true;
+    for (let i = 0; i < SEARCH_INITIAL_PAGES && next; i++) {
+      const page = await fetchSearchPage(query, i * SEARCH_PAGE_SIZE, token, signal);
+      if (reqId !== searchRequestId) return;
+      pages.push(page);
+      next = page.next;
+    }
 
-    const rawTracks = [];
-    pageResults.forEach((r, i) => {
-      if (r.status !== "fulfilled" || !r.value) return;
-      rawTracks.push(...(r.value.tracks?.items || []));
-      if (i === 0) {
-        const artistsList = r.value.artists?.items || [];
-        if (artistsList.length) matchedArtist = artistsList[0];
-      }
-    });
-    // 重複を除いて正規化
-    const seenIds = new Set();
-    tracks = normalizeTracks(rawTracks).filter((t) => {
-      const key = t.id || t.uri;
-      if (!key || seenIds.has(key)) return false;
-      seenIds.add(key);
-      return true;
-    });
-
-    if (!matchedArtist && fallbackArtistRes.status === "fulfilled" && fallbackArtistRes.value.ok) {
+    let artist = pages[0]?.artist || null;
+    if (!artist) {
       try {
-        const fallbackArtists = await fallbackArtistRes.value.json();
-        if (Array.isArray(fallbackArtists) && fallbackArtists.length) {
-          matchedArtist = fallbackArtists[0];
+        const res = await fetch(`/api/artists?q=${encodeURIComponent(query)}`, { signal });
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list) && list.length) artist = list[0];
         }
-      } catch {}
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+      }
+      if (reqId !== searchRequestId) return;
     }
 
-    box.innerHTML = "";
-
-    if (!matchedArtist && !tracks.length) {
-      box.innerHTML = `<div class="empty-message">「${escapeHtml(query)}」に一致する曲やアーティストが見つかりませんでした</div>`;
-      return;
-    }
-
-    // 1. Apple Music-styled Artist Card at the top (as requested)
-    if (matchedArtist) {
-      const artImg = matchedArtist.images?.[0]?.url || matchedArtist.image || "";
-      const artCard = document.createElement("div");
-      artCard.className = "search-artist-card";
-      artCard.setAttribute("role", "button");
-      artCard.setAttribute("tabindex", "0");
-      artCard.setAttribute("aria-label", `${matchedArtist.name}のアーティストページを開く`);
-      artCard.innerHTML = `
-        <div class="search-artist-left">
-          ${artImg ? `<img src="${escapeHtml(artImg)}" alt="" class="search-artist-avatar">` : `<span class="search-artist-avatar-fallback">♫</span>`}
-          <div class="search-artist-text">
-            <span class="search-artist-kicker">アーティスト</span>
-            <span class="search-artist-name">${escapeHtml(matchedArtist.name)}</span>
-            <span class="search-artist-meta">${matchedArtist.followers?.total ? `${Number(matchedArtist.followers.total).toLocaleString()} 人のフォロワー` : "アーティスト専用ページを表示"}</span>
-          </div>
-        </div>
-        <div class="search-artist-arrow-btn">
-          <span>詳細</span>
-          <span class="arrow-glyph">›</span>
-        </div>
-      `;
-      artCard.addEventListener("click", () => {
-        if (typeof window.openArtistDetailPage === "function") {
-          window.openArtistDetailPage({
-            id: matchedArtist.id,
-            name: matchedArtist.name,
-            image: artImg,
-          });
-        }
-      });
-      artCard.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          artCard.click();
-        }
-      });
-      box.appendChild(artCard);
-    }
-
-    // 2. Matching Tracks in Apple Music table layout (without #1 badges)
-    if (tracks.length) {
-      const trackSection = document.createElement("div");
-      trackSection.className = "search-tracks-section";
-
-      const tableHeader = document.createElement("div");
-      tableHeader.className = "apple-track-table-header";
-      tableHeader.innerHTML = `
-        <span class="th-col-title">曲</span>
-        <span class="th-col-artist">アーティスト</span>
-        <span class="th-col-album">アルバム</span>
-        <span class="th-col-duration">時間</span>
-        <span class="th-col-actions"></span>
-      `;
-      trackSection.appendChild(tableHeader);
-
-      tracks.forEach((t, i) => trackSection.appendChild(createTrackCard(t, i, tracks)));
-      box.appendChild(trackSection);
-    }
+    const seen = new Set();
+    const tracks = dedupeNormalizedTracks(pages.flatMap((p) => p.tracks), seen);
+    const state = { tracks, seen, artist, next, offset: pages.length * SEARCH_PAGE_SIZE, loadingMore: false };
+    searchCacheSet(query, state);
+    renderSearchResults(query, state, box);
   } catch (e) {
-    if (reqId === searchRequestId) box.innerHTML = `<div class="empty-message">${escapeHtml(e.message)}</div>`;
+    if (e?.name === "AbortError" || reqId !== searchRequestId) return;
+    box.innerHTML = `<div class="empty-message">${escapeHtml(spotifyReadError(e))}</div>`;
   }
 }
 
@@ -3713,4 +3821,12 @@ function initMobileFullPlayer() {
   };
   query.addEventListener("change", update);
   update();
+}
+
+
+// PWA: ホーム画面に追加でき、画面の枠だけオフラインでも開けるようにする
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((e) => console.warn("Service worker registration failed:", e));
+  });
 }

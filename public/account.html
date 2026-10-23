@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotifyアカウント - Music Picker</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="icon" type="image/png" href="icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#d6002b">
+    <link rel="apple-touch-icon" href="/icon-192.png">
 </head>
 <body>
     <button id="menuButton" class="menu-button">☰</button>
@@ -21,7 +23,7 @@
 
     <main class="sub-page account-page">
         <div class="page-header">
-            <button class="back-button" onclick="location.href='index.html'">←</button>
+            <button class="back-button" type="button" aria-label="ホームに戻る" onclick="location.href='index.html'">←</button>
             <h1>🎵 Spotifyアカウント</h1>
         </div>
         <p class="subtitle">Spotifyとの接続状態</p>
@@ -43,7 +45,7 @@
         </section>
     </main>
 
-    <nav class="bottom-nav">
+    <nav class="bottom-nav" aria-label="メインメニュー">
         <button onclick="location.href='index.html'" class="nav-item"><span>🏠</span><small>ホーム</small></button>
         <button onclick="location.href='search.html'" class="nav-item"><span>🔍</span><small>検索</small></button>
         <button onclick="location.href='favorites.html'" class="nav-item"><span>❤️</span><small>お気に入り</small></button>
