@@ -4,6 +4,8 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { GoogleGenAI, Type } = require("@google/genai");
+const { collectPages } = require("./lib/paging");
+const { createRateLimiter } = require("./lib/rate-limit");
 
 dotenv.config();
 
@@ -34,8 +36,23 @@ const app = express();
 const PORT = 3000;
 
 app.set("trust proxy", 1);
-app.use(express.json());
+app.set("x-powered-by", false);
+// 入力サイズを制限（巨大なリクエストでAI枠やメモリを消費されないように）
+app.use(express.json({ limit: "100kb" }));
+app.use((req, res, next) => {
+  res.set({
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+  });
+  next();
+});
 app.use(express.static("public"));
+
+// 呼び出しコストの高いAPIにはレート制限をかける
+app.use("/api/gemini", createRateLimiter({ windowMs: 60_000, max: 20 }));
+app.use("/api/search", createRateLimiter({ windowMs: 60_000, max: 240 }));
+app.use("/api/artist-details", createRateLimiter({ windowMs: 60_000, max: 60 }));
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
@@ -215,13 +232,19 @@ function getUserAccessToken(req) {
   return "";
 }
 
-async function spotifyFetch(url, options = {}) {
+async function spotifyFetch(url, options = {}, attempt = 0) {
   const response = await fetch(url, options);
   let data = {};
   try {
     data = await response.json();
   } catch {
     data = {};
+  }
+  // 429(混雑)のときは Retry-After に従って短く待ち、1回だけ自動で再試行する
+  if (response.status === 429 && attempt < 1) {
+    const wait = Math.min(Number(response.headers?.get?.("retry-after")) || 1, 3);
+    await new Promise((resolve) => setTimeout(resolve, wait * 1000));
+    return spotifyFetch(url, options, attempt + 1);
   }
   if (!response.ok) {
     const message = data?.error?.message || data?.error_description || `Spotify API Error ${response.status}`;
@@ -231,6 +254,21 @@ async function spotifyFetch(url, options = {}) {
     throw error;
   }
   return data;
+}
+
+// APIエラーを原因別の日本語メッセージにして返す（内部エラーの文面をそのまま見せない）
+function friendlyErrorMessage(error) {
+  const status = error?.status;
+  if (status === 401) return "Spotifyの認証が切れました。ログインし直してください。";
+  if (status === 403) return "Spotifyの権限が足りないため取得できませんでした。";
+  if (status === 404) return "見つかりませんでした。";
+  if (status === 429) return "Spotifyが混み合っています。少し待ってからもう一度お試しください。";
+  if (status >= 500) return "Spotify側で一時的な問題が起きています。しばらくしてからお試しください。";
+  return "取得に失敗しました。通信状況を確認してもう一度お試しください。";
+}
+function sendApiError(res, error) {
+  const status = error?.status && error.status >= 400 && error.status < 600 ? error.status : 500;
+  res.status(status).json({ error: friendlyErrorMessage(error) });
 }
 
 function formatTrack(track) {
@@ -297,18 +335,11 @@ async function searchSpotifyTracks(token, query, limit = 10, offset = 0) {
 }
 
 async function get80Tracks(token, query) {
-  const all = [];
-  for (let offset = 0; offset < 80; offset += 10) {
-    try {
-      const data = await searchSpotifyTracks(token, query, 10, offset);
-      const tracks = data.tracks?.items || [];
-      all.push(...tracks);
-      if (tracks.length < 10) break;
-    } catch (e) {
-      if (e.status === 429) throw e;
-      break;
-    }
-  }
+  const all = await collectPages({
+    maxItems: 80,
+    maxPages: 8,
+    fetchPage: async (offset) => (await searchSpotifyTracks(token, query, 10, offset)).tracks || { items: [] },
+  });
   return uniqueTracks(all).slice(0, 80);
 }
 
@@ -712,6 +743,9 @@ app.get("/api/artist-details", async (req, res) => {
         // 1. Try Spotify top-tracks (if returned)
         if (topTracksRes.status === "fulfilled" && topTracksRes.value?.tracks) {
           (topTracksRes.value.tracks || []).forEach((t) => addCandidateTrack(t));
+        } else {
+          // top-tracks は Spotify 側で制限・廃止されることがあるため、失敗は記録して検索で補う
+          console.warn("Spotify top-tracks unavailable, falling back to search:", topTracksRes.reason?.status || topTracksRes.status);
         }
 
         // 2. Search artist tracks with limit=10 across multiple queries/offsets
@@ -721,19 +755,16 @@ app.get("/api/artist-details", async (req, res) => {
         ];
         for (const q of searchQueries) {
           if (collectedTracks.length >= 20) break;
-          for (let offset = 0; offset < 30 && collectedTracks.length < 20; offset += 10) {
-            try {
-              const sRes = await spotifyFetch(
+          const found = await collectPages({
+            maxItems: 50,
+            maxPages: 5,
+            fetchPage: async (offset) =>
+              (await spotifyFetch(
                 `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=10&offset=${offset}&market=JP`,
                 { headers: { Authorization: `Bearer ${token}` } }
-              );
-              const items = sRes.tracks?.items || [];
-              items.forEach((t) => addCandidateTrack(t));
-              if (items.length < 10) break;
-            } catch {
-              break;
-            }
-          }
+              )).tracks || { items: [] },
+          }).catch(() => []);
+          found.forEach((t) => addCandidateTrack(t));
         }
 
         // 3. If still under 20, fetch from artist's albums
@@ -746,13 +777,16 @@ app.get("/api/artist-details", async (req, res) => {
             const albums = albRes.items || [];
             for (const alb of albums) {
               if (collectedTracks.length >= 20) break;
-              try {
-                const trkRes = await spotifyFetch(
-                  `https://api.spotify.com/v1/albums/${encodeURIComponent(alb.id)}/tracks?limit=10&market=JP`,
-                  { headers: { Authorization: `Bearer ${token}` } }
-                );
-                (trkRes.items || []).forEach((t) => addCandidateTrack(t, alb));
-              } catch {}
+              const albumTracks = await collectPages({
+                maxItems: 30,
+                maxPages: 3,
+                fetchPage: (offset) =>
+                  spotifyFetch(
+                    `https://api.spotify.com/v1/albums/${encodeURIComponent(alb.id)}/tracks?limit=10&offset=${offset}&market=JP`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  ),
+              }).catch(() => []);
+              albumTracks.forEach((t) => addCandidateTrack(t, alb));
             }
           } catch {}
         }
@@ -775,36 +809,30 @@ app.get("/api/artist-details", async (req, res) => {
 
       // If top tracks still empty, try fallback search with limit=10
       if (topTracks.length === 0 && artistName) {
-        for (let offset = 0; offset < 30 && topTracks.length < 20; offset += 10) {
-          try {
-            const searchTracks = await spotifyFetch(
+        const items = await collectPages({
+          maxItems: 20,
+          maxPages: 5,
+          fetchPage: async (offset) =>
+            (await spotifyFetch(
               `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=track&limit=10&offset=${offset}&market=JP`,
               { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const items = searchTracks.tracks?.items || [];
-            for (const t of items) {
-              if (topTracks.length >= 20) break;
-              if (!topTracks.some((x) => x.id === t.id)) {
-                topTracks.push({
-                  id: t.id,
-                  rank: topTracks.length + 1,
-                  name: t.name,
-                  artists: (t.artists || []).map((art) => art.name).join(", "),
-                  albumName: t.album?.name || "",
-                  image: t.album?.images?.[0]?.url || image || "",
-                  previewUrl: t.preview_url || "",
-                  uri: t.uri || `spotify:track:${t.id}`,
-                  spotifyUrl: t.external_urls?.spotify || "",
-                  durationMs: t.duration_ms || 0,
-                  popularity: t.popularity || 0,
-                });
-              }
-            }
-            if (items.length < 10) break;
-          } catch {
-            break;
-          }
-        }
+            )).tracks || { items: [] },
+        }).catch(() => []);
+        items.forEach((t) => {
+          topTracks.push({
+            id: t.id,
+            rank: topTracks.length + 1,
+            name: t.name,
+            artists: (t.artists || []).map((art) => art.name).join(", "),
+            albumName: t.album?.name || "",
+            image: t.album?.images?.[0]?.url || image || "",
+            previewUrl: t.preview_url || "",
+            uri: t.uri || `spotify:track:${t.id}`,
+            spotifyUrl: t.external_urls?.spotify || "",
+            durationMs: t.duration_ms || 0,
+            popularity: t.popularity || 0,
+          });
+        });
       }
     } catch (spotifyErr) {
       console.warn("Spotify artist fetch non-fatal:", spotifyErr.message);
@@ -1088,24 +1116,29 @@ app.get("/api/genre-tracks", async (req, res) => {
 
 app.get("/api/search", async (req, res) => {
   try {
-    const q = String(req.query.q || "").trim();
-    if (!q) return res.json({ tracks: [], artists: [] });
+    const q = String(req.query.q || "").trim().slice(0, 200);
+    if (!q) return res.json({ tracks: [], artists: [], next: false });
+    const offset = Math.min(Math.max(parseInt(req.query.offset, 10) || 0, 0), 1000);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 10); // Spotifyは1回10件まで
     const token = await getSpotifyToken();
+    const type = offset === 0 ? "track,artist" : "track";
     const data = await spotifyFetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track,artist&limit=10&market=JP`,
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=${type}&limit=${limit}&offset=${offset}&market=JP`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     res.json({
-      tracks: (data.tracks?.items || []).map(formatTrack),
+      tracks: (data.tracks?.items || []).filter(Boolean).map(formatTrack),
       artists: (data.artists?.items || []).map((a) => ({
         id: a.id,
         name: a.name,
         image: a.images?.[0]?.url || "",
         spotifyUrl: a.external_urls?.spotify || "",
       })),
+      next: Boolean(data.tracks?.next),
+      offset,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendApiError(res, error);
   }
 });
 
@@ -1244,7 +1277,7 @@ async function generateContentWithRetry(prompt, systemInstruction = "") {
 
 app.post("/api/gemini/analyze-mood", async (req, res) => {
   try {
-    const text = String(req.body?.text || "").trim();
+    const text = String(req.body?.text || "").trim().slice(0, 300);
     if (!text) return res.status(400).json({ error: "今の気分を入力してください。" });
 
     const systemInstruction = `あなたは音楽推薦AIです。ユーザーの気分・シチュエーションを分析し、JSON形式で返してください。`;
@@ -1282,7 +1315,8 @@ app.post("/api/gemini/analyze-mood", async (req, res) => {
 
 app.post("/api/gemini/recommend-from-mood", async (req, res) => {
   try {
-    const { text, artistId, artistName, genre } = req.body;
+    const { artistId, artistName, genre } = req.body;
+    const text = String(req.body.text || "").trim().slice(0, 300);
     if (!text) return res.status(400).json({ error: "気分を入力してください。" });
 
     const excluded = new Set((Array.isArray(req.body.excludedTrackUris) ? req.body.excludedTrackUris : [])
