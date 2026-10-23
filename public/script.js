@@ -2241,6 +2241,19 @@ function bindRangeDrag(el) {
 function seekTarget() {
   return `${playbackGeneration}:${currentTrackData?.uri || playerClock.trackId || ""}`;
 }
+
+function seekTo(pos) {
+  const ms = Math.max(0, Math.round(Number(pos) || 0));
+  const target = seekTarget();
+  isSeeking = true;
+  seekPreview = ms;
+  seekRevision++;
+  clearTimeout(trackEndTimer);
+  renderProgress(ms);
+  playerClock = { ...playerClock, position: ms, ts: Date.now() };
+  queuedSeek = { pos: ms, target, revision: seekRevision };
+  return flushSeek();
+}
 function bindSeekBar(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -3463,6 +3476,29 @@ async function loadLyrics() {
       const element = document.createElement("p");
       element.className = "fp-lyric-line";
       element.textContent = line.text || "♪";
+      if (synced && Number.isFinite(line.time)) {
+        element.setAttribute("role", "button");
+        element.setAttribute("tabindex", "0");
+        element.setAttribute("aria-label", `${line.text || "歌詞"} (${formatTime(line.time)}へ移動)`);
+        element.title = `${formatTime(line.time)} へ移動`;
+
+        const jumpToLine = (e) => {
+          e?.stopPropagation?.();
+          seekTo(line.time);
+          lyricsFollowing = true;
+          const followBtn = document.getElementById("fpLyricsFollow");
+          if (followBtn) followBtn.hidden = true;
+          syncLyrics(line.time, true);
+        };
+
+        element.addEventListener("click", jumpToLine);
+        element.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            jumpToLine(e);
+          }
+        });
+      }
       container.appendChild(element);
     });
     syncLyrics(clockPosition());

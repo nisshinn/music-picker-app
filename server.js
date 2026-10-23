@@ -298,12 +298,12 @@ async function searchSpotifyTracks(token, query, limit = 10, offset = 0) {
 
 async function get80Tracks(token, query) {
   const all = [];
-  for (let offset = 0; offset < 80; offset += 50) {
+  for (let offset = 0; offset < 80; offset += 10) {
     try {
-      const data = await searchSpotifyTracks(token, query, 50, offset);
+      const data = await searchSpotifyTracks(token, query, 10, offset);
       const tracks = data.tracks?.items || [];
       all.push(...tracks);
-      if (tracks.length < 50) break;
+      if (tracks.length < 10) break;
     } catch (e) {
       if (e.status === 429) throw e;
       break;
@@ -679,53 +679,85 @@ app.get("/api/artist-details", async (req, res) => {
           popularity = a.popularity || 0;
         }
 
-        if (topTracksRes.status === "fulfilled" && topTracksRes.value?.tracks) {
-          topTracks = (topTracksRes.value.tracks || []).map((t) => ({
+        // Fetch up to 20 tracks for this artist
+        const collectedTracks = [];
+        const seenTrackIds = new Set();
+
+        const addCandidateTrack = (t, defaultAlbum = null) => {
+          if (!t || !t.id || seenTrackIds.has(t.id)) return;
+          const artList = Array.isArray(t.artists) ? t.artists : [];
+          const matches = !artistName || artList.some((a) =>
+            (cleanId && a.id === cleanId) ||
+            (a.name && a.name.toLowerCase().includes(artistName.toLowerCase())) ||
+            (artistName && artistName.toLowerCase().includes((a.name || "").toLowerCase()))
+          );
+          if (!matches && artList.length > 0) return;
+
+          seenTrackIds.add(t.id);
+          const albObj = t.album || defaultAlbum;
+          collectedTracks.push({
             id: t.id,
             name: t.name,
-            artists: (t.artists || []).map((art) => art.name).join(", "),
-            albumName: t.album?.name || "",
-            image: t.album?.images?.[0]?.url || image || "",
+            artists: artList.map((art) => art.name).filter(Boolean).join(", ") || artistName,
+            albumName: albObj?.name || "",
+            image: albObj?.images?.[0]?.url || image || "",
             previewUrl: t.preview_url || "",
             uri: t.uri || `spotify:track:${t.id}`,
-            spotifyUrl: t.external_urls?.spotify || "",
+            spotifyUrl: t.external_urls?.spotify || `https://open.spotify.com/track/${t.id}`,
             durationMs: t.duration_ms || 0,
-            popularity: t.popularity || 0,
-          }));
+            popularity: t.popularity || 50,
+          });
+        };
+
+        // 1. Try Spotify top-tracks (if returned)
+        if (topTracksRes.status === "fulfilled" && topTracksRes.value?.tracks) {
+          (topTracksRes.value.tracks || []).forEach((t) => addCandidateTrack(t));
         }
 
-        // Augment up to 20 tracks using search if top-tracks had fewer than 20
-        if (topTracks.length < 20 && artistName) {
-          try {
-            const moreTracksRes = await spotifyFetch(
-              `https://api.spotify.com/v1/search?q=${encodeURIComponent(`artist:"${artistName}"`)}&type=track&limit=50&market=JP`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const extraItems = moreTracksRes.tracks?.items || [];
-            const existingIds = new Set(topTracks.map((t) => t.id));
-            for (const item of extraItems) {
-              if (topTracks.length >= 20) break;
-              if (!existingIds.has(item.id)) {
-                existingIds.add(item.id);
-                topTracks.push({
-                  id: item.id,
-                  name: item.name,
-                  artists: (item.artists || []).map((art) => art.name).join(", "),
-                  albumName: item.album?.name || "",
-                  image: item.album?.images?.[0]?.url || image || "",
-                  previewUrl: item.preview_url || "",
-                  uri: item.uri || `spotify:track:${item.id}`,
-                  spotifyUrl: item.external_urls?.spotify || "",
-                  durationMs: item.duration_ms || 0,
-                  popularity: item.popularity || 0,
-                });
-              }
+        // 2. Search artist tracks with limit=10 across multiple queries/offsets
+        const searchQueries = [
+          `artist:"${artistName.replace(/["\\]/g, "")}"`,
+          artistName.replace(/["\\]/g, "")
+        ];
+        for (const q of searchQueries) {
+          if (collectedTracks.length >= 20) break;
+          for (let offset = 0; offset < 30 && collectedTracks.length < 20; offset += 10) {
+            try {
+              const sRes = await spotifyFetch(
+                `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=10&offset=${offset}&market=JP`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              const items = sRes.tracks?.items || [];
+              items.forEach((t) => addCandidateTrack(t));
+              if (items.length < 10) break;
+            } catch {
+              break;
             }
-          } catch {
-            // Ignore non-critical search error
           }
         }
-        topTracks = topTracks.slice(0, 20).map((t, idx) => ({ ...t, rank: idx + 1 }));
+
+        // 3. If still under 20, fetch from artist's albums
+        if (collectedTracks.length < 20 && cleanId) {
+          try {
+            const albRes = await spotifyFetch(
+              `https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=10`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const albums = albRes.items || [];
+            for (const alb of albums) {
+              if (collectedTracks.length >= 20) break;
+              try {
+                const trkRes = await spotifyFetch(
+                  `https://api.spotify.com/v1/albums/${encodeURIComponent(alb.id)}/tracks?limit=10&market=JP`,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+                (trkRes.items || []).forEach((t) => addCandidateTrack(t, alb));
+              } catch {}
+            }
+          } catch {}
+        }
+
+        topTracks = collectedTracks.slice(0, 20).map((t, idx) => ({ ...t, rank: idx + 1 }));
 
         if (albumsRes.status === "fulfilled" && albumsRes.value?.items?.length) {
           const alb = albumsRes.value.items[0];
@@ -741,26 +773,37 @@ app.get("/api/artist-details", async (req, res) => {
         }
       }
 
-      // If top tracks still empty, try fallback search
+      // If top tracks still empty, try fallback search with limit=10
       if (topTracks.length === 0 && artistName) {
-        const searchTracks = await spotifyFetch(
-          `https://api.spotify.com/v1/search?q=${encodeURIComponent(`artist:"${artistName}"`)}&type=track&limit=50&market=JP`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (searchTracks.tracks?.items?.length) {
-          topTracks = searchTracks.tracks.items.slice(0, 20).map((t, idx) => ({
-            id: t.id,
-            rank: idx + 1,
-            name: t.name,
-            artists: (t.artists || []).map((art) => art.name).join(", "),
-            albumName: t.album?.name || "",
-            image: t.album?.images?.[0]?.url || image || "",
-            previewUrl: t.preview_url || "",
-            uri: t.uri || `spotify:track:${t.id}`,
-            spotifyUrl: t.external_urls?.spotify || "",
-            durationMs: t.duration_ms || 0,
-            popularity: t.popularity || 0,
-          }));
+        for (let offset = 0; offset < 30 && topTracks.length < 20; offset += 10) {
+          try {
+            const searchTracks = await spotifyFetch(
+              `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=track&limit=10&offset=${offset}&market=JP`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const items = searchTracks.tracks?.items || [];
+            for (const t of items) {
+              if (topTracks.length >= 20) break;
+              if (!topTracks.some((x) => x.id === t.id)) {
+                topTracks.push({
+                  id: t.id,
+                  rank: topTracks.length + 1,
+                  name: t.name,
+                  artists: (t.artists || []).map((art) => art.name).join(", "),
+                  albumName: t.album?.name || "",
+                  image: t.album?.images?.[0]?.url || image || "",
+                  previewUrl: t.preview_url || "",
+                  uri: t.uri || `spotify:track:${t.id}`,
+                  spotifyUrl: t.external_urls?.spotify || "",
+                  durationMs: t.duration_ms || 0,
+                  popularity: t.popularity || 0,
+                });
+              }
+            }
+            if (items.length < 10) break;
+          } catch {
+            break;
+          }
         }
       }
     } catch (spotifyErr) {
