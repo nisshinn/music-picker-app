@@ -2958,9 +2958,24 @@ function initSearch() {
     const input = document.getElementById(inputId);
     const btn = document.getElementById(btnId);
     const box = document.getElementById("searchResults");
-    if (!input || !btn || !box) return;
-    const run = () => runSongSearch(input.value.trim(), box);
-    btn.addEventListener("click", run);
+    if (!input || !box) return;
+    let timer = null;
+    const run = () => {
+      clearTimeout(timer);
+      runSongSearch(input.value.trim(), box);
+    };
+    // 入力するたびに自動検索（変換中も含む）。連打を避けるため少しだけ待つ
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      if (!input.value.trim()) {
+        searchRequestId++; // 進行中の検索を無効化
+        box.innerHTML = `<div class="empty-message">曲名やアーティスト名を入力してください</div>`;
+        return;
+      }
+      timer = setTimeout(run, 250);
+    });
+    // 検索ボタンがあるページ用（なくても動く）
+    if (btn) btn.addEventListener("click", run);
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.isComposing) {
         e.preventDefault();
@@ -2970,13 +2985,20 @@ function initSearch() {
   });
 }
 
+// Spotifyの検索は1回10件までなので、offsetをずらして複数ページ取得し、20曲以上そろえる
+const SEARCH_PAGE_SIZE = 10;
+const SEARCH_PAGES = 3; // 10 x 3 = 最大30曲
+
 async function runSongSearch(query, box) {
   if (!query) {
     box.innerHTML = `<div class="empty-message">曲名やアーティスト名を入力してください</div>`;
     return;
   }
   const reqId = ++searchRequestId;
-  box.innerHTML = `<div class="empty-message">🔄 検索中...</div>`;
+  // 前の結果が出ている間は表示を消さない（入力中のちらつき防止）
+  if (!box.querySelector(".search-tracks-section, .search-artist-card")) {
+    box.innerHTML = `<div class="empty-message">🔄 検索中...</div>`;
+  }
 
   const token = await getFreshSpotifyToken(false);
   if (reqId !== searchRequestId) return;
@@ -2986,11 +3008,14 @@ async function runSongSearch(query, box) {
   }
 
   try {
-    const [searchRes, fallbackArtistRes] = await Promise.allSettled([
-      fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track,artist&limit=10`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
+    const authHeaders = { Authorization: `Bearer ${token}` };
+    const pageUrl = (offset) =>
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=${offset === 0 ? "track,artist" : "track"}&limit=${SEARCH_PAGE_SIZE}&offset=${offset}&market=JP`;
+    const [fallbackArtistRes, ...pageResults] = await Promise.allSettled([
       fetch(`/api/artists?q=${encodeURIComponent(query)}`),
+      ...Array.from({ length: SEARCH_PAGES }, (_, i) =>
+        fetch(pageUrl(i * SEARCH_PAGE_SIZE), { headers: authHeaders }).then((r) => (r.ok ? r.json() : null))
+      ),
     ]);
 
     if (reqId !== searchRequestId) return;
@@ -2998,14 +3023,23 @@ async function runSongSearch(query, box) {
     let tracks = [];
     let matchedArtist = null;
 
-    if (searchRes.status === "fulfilled" && searchRes.value.ok) {
-      const data = await searchRes.value.json();
-      tracks = normalizeTracks(data.tracks?.items || []);
-      const artistsList = data.artists?.items || [];
-      if (artistsList.length) {
-        matchedArtist = artistsList[0];
+    const rawTracks = [];
+    pageResults.forEach((r, i) => {
+      if (r.status !== "fulfilled" || !r.value) return;
+      rawTracks.push(...(r.value.tracks?.items || []));
+      if (i === 0) {
+        const artistsList = r.value.artists?.items || [];
+        if (artistsList.length) matchedArtist = artistsList[0];
       }
-    }
+    });
+    // 重複を除いて正規化
+    const seenIds = new Set();
+    tracks = normalizeTracks(rawTracks).filter((t) => {
+      const key = t.id || t.uri;
+      if (!key || seenIds.has(key)) return false;
+      seenIds.add(key);
+      return true;
+    });
 
     if (!matchedArtist && fallbackArtistRes.status === "fulfilled" && fallbackArtistRes.value.ok) {
       try {
