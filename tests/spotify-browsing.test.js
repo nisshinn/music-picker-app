@@ -116,7 +116,7 @@ test('server playlist routes use Spotify items API and both response shapes', as
       if (name === 'express') return express;
       if (name === 'dotenv') return { config() {} };
       if (name === '@google/genai') return {};
-      return require(name);
+      return require(name.startsWith('.') ? require('node:path').resolve(name) : name);
     },
     fetch: async (url, options) => {
       requests.push({ url, options });
@@ -419,7 +419,7 @@ test('curator applies an explicit genre to artist catalogue queries and ranking'
       if (name === 'express') return express;
       if (name === 'dotenv') return { config() {} };
       if (name === '@google/genai') return {};
-      return require(name);
+      return require(name.startsWith('.') ? require('node:path').resolve(name) : name);
     },
   });
   vm.runInContext(fs.readFileSync('server.js', 'utf8'), context);
@@ -522,7 +522,7 @@ function exclusionServer() {
   const expressApp = { set() {}, use() {}, listen() {}, get(path, handler) { routes.set(path, handler); }, post(path, handler) { routes.set(path, handler); } };
   const express = Object.assign(() => expressApp, { json: () => {}, static: () => {} });
   const context = vm.createContext({console:{log(){},error(){},warn(){}},process:{env:{}},Buffer,URLSearchParams,AbortSignal,
-    require(name) { if(name==='express')return express;if(name==='dotenv')return {config(){}};if(name==='@google/genai')return {};return require(name); }
+    require(name) { if(name==='express')return express;if(name==='dotenv')return {config(){}};if(name==='@google/genai')return {};return require(name.startsWith('.') ? require('node:path').resolve(name) : name); }
   });
   vm.runInContext(fs.readFileSync('server.js','utf8'),context);
   vm.runInContext('getSpotifyToken=async()=>"synthetic";globalThis.rankCalls=0;generateContentWithRetry=async prompt=>{rankCalls++;globalThis.lastPrompt=prompt;return JSON.stringify({selected:[{index:0},{index:0},{index:999},{index:1}]})};',context);
