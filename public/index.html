@@ -3,10 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Music Picker - Spotify × Gemini AI</title>
-    <meta name="description" content="A web application to discover and pick music using Spotify and Google Gemini AI.">
-    <meta property="og:title" content="Music Picker - Spotify × Gemini AI">
-    <meta property="og:description" content="A web application to discover and pick music using Spotify and Google Gemini AI.">
+    
+    <!-- Google Search SEO Primary Meta Tags -->
+    <title>Music Picker - 気分やアーティストから音楽発見 Spotify × Gemini AI</title>
+    <meta name="description" content="今の気分やアーティストから、Gemini AIとSpotifyが最適な音楽5曲をレコメンド。新着アルバム一覧、人気曲ランキング、歌詞同期表示、Spotifyプレイリスト一括保存まで対応した音楽発見Webアプリ。">
+    <meta name="keywords" content="Music Picker, ミュージックピッカー, Spotify, Gemini AI, 音楽レコメンド, 音楽検索, プレイリスト作成, 気分 音楽, おすすめ曲, アルバム新着, 歌詞">
+    <meta name="author" content="Music Picker">
+    <meta name="application-name" content="Music Picker">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <link rel="canonical" href="https://ais-pre-zm535d3kmvpavtgnurcw7k-547276737603.asia-east1.run.app/">
+
+    <!-- Performance & Preconnect for Core Web Vitals -->
+    <link rel="preconnect" href="https://api.spotify.com">
+    <link rel="preconnect" href="https://accounts.spotify.com">
+    <link rel="preconnect" href="https://sdk.scdn.co">
+    <link rel="dns-prefetch" href="https://lrclib.net">
+
+    <!-- OpenGraph Social Cards -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Music Picker">
+    <meta property="og:locale" content="ja_JP">
+    <meta property="og:title" content="Music Picker - 気分やアーティストから音楽発見 Spotify × Gemini AI">
+    <meta property="og:description" content="今の気分やアーティストから、Gemini AIとSpotifyが最適な音楽5曲をレコメンド。新着アルバム一覧、人気曲ランキング、歌詞同期表示、Spotifyプレイリスト一括保存まで対応した音楽発見Webアプリ。">
+    <meta property="og:url" content="https://ais-pre-zm535d3kmvpavtgnurcw7k-547276737603.asia-east1.run.app/">
+    <meta property="og:image" content="/icon-512.png">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:image:alt" content="Music Picker - Spotify × Gemini AI 音楽レコメンド">
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Music Picker - 気分やアーティストから音楽発見 Spotify × Gemini AI">
+    <meta name="twitter:description" content="今の気分やアーティストから、Gemini AIとSpotifyが最適な音楽5曲をレコメンド。新着アルバム一覧、人気曲ランキング、歌詞同期表示、Spotifyプレイリスト一括保存まで対応した音楽発見Webアプリ。">
+    <meta name="twitter:image" content="/icon-512.png">
+    
+    <!-- Icons & PWA -->
     <link rel="icon" type="image/png" href="/icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Music Picker">
@@ -19,6 +51,84 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <meta name="theme-color" content="#d6002b">
     <link rel="apple-touch-icon" href="/icon-192.png">
+
+    <!-- Schema.org JSON-LD Structured Data for Google Rich Results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": "https://ais-pre-zm535d3kmvpavtgnurcw7k-547276737603.asia-east1.run.app/#webapp",
+          "name": "Music Picker",
+          "alternateName": "ミュージックピッカー",
+          "applicationCategory": "MultimediaApplication",
+          "operatingSystem": "All",
+          "browserRequirements": "Requires JavaScript. Requires HTML5.",
+          "url": "https://ais-pre-zm535d3kmvpavtgnurcw7k-547276737603.asia-east1.run.app/",
+          "description": "今の気分やアーティストから、Gemini AIとSpotifyが最適な音楽5曲をレコメンド。新着アルバム一覧、人気曲ランキング、歌詞同期表示、Spotifyプレイリスト一括保存まで対応した音楽発見Webアプリ。",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "JPY"
+          },
+          "featureList": [
+            "今の気分や場面の自由文入力によるGemini AI音楽分析＆5曲レコメンド",
+            "Spotify公式API連携による楽曲・アルバム・人気曲の検索＆プレビュー再生",
+            "アーティスト別新着アルバム一覧（新着順）と人気曲5曲/20曲切り替え表示",
+            "リアルタイム同期の歌詞表示（LRCLIB連携）",
+            "作成したAIおすすめ曲をSpotifyプレイリストへワンクリック一括保存"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://ais-pre-zm535d3kmvpavtgnurcw7k-547276737603.asia-east1.run.app/#website",
+          "url": "https://ais-pre-zm535d3kmvpavtgnurcw7k-547276737603.asia-east1.run.app/",
+          "name": "Music Picker",
+          "description": "Spotify × Google Gemini AI 音楽レコメンド＆ディスカバリー",
+          "inLanguage": "ja-JP",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://ais-pre-zm535d3kmvpavtgnurcw7k-547276737603.asia-east1.run.app/search.html?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://ais-pre-zm535d3kmvpavtgnurcw7k-547276737603.asia-east1.run.app/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Music Pickerとはどのようなアプリですか？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Music Pickerは、Google Gemini AIとSpotify APIを組み合わせて、今の気分や聴きたいシチュエーション、お気に入りのアーティストから最適な5曲を推薦・再生・プレイリスト保存できる音楽発見Webアプリです。"
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Spotifyのアカウントがなくても使えますか？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "はい、Spotify未ログインでもAIによる気分選曲、楽曲やアーティスト・アルバムの検索、30秒プレビュー試聴をご利用いただけます。Spotifyアカウントを接続すると、フル再生やお気に入り・プレイリストへの保存が可能になります。"
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "曲の歌詞は見られますか？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "はい、楽曲再生中にプレイヤーの歌詞ボタンを押すことで、音楽の再生位置に合わせたリアルタイム同期歌詞を閲覧できます。"
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
 </head>
 <body>
 
@@ -297,6 +407,32 @@
 
         <!-- プレイリスト結果エリア -->
         <section id="playlist" class="playlist"></section>
+
+        <!-- SEO & アプリ概要ガイド (Google検索向けセマンティックコンテンツ) -->
+        <footer class="home-seo-guide" aria-label="Music Picker サービス概要">
+            <h2 class="seo-guide-title">Music Picker（ミュージックピッカー）とは？</h2>
+            <p class="seo-guide-desc">
+                Music Pickerは、<strong>Google Gemini AI</strong>と<strong>Spotify公式API</strong>を融合した、次世代の音楽ディスカバリー・レコメンドWebアプリケーションです。「明るい曲」「作業に集中したい」「雨の日のドライブ」「しんみり浸りたい」など、あなたの今の気分やシチュエーション、好きなアーティストを選ぶだけで、Gemini AIが感情・ムード・音楽ジャンルを深く分析し、数千万曲のSpotifyライブラリから<strong>最適な5曲</strong>を自動選曲します。
+            </p>
+            <div class="seo-features-grid">
+                <article class="seo-feature-card">
+                    <h3>🤖 AI気分選曲</h3>
+                    <p>ワンタップの気分ボタンや自由な情景入力から、Gemini AIが最適なテンポ・曲調の5曲を瞬時に推薦。</p>
+                </article>
+                <article class="seo-feature-card">
+                    <h3>🔍 Spotifyカタログ＆新着アルバム</h3>
+                    <p>曲名・アーティスト・新着順アルバムをスムーズに検索。プレビュー試聴も可能。</p>
+                </article>
+                <article class="seo-feature-card">
+                    <h3>🎶 リアルタイム同期歌詞</h3>
+                    <p>再生中の楽曲に合わせて自動スクロールする同期歌詞表示（LRCLIB連携）を標準搭載。</p>
+                </article>
+                <article class="seo-feature-card">
+                    <h3>💾 Spotifyプレイリスト一括保存</h3>
+                    <p>AIが選曲したお気に入りのセットリストを、ワンクリックであなたのSpotify公式アカウントに保存。</p>
+                </article>
+            </div>
+        </footer>
     </section>
 
     <!-- 検索ページ -->

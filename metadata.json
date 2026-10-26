@@ -1,6 +1,8 @@
 {
   "name": "Music Picker",
-  "description": "A web application to discover and pick music using Spotify and Google Gemini AI.",
+  "description": "今の気分やアーティストから、Gemini AIとSpotifyが最適な音楽5曲をレコメンド。新着アルバム一覧、人気曲ランキング、歌詞同期表示、Spotifyプレイリスト一括保存まで対応した音楽発見Webアプリ。",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

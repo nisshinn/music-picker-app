@@ -3264,3 +3264,52 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
   border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08)) !important;
 }
 
+/* SEO App Guide / Footer */
+.home-seo-guide {
+  margin-top: 36px;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.seo-guide-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0 0 10px;
+  color: var(--accent-text);
+}
+.seo-guide-desc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 0 0 18px;
+}
+.seo-guide-desc strong {
+  color: var(--text);
+}
+.seo-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.seo-feature-card {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+.seo-feature-card h3 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+.seo-feature-card p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0;
+}
+
+
