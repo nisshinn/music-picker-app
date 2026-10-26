@@ -47,6 +47,88 @@ app.use((req, res, next) => {
   });
   next();
 });
+
+function getAppBaseUrl(req) {
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
+  if (process.env.RENDER_EXTERNAL_URL) return process.env.RENDER_EXTERNAL_URL.replace(/\/$/, "");
+  const proto = req.headers["x-forwarded-proto"] || (req.secure ? "https" : req.protocol);
+  const host = req.headers["x-forwarded-host"] || req.get("host");
+  return `${proto}://${host}`;
+}
+
+const CANONICAL_PLACEHOLDER = "https://ais-pre-zm535d3kmvpavtgnurcw7k-547276737603.asia-east1.run.app";
+
+// Dynamic robots.txt tailored to current hosting domain (Render / Custom domain / Preview)
+app.get("/robots.txt", (req, res) => {
+  const base = getAppBaseUrl(req);
+  res.type("text/plain");
+  res.send(`User-agent: *
+Allow: /
+Sitemap: ${base}/sitemap.xml
+`);
+});
+
+// Dynamic sitemap.xml tailored to current hosting domain
+app.get("/sitemap.xml", (req, res) => {
+  const base = getAppBaseUrl(req);
+  res.type("application/xml");
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${base}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${base}/search.html</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${base}/top-tracks.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${base}/favorites.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${base}/history.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>`);
+});
+
+// HTML canonical URL & OpenGraph rewriting middleware so search engines index the exact current domain
+app.use((req, res, next) => {
+  if (req.method !== "GET" && req.method !== "HEAD") return next();
+  const reqPath = req.path;
+  const fileName = reqPath === "/" ? "index.html" : reqPath.replace(/^\//, "");
+  if (fileName.endsWith(".html") || reqPath === "/") {
+    const fullPath = path.join(__dirname, "public", fileName.endsWith(".html") ? fileName : `${fileName}.html`);
+    if (fs.existsSync(fullPath)) {
+      try {
+        let content = fs.readFileSync(fullPath, "utf-8");
+        const currentOrigin = getAppBaseUrl(req);
+        content = content.split(CANONICAL_PLACEHOLDER).join(currentOrigin);
+        res.set({
+          "Content-Type": "text/html; charset=utf-8",
+          "X-Content-Type-Options": "nosniff",
+          "X-Frame-Options": "SAMEORIGIN",
+          "Referrer-Policy": "strict-origin-when-cross-origin",
+        });
+        return res.send(content);
+      } catch (err) {
+        return next();
+      }
+    }
+  }
+  next();
+});
+
 app.use(express.static("public"));
 
 // 呼び出しコストの高いAPIにはレート制限をかける
