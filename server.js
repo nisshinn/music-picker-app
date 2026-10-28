@@ -749,10 +749,13 @@ app.get("/api/artist-details", async (req, res) => {
     let popularity = 0;
     let topTracks = [];
     let latestRelease = null;
+    let albums = [];
+    let cleanId = "";
+    let token = "";
 
     // 1. Fetch Spotify data if available
     try {
-      const token = await getSpotifyToken();
+      token = await getSpotifyToken();
       let resolvedId = artistId;
 
       // If no valid artistId, resolve by searching
@@ -769,7 +772,7 @@ app.get("/api/artist-details", async (req, res) => {
       }
 
       if (resolvedId && /^[a-zA-Z0-9]+$/.test(resolvedId.replace(/^spotify:artist:/, ""))) {
-        const cleanId = resolvedId.replace(/^spotify:artist:/, "");
+        cleanId = resolvedId.replace(/^spotify:artist:/, "");
         const [artistRes, topTracksRes, albumsRes] = await Promise.allSettled([
           spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}`, {
             headers: { Authorization: `Bearer ${token}` }
@@ -777,7 +780,7 @@ app.get("/api/artist-details", async (req, res) => {
           spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/top-tracks?market=JP`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=5`, {
+          spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=50`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
@@ -790,6 +793,42 @@ app.get("/api/artist-details", async (req, res) => {
           spotifyUrl = a.external_urls?.spotify || `https://open.spotify.com/artist/${cleanId}`;
           followers = a.followers?.total || 0;
           popularity = a.popularity || 0;
+        }
+
+        // Process albums (deduplicated, sorted newest first)
+        if (albumsRes.status === "fulfilled" && albumsRes.value?.items?.length) {
+          const seenNames = new Set();
+          albums = (albumsRes.value.items || [])
+            .map((alb) => ({
+              id: alb.id,
+              name: alb.name,
+              releaseDate: alb.release_date || "",
+              totalTracks: alb.total_tracks || 1,
+              type: alb.album_type === "single" ? "Single" : "Album",
+              image: alb.images?.[0]?.url || alb.images?.[1]?.url || image || "",
+              spotifyUrl: alb.external_urls?.spotify || `https://open.spotify.com/album/${alb.id}`,
+            }))
+            .filter((alb) => {
+              const key = alb.name.toLowerCase().trim();
+              if (seenNames.has(key)) return false;
+              seenNames.add(key);
+              return true;
+            });
+
+          albums.sort((a, b) => new Date(b.releaseDate || "1970") - new Date(a.releaseDate || "1970"));
+
+          if (albums.length > 0) {
+            const first = albums[0];
+            latestRelease = {
+              id: first.id,
+              name: first.name,
+              releaseDate: first.releaseDate || "",
+              totalTracks: first.totalTracks || 1,
+              type: first.type || "Album",
+              image: first.image || image || "",
+              spotifyUrl: first.spotifyUrl || spotifyUrl,
+            };
+          }
         }
 
         // Fetch up to 20 tracks for this artist
@@ -822,71 +861,49 @@ app.get("/api/artist-details", async (req, res) => {
           });
         };
 
-        // 1. Try Spotify top-tracks (if returned)
+        // 1. Try Spotify top-tracks (usually up to 10 tracks)
         if (topTracksRes.status === "fulfilled" && topTracksRes.value?.tracks) {
           (topTracksRes.value.tracks || []).forEach((t) => addCandidateTrack(t));
         } else {
-          // top-tracks は Spotify 側で制限・廃止されることがあるため、失敗は記録して検索で補う
           console.warn("Spotify top-tracks unavailable, falling back to search:", topTracksRes.reason?.status || topTracksRes.status);
         }
 
-        // 2. Search artist tracks with limit=10 across multiple queries/offsets
-        const searchQueries = [
-          `artist:"${artistName.replace(/["\\]/g, "")}"`,
-          artistName.replace(/["\\]/g, "")
-        ];
-        for (const q of searchQueries) {
-          if (collectedTracks.length >= 20) break;
-          const found = await collectPages({
-            maxItems: 50,
-            maxPages: 5,
-            fetchPage: async (offset) =>
-              (await spotifyFetch(
-                `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=10&offset=${offset}&market=JP`,
+        // 2. To reach 20 tracks: fetch tracks from artist's albums
+        if (collectedTracks.length < 20 && albums.length > 0) {
+          for (const alb of albums.slice(0, 5)) {
+            if (collectedTracks.length >= 20) break;
+            try {
+              const albumTracksRes = await spotifyFetch(
+                `https://api.spotify.com/v1/albums/${encodeURIComponent(alb.id)}/tracks?limit=20&market=JP`,
                 { headers: { Authorization: `Bearer ${token}` } }
-              )).tracks || { items: [] },
-          }).catch(() => []);
-          found.forEach((t) => addCandidateTrack(t));
+              );
+              (albumTracksRes.items || []).forEach((t) => addCandidateTrack(t, alb));
+            } catch {}
+          }
         }
 
-        // 3. If still under 20, fetch from artist's albums
-        if (collectedTracks.length < 20 && cleanId) {
-          try {
-            const albRes = await spotifyFetch(
-              `https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=10`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const albums = albRes.items || [];
-            for (const alb of albums) {
-              if (collectedTracks.length >= 20) break;
-              const albumTracks = await collectPages({
-                maxItems: 30,
-                maxPages: 3,
-                fetchPage: (offset) =>
-                  spotifyFetch(
-                    `https://api.spotify.com/v1/albums/${encodeURIComponent(alb.id)}/tracks?limit=10&offset=${offset}&market=JP`,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                  ),
-              }).catch(() => []);
-              albumTracks.forEach((t) => addCandidateTrack(t, alb));
-            }
-          } catch {}
+        // 3. Search artist tracks if still under 20
+        if (collectedTracks.length < 20 && artistName) {
+          const searchQueries = [
+            `artist:"${artistName.replace(/["\\]/g, "")}"`,
+            artistName.replace(/["\\]/g, "")
+          ];
+          for (const q of searchQueries) {
+            if (collectedTracks.length >= 20) break;
+            const found = await collectPages({
+              maxItems: 50,
+              maxPages: 5,
+              fetchPage: async (offset) =>
+                (await spotifyFetch(
+                  `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=10&offset=${offset}&market=JP`,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                )).tracks || { items: [] },
+            }).catch(() => []);
+            found.forEach((t) => addCandidateTrack(t));
+          }
         }
 
         topTracks = collectedTracks.slice(0, 20).map((t, idx) => ({ ...t, rank: idx + 1 }));
-
-        if (albumsRes.status === "fulfilled" && albumsRes.value?.items?.length) {
-          const alb = albumsRes.value.items[0];
-          latestRelease = {
-            id: alb.id,
-            name: alb.name,
-            releaseDate: alb.release_date || "",
-            totalTracks: alb.total_tracks || 1,
-            type: alb.album_type === "single" ? "Single" : "Album",
-            image: alb.images?.[0]?.url || image || "",
-            spotifyUrl: alb.external_urls?.spotify || `https://open.spotify.com/album/${alb.id}`,
-          };
-        }
       }
 
       // If top tracks still empty, try fallback search with limit=10
@@ -920,15 +937,16 @@ app.get("/api/artist-details", async (req, res) => {
       console.warn("Spotify artist fetch non-fatal:", spotifyErr.message);
     }
 
-    // 2. AI Biography and Highlights via Gemini
+    // 2. AI Biography, Representative 20 Songs & Albums via Gemini
     let bio = "";
     let summary = "";
     let highlights = [];
     let representativeSongs = [];
+    let representativeAlbums = [];
 
     if (process.env.GEMINI_API_KEY && artistName) {
       try {
-        const systemInstruction = "あなたは音楽キュレーター・音楽評論家です。指定されたアーティストについて、リスナーがその魅力・個性をすぐに理解できる洗練された日本語の紹介文を作成し、JSON形式で返してください。";
+        const systemInstruction = "あなたは音楽キュレーター・音楽評論家です。指定されたアーティストについて、リスナーがその魅力・個性をすぐに理解できる洗練された日本語の紹介文、代表曲20曲、代表アルバム・シングルを作成し、JSON形式で返してください。";
         const prompt = `アーティスト名: 「${artistName}」
 ジャンル: ${genres.length ? genres.join(", ") : "J-POP / ポップス / ロック"}
 以下のJSON形式で回答してください:
@@ -936,7 +954,12 @@ app.get("/api/artist-details", async (req, res) => {
   "summary": "1文で表すアーティストのキャッチコピー（例: 叙情的なメロディと圧倒的な表現力で時代を牽引するフロントランナー）",
   "bio": "生い立ちや音楽的特徴、魅力や現在の音楽シーンでの立ち位置を簡潔かつ魅力的にまとめた紹介文（150〜220文字程度、2〜3文）",
   "highlights": ["音楽的特徴や魅力のキーワード1", "キーワード2", "キーワード3"],
-  "representativeSongs": ["代表曲1", "代表曲2", "代表曲3", "代表曲4", "代表曲5"]
+  "representativeSongs": ["代表曲1", "代表曲2", "代表曲3", "代表曲4", "代表曲5", "代表曲6", "代表曲7", "代表曲8", "代表曲9", "代表曲10", "代表曲11", "代表曲12", "代表曲13", "代表曲14", "代表曲15", "代表曲16", "代表曲17", "代表曲18", "代表曲19", "代表曲20"],
+  "representativeAlbums": [
+    { "name": "代表アルバム1", "releaseDate": "2023", "type": "Album", "totalTracks": 10 },
+    { "name": "代表アルバム2", "releaseDate": "2022", "type": "Album", "totalTracks": 12 },
+    { "name": "代表シングル1", "releaseDate": "2024", "type": "Single", "totalTracks": 2 }
+  ]
 }`;
         const raw = await generateContentWithRetry(prompt, systemInstruction);
         const parsed = JSON.parse(raw.replace(/^```json/i, "").replace(/```$/i, "").trim());
@@ -944,6 +967,7 @@ app.get("/api/artist-details", async (req, res) => {
         summary = parsed.summary || "";
         highlights = Array.isArray(parsed.highlights) ? parsed.highlights : [];
         representativeSongs = Array.isArray(parsed.representativeSongs) ? parsed.representativeSongs : [];
+        representativeAlbums = Array.isArray(parsed.representativeAlbums) ? parsed.representativeAlbums : [];
       } catch (geminiErr) {
         console.warn("Gemini artist bio generation non-fatal:", geminiErr.message);
       }
@@ -957,9 +981,9 @@ app.get("/api/artist-details", async (req, res) => {
       highlights = genres.length ? genres.slice(0, 3) : ["メロディセンス", "独自の世界観", "注目アーティスト"];
     }
 
-    // If top tracks empty, populate from representative songs
+    // If top tracks empty, populate from representative songs (up to 20)
     if (topTracks.length === 0 && representativeSongs.length > 0) {
-      topTracks = representativeSongs.map((songTitle, idx) => ({
+      topTracks = representativeSongs.slice(0, 20).map((songTitle, idx) => ({
         id: `song-${idx + 1}`,
         rank: idx + 1,
         name: songTitle,
@@ -970,11 +994,35 @@ app.get("/api/artist-details", async (req, res) => {
         uri: "",
         spotifyUrl: spotifyUrl || `https://open.spotify.com/search/${encodeURIComponent(`${artistName} ${songTitle}`)}`,
         durationMs: 0,
-        popularity: 80 - idx * 5,
+        popularity: Math.max(20, 95 - idx * 3),
       }));
     }
 
-    if (!latestRelease && topTracks.length > 0) {
+    // If albums empty, populate from representative albums
+    if (albums.length === 0 && representativeAlbums.length > 0) {
+      albums = representativeAlbums.map((alb, idx) => ({
+        id: `album-${idx + 1}`,
+        name: alb.name,
+        releaseDate: alb.releaseDate || "",
+        totalTracks: alb.totalTracks || 10,
+        type: alb.type || "Album",
+        image: image || "",
+        spotifyUrl: spotifyUrl || `https://open.spotify.com/search/${encodeURIComponent(`${artistName} ${alb.name}`)}`,
+      }));
+    }
+
+    if (!latestRelease && albums.length > 0) {
+      const first = albums[0];
+      latestRelease = {
+        id: first.id,
+        name: first.name,
+        releaseDate: first.releaseDate || "",
+        totalTracks: first.totalTracks || 1,
+        type: first.type || "Album",
+        image: first.image || image || "",
+        spotifyUrl: first.spotifyUrl || spotifyUrl,
+      };
+    } else if (!latestRelease && topTracks.length > 0) {
       const first = topTracks[0];
       latestRelease = {
         id: first.id,
@@ -985,35 +1033,6 @@ app.get("/api/artist-details", async (req, res) => {
         image: first.image || image || "",
         spotifyUrl: first.spotifyUrl || spotifyUrl,
       };
-    }
-
-    let albums = [];
-    if (cleanId) {
-      try {
-        const albRes = await spotifyFetch(
-          `https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=50`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        albums = (albRes.items || []).map((alb) => ({
-          id: alb.id,
-          name: alb.name,
-          releaseDate: alb.release_date || "",
-          totalTracks: alb.total_tracks || 1,
-          type: alb.album_type === "single" ? "Single" : "Album",
-          image: alb.images?.[0]?.url || alb.images?.[1]?.url || image || "",
-          spotifyUrl: alb.external_urls?.spotify || `https://open.spotify.com/album/${alb.id}`,
-        }));
-        albums.sort((a, b) => new Date(b.releaseDate || "1970") - new Date(a.releaseDate || "1970"));
-        const seenNames = new Set();
-        albums = albums.filter(a => {
-          const key = a.name.toLowerCase().trim();
-          if (seenNames.has(key)) return false;
-          seenNames.add(key);
-          return true;
-        });
-      } catch (err) {
-        console.warn("Spotify artist albums fetch error:", err.message);
-      }
     }
 
     const payload = {

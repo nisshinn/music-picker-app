@@ -1215,6 +1215,16 @@ window.openArtistDetailPage = async function (artist) {
     `;
   }
 
+  // Albums Skeleton
+  const albumsContainer = document.getElementById("artistAlbumsContainer");
+  if (albumsContainer) {
+    albumsContainer.innerHTML = `
+      <div class="skeleton-shimmer" style="height: 180px; width: 140px; border-radius: 12px; flex-shrink: 0;"></div>
+      <div class="skeleton-shimmer" style="height: 180px; width: 140px; border-radius: 12px; flex-shrink: 0;"></div>
+      <div class="skeleton-shimmer" style="height: 180px; width: 140px; border-radius: 12px; flex-shrink: 0;"></div>
+    `;
+  }
+
   // Update "Add to List" button initial state
   const isAlreadySelected = selectedArtists.some((x) => x.id === artistId);
   if (addToListBtn) {
@@ -1235,7 +1245,9 @@ window.openArtistDetailPage = async function (artist) {
       const res = await fetch(url);
       if (res.ok) {
         data = await res.json();
-        clientArtistDetailsCache.set(cacheKey, data);
+        if (data && ((Array.isArray(data.topTracks) && data.topTracks.length > 0) || (Array.isArray(data.albums) && data.albums.length > 0))) {
+          clientArtistDetailsCache.set(cacheKey, data);
+        }
       }
     } catch (err) {
       console.warn("Failed to fetch artist details for page:", err);
@@ -1256,6 +1268,7 @@ window.openArtistDetailPage = async function (artist) {
       highlights: ["メロディセンス", "独自の世界観"],
       topTracks: [],
       latestRelease: null,
+      albums: [],
     };
   }
 
