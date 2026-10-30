@@ -3256,13 +3256,71 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
   color: var(--card);
 }
 
-/* Discography Grid & Cards (写真2枚目準拠) */
+/* Discography & Search Albums Grid: Responsive 1-row default */
 .artist-albums-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
   margin-top: 12px;
 }
+
+@media (max-width: 1200px) {
+  .artist-albums-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .artist-albums-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 680px) {
+  .artist-albums-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .artist-albums-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+
+/* 横一列だけ表示は絶対: When not expanded, show strictly the 1st row across all screen widths */
+.artist-albums-grid:not(.is-expanded) > .artist-album-card:nth-child(n + 7) {
+  display: none !important;
+}
+
+@media (max-width: 1200px) {
+  .artist-albums-grid:not(.is-expanded) > .artist-album-card:nth-child(n + 6) {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .artist-albums-grid:not(.is-expanded) > .artist-album-card:nth-child(n + 5) {
+    display: none !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .artist-albums-grid:not(.is-expanded) > .artist-album-card:nth-child(n + 4) {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .artist-albums-grid:not(.is-expanded) > .artist-album-card:nth-child(n + 3) {
+    display: none !important;
+  }
+}
+
 .artist-album-card {
   position: relative;
   background: var(--card);

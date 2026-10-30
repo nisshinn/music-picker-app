@@ -1529,10 +1529,10 @@ function renderArtistDetailPageContent(data) {
       });
     }
 
-    const displayed = showAllDiscography ? filtered : filtered.slice(0, 5);
+    const displayed = filtered;
 
     if (showAllBtn) {
-      if (filtered.length <= 5) {
+      if (filtered.length <= 1) {
         showAllBtn.style.display = "none";
       } else {
         showAllBtn.style.display = "inline-block";
@@ -1544,6 +1544,8 @@ function renderArtistDetailPageContent(data) {
       albumsContainer.innerHTML = `<div class="empty-message">該当するアイテムはありません</div>`;
       return;
     }
+
+    albumsContainer.className = `artist-albums-grid discography-grid ${showAllDiscography ? "is-expanded" : ""}`;
 
     albumsContainer.innerHTML = displayed
       .map((alb, idx) => {
@@ -1631,7 +1633,8 @@ function renderArtistDetailPageContent(data) {
   if (showAllBtn) {
     showAllBtn.onclick = () => {
       showAllDiscography = !showAllDiscography;
-      renderDiscographyList();
+      albumsContainer.classList.toggle("is-expanded", showAllDiscography);
+      showAllBtn.textContent = showAllDiscography ? "閉じる" : "もっと見る";
     };
   }
 
@@ -3592,19 +3595,18 @@ function renderSearchResults(query, state, box) {
     albumSection.className = "search-albums-section";
     const totalAlbums = state.albums.length;
     const isExpanded = !!state.albumsExpanded;
-    const albumsToShow = isExpanded ? state.albums : state.albums.slice(0, 5);
 
     albumSection.innerHTML = `
       <div class="search-albums-header" style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 8px;">
         <div class="search-section-title" style="font-size:14px;font-weight:700;margin:0;color:var(--text);">アルバム</div>
-        ${totalAlbums > 5 ? `
+        ${totalAlbums > 1 ? `
           <button type="button" class="search-albums-toggle-btn" id="searchAlbumsToggleBtn">
             ${isExpanded ? "閉じる" : "もっと見る"}
           </button>
         ` : ""}
       </div>
-      <div class="artist-albums-grid">
-        ${albumsToShow
+      <div class="artist-albums-grid ${isExpanded ? "is-expanded" : ""}">
+        ${state.albums
           .map(
             (alb) => `
           <div class="artist-album-card" role="button" tabindex="0" data-search-album-id="${escapeHtml(alb.id)}" title="${escapeHtml(alb.name)}を表示">
@@ -3630,7 +3632,9 @@ function renderSearchResults(query, state, box) {
     if (toggleBtn) {
       toggleBtn.addEventListener("click", () => {
         state.albumsExpanded = !state.albumsExpanded;
-        renderSearchResults(query, state, box);
+        const grid = albumSection.querySelector(".artist-albums-grid");
+        if (grid) grid.classList.toggle("is-expanded", state.albumsExpanded);
+        toggleBtn.textContent = state.albumsExpanded ? "閉じる" : "もっと見る";
       });
     }
 
