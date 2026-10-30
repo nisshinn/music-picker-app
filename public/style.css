@@ -2961,8 +2961,13 @@ button.artist-group-header.artist-group-toggle:hover .group-arrow {
   gap: 12px;
   min-height: 56px;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: 6px;
+  border-bottom: 1px solid var(--border);
   transition: background 0.15s ease;
+}
+
+.artist-top-song-row:last-child {
+  border-bottom: none;
 }
 
 .artist-top-song-row:hover {
@@ -3199,19 +3204,21 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
   align-items: center;
   justify-content: space-between;
 }
-.discography-show-all-btn {
+.discography-show-all-btn,
+.search-albums-toggle-btn {
   background: transparent;
   border: none;
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 2px 4px;
   transition: color 0.15s ease;
 }
-.discography-show-all-btn:hover {
+.discography-show-all-btn:hover,
+.search-albums-toggle-btn:hover {
   color: var(--text);
+  text-decoration: underline;
 }
 .artist-discography-tabs {
   display: flex;
@@ -3278,27 +3285,34 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 .artist-album-art-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 1 / 1;
   border-radius: 6px;
   overflow: hidden;
   background: #181818;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .artist-album-art {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+  z-index: 1;
   transition: transform 0.25s ease;
 }
 .artist-album-card:hover .artist-album-art {
   transform: scale(1.03);
 }
 .artist-album-art-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 28px;
   color: var(--muted);
+  z-index: 0;
 }
 /* Hover play button matching Spotify in Image 2 */
 .album-card-play-btn {
@@ -3319,6 +3333,7 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
   transform: translateY(8px);
   transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
   pointer-events: auto;
+  z-index: 2;
 }
 .album-card-play-btn:hover {
   background: #1fdf64;
@@ -3610,10 +3625,14 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
   gap: 16px;
   align-items: center;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 6px;
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   transition: background 0.15s ease;
   user-select: none;
+}
+.album-track-row:last-child {
+  border-bottom: none;
 }
 .album-track-row:hover {
   background: var(--hover);

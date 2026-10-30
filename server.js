@@ -852,107 +852,125 @@ app.get("/api/artist-details", async (req, res) => {
           }
         }
 
-        // Fetch up to 20 tracks for this artist
+        // Fetch up to 20 top tracks for this artist
         const collectedTracks = [];
         const seenTrackIds = new Set();
+        const seenNormTitles = new Map();
+
+        const normalizeSongTitle = (t) => {
+          if (!t) return "";
+          return t
+            .toLowerCase()
+            .replace(/[\(（\[【].*?[\)）\]】]/g, "")
+            .replace(/\s*[-–~〜].*$/, "")
+            .trim();
+        };
+
+        const isJunkTrackTitle = (title) => {
+          const lower = (title || "").toLowerCase().trim();
+          if (/^audio\s*\d+/i.test(lower)) return true;
+          if (/^(intro|outro|interlude|skit|prologue|epilogue)\b/i.test(lower)) return true;
+          return false;
+        };
+
+        const isLiveRecordingTrack = (trackName, albumName) => {
+          const combined = `${trackName || ""} ${albumName || ""}`.toLowerCase();
+          return /live|tour|dome tour|selection from|in tokyo|live selection|at budokan|acoustic live|arena tour/i.test(combined);
+        };
 
         const addCandidateTrack = (t, defaultAlbum = null) => {
-          if (!t || !t.id || seenTrackIds.has(t.id)) return;
+          if (!t || !t.id || seenTrackIds.has(t.id)) return false;
+          if (isJunkTrackTitle(t.name)) return false;
+
           const artList = Array.isArray(t.artists) ? t.artists : [];
           const matches = !artistName || artList.some((a) =>
             (cleanId && a.id === cleanId) ||
             (a.name && a.name.toLowerCase().includes(artistName.toLowerCase())) ||
             (artistName && artistName.toLowerCase().includes((a.name || "").toLowerCase()))
           );
-          if (!matches && artList.length > 0) return;
+          if (!matches && artList.length > 0) return false;
 
-          seenTrackIds.add(t.id);
           const albObj = t.album || defaultAlbum;
-          collectedTracks.push({
+          const normTitle = normalizeSongTitle(t.name);
+          const isLive = isLiveRecordingTrack(t.name, albObj?.name);
+
+          const trackObj = {
             id: t.id,
             name: t.name,
             artists: artList.map((art) => art.name).filter(Boolean).join(", ") || artistName,
             albumName: albObj?.name || "",
-            image: albObj?.images?.[0]?.url || image || "",
+            image: albObj?.images?.[0]?.url || albObj?.images?.[1]?.url || image || "",
             previewUrl: t.preview_url || "",
             uri: t.uri || `spotify:track:${t.id}`,
             spotifyUrl: t.external_urls?.spotify || `https://open.spotify.com/track/${t.id}`,
             durationMs: t.duration_ms || 0,
-            popularity: t.popularity || 50,
-          });
+            popularity: typeof t.popularity === "number" ? t.popularity : 50,
+          };
+
+          if (normTitle && seenNormTitles.has(normTitle)) {
+            const existingIdx = seenNormTitles.get(normTitle);
+            const existing = collectedTracks[existingIdx];
+            const existingIsLive = isLiveRecordingTrack(existing.name, existing.albumName);
+
+            // If existing track was a live version and candidate is studio version, upgrade it
+            if (existingIsLive && !isLive) {
+              seenTrackIds.delete(existing.id);
+              seenTrackIds.add(t.id);
+              collectedTracks[existingIdx] = trackObj;
+              return true;
+            }
+            return false;
+          }
+
+          seenTrackIds.add(t.id);
+          if (normTitle) {
+            seenNormTitles.set(normTitle, collectedTracks.length);
+          }
+          collectedTracks.push(trackObj);
+          return true;
         };
 
-        // 1. Try Spotify top-tracks (usually up to 10 tracks)
-        if (topTracksRes.status === "fulfilled" && topTracksRes.value?.tracks) {
-          (topTracksRes.value.tracks || []).forEach((t) => addCandidateTrack(t));
-        } else {
-          console.warn("Spotify top-tracks unavailable, falling back to search:", topTracksRes.reason?.status || topTracksRes.status);
-        }
-
-        // 2. To reach 20 tracks: fetch tracks from artist's albums
-        if (collectedTracks.length < 20 && albums.length > 0) {
-          for (const alb of albums.slice(0, 5)) {
-            if (collectedTracks.length >= 20) break;
-            try {
-              const albumTracksRes = await spotifyFetch(
-                `https://api.spotify.com/v1/albums/${encodeURIComponent(alb.id)}/tracks?limit=20&market=JP`,
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-              (albumTracksRes.items || []).forEach((t) => addCandidateTrack(t, alb));
-            } catch {}
+        // 1. Try Spotify top-tracks endpoint (official top tracks if available)
+        if (topTracksRes.status === "fulfilled" && Array.isArray(topTracksRes.value?.tracks)) {
+          for (const t of topTracksRes.value.tracks) {
+            addCandidateTrack(t);
           }
         }
 
-        // 3. Search artist tracks if still under 20
+        // 2. Fetch popular tracks via Spotify track search (Spotify search algorithm ranks tracks by popularity/relevance)
         if (collectedTracks.length < 20 && artistName) {
           const searchQueries = [
-            `artist:"${artistName.replace(/["\\]/g, "")}"`,
-            artistName.replace(/["\\]/g, "")
+            artistName.replace(/["\\]/g, ""),
+            `artist:"${artistName.replace(/["\\]/g, "")}"`
           ];
           for (const q of searchQueries) {
             if (collectedTracks.length >= 20) break;
-            const found = await collectPages({
-              maxItems: 50,
-              maxPages: 5,
-              fetchPage: async (offset) =>
-                (await spotifyFetch(
-                  `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=10&offset=${offset}&market=JP`,
-                  { headers: { Authorization: `Bearer ${token}` } }
-                )).tracks || { items: [] },
-            }).catch(() => []);
-            found.forEach((t) => addCandidateTrack(t));
+            try {
+              const offsets = [0, 10, 20, 30, 40];
+              const pages = await Promise.allSettled(
+                offsets.map((off) =>
+                  spotifyFetch(
+                    `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=10&offset=${off}&market=JP`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  )
+                )
+              );
+              for (const pageRes of pages) {
+                if (collectedTracks.length >= 20) break;
+                if (pageRes.status === "fulfilled" && Array.isArray(pageRes.value?.tracks?.items)) {
+                  for (const t of pageRes.value.tracks.items) {
+                    addCandidateTrack(t);
+                    if (collectedTracks.length >= 20) break;
+                  }
+                }
+              }
+            } catch (searchErr) {
+              console.warn("Spotify artist track search non-fatal:", searchErr.message);
+            }
           }
         }
 
         topTracks = collectedTracks.slice(0, 20).map((t, idx) => ({ ...t, rank: idx + 1 }));
-      }
-
-      // If top tracks still empty, try fallback search with limit=10
-      if (topTracks.length === 0 && artistName) {
-        const items = await collectPages({
-          maxItems: 20,
-          maxPages: 5,
-          fetchPage: async (offset) =>
-            (await spotifyFetch(
-              `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=track&limit=10&offset=${offset}&market=JP`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            )).tracks || { items: [] },
-        }).catch(() => []);
-        items.forEach((t) => {
-          topTracks.push({
-            id: t.id,
-            rank: topTracks.length + 1,
-            name: t.name,
-            artists: (t.artists || []).map((art) => art.name).join(", "),
-            albumName: t.album?.name || "",
-            image: t.album?.images?.[0]?.url || image || "",
-            previewUrl: t.preview_url || "",
-            uri: t.uri || `spotify:track:${t.id}`,
-            spotifyUrl: t.external_urls?.spotify || "",
-            durationMs: t.duration_ms || 0,
-            popularity: t.popularity || 0,
-          });
-        });
       }
     } catch (spotifyErr) {
       console.warn("Spotify artist fetch non-fatal:", spotifyErr.message);
@@ -1057,7 +1075,7 @@ app.get("/api/artist-details", async (req, res) => {
     }
 
     const payload = {
-      id: artistId,
+      id: artistId || cleanId,
       name: artistName,
       image,
       genres,
