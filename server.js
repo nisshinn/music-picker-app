@@ -773,14 +773,11 @@ app.get("/api/artist-details", async (req, res) => {
 
       if (resolvedId && /^[a-zA-Z0-9]+$/.test(resolvedId.replace(/^spotify:artist:/, ""))) {
         cleanId = resolvedId.replace(/^spotify:artist:/, "");
-        const [artistRes, topTracksRes, albumsRes] = await Promise.allSettled([
+        const [artistRes, topTracksRes] = await Promise.allSettled([
           spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
           spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/top-tracks?market=JP`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=50`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
@@ -795,17 +792,41 @@ app.get("/api/artist-details", async (req, res) => {
           popularity = a.popularity || 0;
         }
 
+        // Fetch up to 30 albums/singles using limit=10 (Spotify rejects limit>20 on /v1/artists/{id}/albums)
+        let rawAlbumItems = [];
+        try {
+          const albumPages = await Promise.allSettled([
+            spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=10&offset=0`, {
+              headers: { Authorization: `Bearer ${token}` }
+            }),
+            spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=10&offset=10`, {
+              headers: { Authorization: `Bearer ${token}` }
+            }),
+            spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(cleanId)}/albums?include_groups=album,single&market=JP&limit=10&offset=20`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+          ]);
+          for (const pageRes of albumPages) {
+            if (pageRes.status === "fulfilled" && Array.isArray(pageRes.value?.items)) {
+              rawAlbumItems.push(...pageRes.value.items);
+            }
+          }
+        } catch (albErr) {
+          console.warn("Spotify artist albums fetch non-fatal:", albErr.message);
+        }
+
         // Process albums (deduplicated, sorted newest first)
-        if (albumsRes.status === "fulfilled" && albumsRes.value?.items?.length) {
+        if (rawAlbumItems.length > 0) {
           const seenNames = new Set();
-          albums = (albumsRes.value.items || [])
+          albums = rawAlbumItems
             .map((alb) => ({
               id: alb.id,
               name: alb.name,
               releaseDate: alb.release_date || "",
               totalTracks: alb.total_tracks || 1,
-              type: alb.album_type === "single" ? "Single" : "Album",
-              image: alb.images?.[0]?.url || alb.images?.[1]?.url || image || "",
+              type: alb.album_type === "single" ? "Single" : (alb.album_type === "compilation" ? "Compilation" : "Album"),
+              albumType: alb.album_type || "album",
+              image: alb.images?.[0]?.url || alb.images?.[1]?.url || "",
               spotifyUrl: alb.external_urls?.spotify || `https://open.spotify.com/album/${alb.id}`,
             }))
             .filter((alb) => {
@@ -1055,6 +1076,175 @@ app.get("/api/artist-details", async (req, res) => {
     if (artistDetailsCache.size > 200) {
       const firstKey = artistDetailsCache.keys().next().value;
       artistDetailsCache.delete(firstKey);
+    }
+
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// -------------------------------------------------------------
+// Album Details: Metadata & Tracklist
+// -------------------------------------------------------------
+const albumDetailsCache = new Map();
+
+app.get("/api/album-details", async (req, res) => {
+  try {
+    const albumId = String(req.query.id || "").trim();
+    const albumName = String(req.query.name || "").trim();
+    const artistName = String(req.query.artist || "").trim();
+
+    if (!albumId && !albumName) {
+      return res.status(400).json({ error: "album id or name is required" });
+    }
+
+    const cacheKey = `${albumId || "no-id"}:${albumName.toLowerCase()}:${artistName.toLowerCase()}`;
+    const cached = albumDetailsCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 3600_000) {
+      return res.json(cached.data);
+    }
+
+    let token = "";
+    try {
+      token = await getSpotifyToken();
+    } catch {}
+
+    let resolvedAlbumId = albumId;
+    let albumData = null;
+
+    if (token) {
+      // 1. If no valid Spotify ID, search for the album
+      if (!resolvedAlbumId && albumName) {
+        try {
+          const q = artistName ? `album:${albumName} artist:${artistName}` : albumName;
+          const searchRes = await spotifyFetch(
+            `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=1&market=JP`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          resolvedAlbumId = searchRes.albums?.items?.[0]?.id || "";
+        } catch {}
+      }
+
+      // 2. Fetch full album from Spotify
+      if (resolvedAlbumId && /^[a-zA-Z0-9]+$/.test(resolvedAlbumId.replace(/^spotify:album:/, ""))) {
+        const cleanAlbumId = resolvedAlbumId.replace(/^spotify:album:/, "");
+        try {
+          albumData = await spotifyFetch(
+            `https://api.spotify.com/v1/albums/${encodeURIComponent(cleanAlbumId)}?market=JP`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        } catch (e) {
+          console.warn("Spotify album detail fetch failed:", e.message);
+        }
+      }
+    }
+
+    let payload = null;
+    if (albumData && !albumData.error) {
+      const artists = (albumData.artists || []).map((a) => ({
+        id: a.id,
+        name: a.name,
+        spotifyUrl: a.external_urls?.spotify || "",
+      }));
+      const primaryArtist = artists[0]?.name || artistName || "";
+      const primaryArtistId = artists[0]?.id || "";
+
+      // Try to get artist avatar if token available
+      let primaryArtistImage = "";
+      if (token && primaryArtistId) {
+        try {
+          const artRes = await spotifyFetch(
+            `https://api.spotify.com/v1/artists/${encodeURIComponent(primaryArtistId)}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          primaryArtistImage = artRes?.images?.[0]?.url || "";
+        } catch {}
+      }
+
+      const rawTracks = albumData.tracks?.items || [];
+      let totalDurationMs = 0;
+      const tracks = rawTracks.map((t, idx) => {
+        const dur = t.duration_ms || 0;
+        totalDurationMs += dur;
+        const mins = Math.floor(dur / 60000);
+        const secs = Math.floor((dur % 60000) / 1000);
+        const durationStr = `${mins}:${String(secs).padStart(2, "0")}`;
+        const tArtists = (t.artists || []).map((a) => a.name).join(", ") || primaryArtist;
+        const albumImg = albumData.images?.[0]?.url || "";
+
+        return {
+          id: t.id,
+          trackNumber: t.track_number || idx + 1,
+          name: t.name,
+          title: t.name,
+          artist: tArtists,
+          artists: tArtists,
+          albumName: albumData.name,
+          albumId: albumData.id,
+          durationMs: dur,
+          durationStr,
+          previewUrl: t.preview_url || "",
+          uri: t.uri || `spotify:track:${t.id}`,
+          spotifyUrl: t.external_urls?.spotify || `https://open.spotify.com/track/${t.id}`,
+          image: albumImg,
+        };
+      });
+
+      const totalMins = Math.floor(totalDurationMs / 60000);
+      const totalSecs = Math.floor((totalDurationMs % 60000) / 1000);
+      const typeLabel =
+        albumData.album_type === "single"
+          ? (albumData.total_tracks > 1 && albumData.total_tracks <= 6 ? "シングルとEP" : "シングル")
+          : "アルバム";
+
+      payload = {
+        id: albumData.id,
+        name: albumData.name,
+        type: typeLabel,
+        albumType: albumData.album_type || "album",
+        releaseDate: albumData.release_date || "",
+        releaseYear: (albumData.release_date || "").slice(0, 4),
+        totalTracks: albumData.total_tracks || tracks.length,
+        durationMs: totalDurationMs,
+        durationText: `${albumData.total_tracks || tracks.length}曲, ${totalMins}分 ${totalSecs}秒`,
+        image: albumData.images?.[0]?.url || albumData.images?.[1]?.url || "",
+        spotifyUrl: albumData.external_urls?.spotify || `https://open.spotify.com/album/${albumData.id}`,
+        label: albumData.label || "",
+        copyrights: (albumData.copyrights || []).map((c) => c.text),
+        artists,
+        primaryArtist,
+        primaryArtistId,
+        primaryArtistImage,
+        tracks,
+      };
+    } else {
+      payload = {
+        id: albumId || `album-${Date.now()}`,
+        name: albumName || "アルバム",
+        type: "アルバム",
+        albumType: "album",
+        releaseDate: new Date().getFullYear().toString(),
+        releaseYear: new Date().getFullYear().toString(),
+        totalTracks: 0,
+        durationMs: 0,
+        durationText: "0曲",
+        image: "",
+        spotifyUrl: albumId ? `https://open.spotify.com/album/${albumId}` : "",
+        label: "",
+        copyrights: [],
+        artists: artistName ? [{ id: "", name: artistName }] : [],
+        primaryArtist: artistName || "アーティスト",
+        primaryArtistId: "",
+        primaryArtistImage: "",
+        tracks: [],
+      };
+    }
+
+    albumDetailsCache.set(cacheKey, { timestamp: Date.now(), data: payload });
+    if (albumDetailsCache.size > 200) {
+      const firstKey = albumDetailsCache.keys().next().value;
+      albumDetailsCache.delete(firstKey);
     }
 
     res.json(payload);

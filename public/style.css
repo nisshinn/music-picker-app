@@ -3193,67 +3193,518 @@ button.artist-group-header.artist-group-toggle:hover .group-arrow {
 
 input[type="search"] { -webkit-appearance: none; appearance: none; }
 
-/* Artist Albums Grid */
+/* Discography Tabs & Header (写真2枚目準拠) */
+.discography-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.discography-show-all-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+.discography-show-all-btn:hover {
+  color: var(--text);
+}
+.artist-discography-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.artist-discography-tabs::-webkit-scrollbar {
+  display: none;
+}
+.discography-tab {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.discography-tab:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+.discography-tab.active {
+  background: #ffffff;
+  color: #121212;
+}
+[data-theme="ocean"] .discography-tab.active {
+  background: var(--text);
+  color: var(--card);
+}
+
+/* Discography Grid & Cards (写真2枚目準拠) */
 .artist-albums-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  margin-top: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
 }
 .artist-album-card {
+  position: relative;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 10px;
+  border-radius: 10px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   text-decoration: none;
   color: var(--text);
-  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 .artist-album-card:hover {
   background: var(--hover);
-  border-color: var(--green);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 .artist-album-art-wrap {
+  position: relative;
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
-  background: var(--input);
-  position: relative;
+  background: #181818;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .artist-album-art {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.25s ease;
+}
+.artist-album-card:hover .artist-album-art {
+  transform: scale(1.03);
 }
 .artist-album-art-fallback {
-  font-size: 24px;
+  font-size: 28px;
   color: var(--muted);
+}
+/* Hover play button matching Spotify in Image 2 */
+.album-card-play-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1ed760;
+  color: #000000;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
+  pointer-events: auto;
+}
+.album-card-play-btn:hover {
+  background: #1fdf64;
+  transform: translateY(0) scale(1.08) !important;
+}
+.artist-album-card:hover .album-card-play-btn,
+.artist-album-card:focus-within .album-card-play-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+.album-card-play-btn svg {
+  margin-left: 2px;
 }
 .artist-album-info {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 .artist-album-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+.artist-album-meta {
+  font-size: 12px;
+  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.artist-album-meta {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 2px;
+
+/* Album Detail Page (写真3枚目準拠) */
+.album-detail-page {
+  padding-bottom: 60px;
+}
+.album-hero-banner {
+  background: linear-gradient(180deg, #b0006f 0%, #4a0030 65%, var(--bg) 100%);
+  border-radius: 20px 20px 0 0;
+  padding: 16px 24px 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+[data-theme="ocean"] .album-hero-banner {
+  background: linear-gradient(180deg, #c2185b 0%, #580d28 65%, var(--bg) 100%);
+}
+.album-hero-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.album-nav-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.15s ease;
+}
+.album-nav-back:hover {
+  background: rgba(0, 0, 0, 0.6);
+  transform: translateX(-2px);
+}
+.album-nav-back .back-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.album-nav-header-title {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  max-width: 260px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  opacity: 0.9;
+}
+.album-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.15s ease;
+}
+.album-nav-pill:hover {
+  background: rgba(30, 215, 96, 0.25);
+  border-color: #1ed760;
+  color: #ffffff;
+}
+
+.album-hero-content {
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
+}
+.album-artwork-wrap {
+  width: 210px;
+  height: 210px;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1e1e1e;
+  flex-shrink: 0;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.album-artwork-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.album-artwork-fallback {
+  font-size: 54px;
+  color: rgba(255, 255, 255, 0.4);
+}
+.album-header-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #ffffff;
+}
+.album-type-kicker {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 4px;
+}
+.album-title {
+  font-size: clamp(28px, 4.5vw, 54px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: #ffffff;
+  margin: 0 0 10px;
+  word-break: break-word;
+}
+.album-artist-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  flex-wrap: wrap;
+}
+.album-artist-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #282828;
+}
+.album-artist-name-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.album-artist-name-btn:hover {
+  text-decoration: underline;
+}
+.album-meta-dot {
+  opacity: 0.7;
+}
+
+/* Album Action Bar (写真3枚目準拠) */
+.album-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px 14px;
+}
+.album-play-circle-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #1ed760;
+  color: #000000;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(30, 215, 96, 0.4);
+  transition: transform 0.2s ease, background 0.15s ease;
+}
+.album-play-circle-btn:hover {
+  background: #1fdf64;
+  transform: scale(1.06);
+}
+.album-play-circle-btn svg {
+  margin-left: 2px;
+}
+.album-icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.album-icon-btn:hover {
+  color: var(--text);
+  border-color: var(--accent-text);
+  transform: scale(1.06);
+}
+.album-icon-btn.is-active {
+  color: #fa2d48;
+  border-color: #fa2d48;
+}
+.album-view-mode-label {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Album Tracklist Table (写真3枚目準拠) */
+.album-tracks-container {
+  padding: 8px 24px 30px;
+}
+.album-table-header {
+  display: grid;
+  grid-template-columns: 40px 1fr 64px;
+  gap: 16px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.04em;
+}
+.album-table-header .col-num {
+  text-align: center;
+}
+.album-table-header .col-duration {
+  text-align: right;
+  font-size: 14px;
+}
+.album-tracks-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+}
+.album-track-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 64px;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+.album-track-row:hover {
+  background: var(--hover);
+}
+.album-track-row.is-playing {
+  background: rgba(30, 215, 96, 0.1);
+}
+.album-track-row.is-playing .album-track-title {
+  color: #1ed760;
+}
+.album-track-num-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  position: relative;
+}
+.album-track-num-text {
+  transition: opacity 0.15s ease;
+}
+.album-track-play-icon {
+  position: absolute;
+  opacity: 0;
+  color: var(--text);
+  transition: opacity 0.15s ease;
+}
+.album-track-row:hover .album-track-num-text {
+  opacity: 0;
+}
+.album-track-row:hover .album-track-play-icon {
+  opacity: 1;
+}
+.album-track-row.is-playing .album-track-num-text {
+  display: none;
+}
+.album-track-row.is-playing .album-track-play-icon {
+  opacity: 1;
+  color: #1ed760;
+}
+.album-track-info-cell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.album-track-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.album-track-artist {
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.album-track-duration-cell {
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+@media (max-width: 680px) {
+  .album-hero-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 18px;
+  }
+  .album-artwork-wrap {
+    width: 170px;
+    height: 170px;
+  }
+  .album-artist-meta-row {
+    justify-content: center;
+  }
+  .album-hero-banner {
+    padding: 12px 16px 20px;
+  }
+  .album-action-bar {
+    padding: 16px 16px 10px;
+  }
+  .album-tracks-container {
+    padding: 8px 12px 24px;
+  }
 }
 
 /* Track row bottom separator lines (Apple Music / Spotify compact style) */
