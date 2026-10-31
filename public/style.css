@@ -4056,5 +4056,134 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
   margin-bottom: 46px !important;
 }
 
+/* 卒業制作 発表用資料セクション */
+.presentation-box {
+  background: linear-gradient(145deg, rgba(30, 35, 48, 0.7) 0%, rgba(18, 22, 32, 0.85) 100%);
+  border: 1px solid rgba(29, 185, 84, 0.3);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.presentation-box::before {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(29, 185, 84, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.presentation-header-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.presentation-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #1ed760;
+  background: rgba(29, 185, 84, 0.12);
+  border: 1px solid rgba(29, 185, 84, 0.3);
+  border-radius: 999px;
+}
+
+.presentation-desc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #b3b3b3;
+  margin: 0 0 20px 0;
+}
+
+.presentation-actions {
+  margin-bottom: 20px;
+}
+
+.presentation-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 22px;
+  background: linear-gradient(135deg, #1ed760 0%, #159e43 100%);
+  color: #0b0c10;
+  text-decoration: none;
+  border-radius: 14px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(29, 185, 84, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.presentation-download-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(29, 185, 84, 0.48);
+  filter: brightness(1.06);
+  color: #000000;
+}
+
+.presentation-download-btn:active {
+  transform: translateY(1px);
+}
+
+.presentation-btn-icon {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.presentation-btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.presentation-btn-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.presentation-btn-sub {
+  font-size: 11.5px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.presentation-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.presentation-detail-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.detail-label {
+  font-weight: 700;
+  color: #ffffff;
+  min-width: 120px;
+}
+
+.detail-val {
+  color: #b3b3b3;
+  flex: 1;
+}
+
 
 
