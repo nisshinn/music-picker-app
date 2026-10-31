@@ -444,6 +444,7 @@
         <section class="content-box">
             <input type="search" id="songSearchInput" class="big-search" placeholder="曲名・アーティスト名を入力..." autocomplete="off" enterkeyhint="search" aria-label="曲名・アーティスト名で検索">
             <button id="songSearchButton" class="search-button">検索</button>
+            <div id="searchSuggestionsBox" class="search-suggestions-box"></div>
             <div id="searchResults" class="search-results"></div>
         </section>
     </section>
@@ -651,10 +652,9 @@
 
         <!-- アクションバー（大きな丸型再生ボタン、お気に入り、シャッフル、Spotify外部リンク） -->
         <div class="album-action-bar">
-            <button id="albumPlayAllBtn" class="album-play-circle-btn" type="button" aria-label="全曲再生" title="アルバムを最初から再生">
-                <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
-                    <polygon points="7 4 20 12 7 20 7 4"></polygon>
-                </svg>
+            <button id="albumPlayAllBtn" class="album-play-hero-btn" type="button" aria-label="全曲再生" title="アルバムを最初から再生">
+                <span class="album-play-hero-icon" aria-hidden="true">▶</span>
+                <span class="album-play-hero-text">全曲再生</span>
             </button>
             <button id="albumFavoriteBtn" class="album-icon-btn" type="button" aria-label="お気に入りに追加" title="お気に入り">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
@@ -813,6 +813,17 @@
                 </div>
             </div>
             <section id="fpLyrics" class="fp-lyrics" aria-label="歌詞" hidden>
+                <div class="fp-lyrics-toolbar">
+                    <div class="lyrics-font-controls" role="group" aria-label="歌詞の文字サイズ">
+                        <span class="lyrics-toolbar-label">文字サイズ</span>
+                        <button type="button" class="lyrics-size-btn" data-size="sm" title="小サイズ">小</button>
+                        <button type="button" class="lyrics-size-btn active" data-size="md" title="中サイズ">中</button>
+                        <button type="button" class="lyrics-size-btn" data-size="lg" title="大サイズ">大</button>
+                    </div>
+                    <button type="button" class="lyrics-fullscreen-btn" id="fpLyricsFullscreenBtn" title="歌詞の全画面表示">
+                        <span class="fs-icon" aria-hidden="true">⛶</span> 全画面
+                    </button>
+                </div>
                 <p id="fpLyricsStatus" class="fp-lyrics-status" role="status"></p>
                 <div id="fpLyricsLines" class="fp-lyrics-lines" tabindex="0" aria-label="歌詞をスクロール"></div>
                 <div class="fp-lyrics-footer">

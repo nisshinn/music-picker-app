@@ -1462,8 +1462,15 @@ function renderArtistDetailPageContent(data) {
     }
 
     topSongsContainer.innerHTML = tracks
-      .map(
-        (t, idx) => `
+      .map((t, idx) => {
+        const normTrack = normalizeTrack({
+          ...t,
+          album: { name: t.albumName || "", images: [{ url: t.image }] }
+        });
+        const isFav = getFavorites().some((fav) => fav.uri === normTrack.uri || fav.id === normTrack.id);
+        const spotifyUrl = t.spotifyUrl || (t.id ? `https://open.spotify.com/track/${t.id}` : "https://open.spotify.com");
+
+        return `
       <div class="artist-top-song-row" data-track-id="${escapeHtml(t.id)}" role="button" tabindex="0" aria-label="${escapeHtml(t.name)}を再生" onclick="window.playArtistTopSong(${idx}, event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.playArtistTopSong(${idx}, event);}">
         <div class="song-rank">${idx + 1}</div>
         <div class="song-art-wrap">
@@ -1477,19 +1484,38 @@ function renderArtistDetailPageContent(data) {
           <div class="song-sub">${escapeHtml(t.albumName || t.artists || data.name)}</div>
         </div>
         <div class="song-actions-col">
+          <button type="button" class="track-row-heart-btn artist-top-song-heart-btn ${isFav ? "is-favorite" : ""}" data-song-idx="${idx}" title="${isFav ? "お気に入りから削除" : "お気に入りに追加"}" aria-label="${isFav ? "お気に入りから削除" : "お気に入りに追加"}">
+            ${isFav ? "❤️" : "♡"}
+          </button>
           ${t.previewUrl ? `
             <button type="button" class="song-action-pill-btn" id="artistPagePlayPill-${escapeHtml(t.id)}" onclick="window.toggleArtistPageTrackPreview('${escapeHtml(t.previewUrl)}', '${escapeHtml(t.id)}', event)">
               試聴
             </button>
           ` : ""}
-          ${t.spotifyUrl ? `
-            <a href="${escapeHtml(t.spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="song-action-ext-btn" title="Spotifyで聴く" onclick="event.stopPropagation()">↗</a>
-          ` : ""}
+          <a href="${escapeHtml(spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="track-row-spotify-btn song-action-ext-btn" title="Spotifyで聴く" onclick="event.stopPropagation()">↗</a>
         </div>
       </div>
-    `
-      )
+    `;
+      })
       .join("");
+
+    topSongsContainer.querySelectorAll(".artist-top-song-heart-btn").forEach((hBtn) => {
+      hBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = Number(hBtn.dataset.songIdx);
+        const songData = tracks[idx];
+        if (!songData) return;
+        const norm = normalizeTrack({
+          ...songData,
+          album: { name: songData.albumName || "", images: [{ url: songData.image }] }
+        });
+        toggleFavorite(norm);
+        const nowFav = getFavorites().some((fav) => fav.uri === norm.uri || fav.id === norm.id);
+        hBtn.classList.toggle("is-favorite", nowFav);
+        hBtn.textContent = nowFav ? "❤️" : "♡";
+        hBtn.title = nowFav ? "お気に入りから削除" : "お気に入りに追加";
+      });
+    });
   };
 
   if (topSongsToggleBtn) {
@@ -1506,7 +1532,6 @@ function renderArtistDetailPageContent(data) {
   const discographyTabs = document.querySelectorAll(".discography-tab");
   const showAllBtn = document.getElementById("discographyShowAllBtn");
   let currentDiscographyFilter = "all";
-  let showAllDiscography = false;
 
   const renderDiscographyList = () => {
     if (!albumsContainer) return;
@@ -1532,12 +1557,7 @@ function renderArtistDetailPageContent(data) {
     const displayed = filtered;
 
     if (showAllBtn) {
-      if (filtered.length <= 1) {
-        showAllBtn.style.display = "none";
-      } else {
-        showAllBtn.style.display = "inline-block";
-        showAllBtn.textContent = showAllDiscography ? "閉じる" : "もっと見る";
-      }
+      showAllBtn.style.display = "none";
     }
 
     if (displayed.length === 0) {
@@ -1545,7 +1565,7 @@ function renderArtistDetailPageContent(data) {
       return;
     }
 
-    albumsContainer.className = `artist-albums-grid discography-grid ${showAllDiscography ? "is-expanded" : ""}`;
+    albumsContainer.className = "artist-albums-grid discography-grid";
 
     albumsContainer.innerHTML = displayed
       .map((alb, idx) => {
@@ -1563,7 +1583,7 @@ function renderArtistDetailPageContent(data) {
               ${alb.image ? `<img src="${escapeHtml(alb.image)}" alt="${escapeHtml(alb.name)}" class="artist-album-art" loading="lazy" onerror="this.style.display='none'">` : ""}
               <span class="artist-album-art-fallback" aria-hidden="true">♫</span>
               <button type="button" class="album-card-play-btn" data-album-play="${escapeHtml(alb.id)}" aria-label="${escapeHtml(alb.name)}を再生" title="再生">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
               </button>
             </div>
             <div class="artist-album-info">
@@ -1625,17 +1645,12 @@ function renderArtistDetailPageContent(data) {
       tab.classList.add("active");
       tab.setAttribute("aria-selected", "true");
       currentDiscographyFilter = tab.dataset.filter || "all";
-      showAllDiscography = false;
       renderDiscographyList();
     };
   });
 
   if (showAllBtn) {
-    showAllBtn.onclick = () => {
-      showAllDiscography = !showAllDiscography;
-      albumsContainer.classList.toggle("is-expanded", showAllDiscography);
-      showAllBtn.textContent = showAllDiscography ? "閉じる" : "もっと見る";
-    };
+    showAllBtn.style.display = "none";
   }
 
   renderDiscographyList();
@@ -1858,6 +1873,10 @@ function renderAlbumDetailPageContent(data) {
       trackListContainer.innerHTML = tracks
         .map((t, idx) => {
           const isCurrent = currentTrackData && (currentTrackData.id === t.id || currentTrackData.uri === t.uri);
+          const norm = normalizedTracks[idx];
+          const isFav = norm && getFavorites().some((fav) => fav.uri === norm.uri || fav.id === norm.id);
+          const spotifyUrl = t.spotifyUrl || (t.id ? `https://open.spotify.com/track/${t.id}` : "https://open.spotify.com");
+
           return `
             <div class="album-track-row ${isCurrent ? "is-playing" : ""}" data-track-index="${idx}" tabindex="0" role="button">
               <div class="album-track-num-cell">
@@ -1868,6 +1887,12 @@ function renderAlbumDetailPageContent(data) {
                 <div class="album-track-title">${escapeHtml(t.name || t.title)}</div>
                 <div class="album-track-artist">${escapeHtml(t.artists || data.primaryArtist || "")}</div>
               </div>
+              <div class="album-track-actions">
+                <button type="button" class="track-row-heart-btn album-track-heart-btn ${isFav ? "is-favorite" : ""}" data-track-index="${idx}" title="${isFav ? "お気に入りから削除" : "お気に入りに追加"}" aria-label="${isFav ? "お気に入りから削除" : "お気に入りに追加"}">
+                  ${isFav ? "❤️" : "♡"}
+                </button>
+                <a href="${escapeHtml(spotifyUrl)}" target="_blank" rel="noopener noreferrer" class="track-row-spotify-btn" title="Spotifyで聴く">↗</a>
+              </div>
               <div class="album-track-duration-cell">${escapeHtml(t.durationStr || "")}</div>
             </div>
           `;
@@ -1876,7 +1901,8 @@ function renderAlbumDetailPageContent(data) {
 
       // Row clicks
       trackListContainer.querySelectorAll(".album-track-row").forEach((row) => {
-        row.addEventListener("click", () => {
+        row.addEventListener("click", (e) => {
+          if (e.target.closest(".track-row-heart-btn, .track-row-spotify-btn")) return;
           const idx = Number(row.dataset.trackIndex);
           if (idx >= 0 && idx < normalizedTracks.length) {
             startTrackList(normalizedTracks, idx);
@@ -1887,10 +1913,32 @@ function renderAlbumDetailPageContent(data) {
         });
         row.addEventListener("keydown", (e) => {
           if (e.key === "Enter" || e.key === " ") {
+            if (e.target.closest(".track-row-heart-btn, .track-row-spotify-btn")) return;
             e.preventDefault();
             row.click();
           }
         });
+      });
+
+      // Track heart buttons
+      trackListContainer.querySelectorAll(".album-track-heart-btn").forEach((hBtn) => {
+        hBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const idx = Number(hBtn.dataset.trackIndex);
+          const targetTrack = normalizedTracks[idx];
+          if (targetTrack) {
+            toggleFavorite(targetTrack);
+            const nowFav = getFavorites().some((fav) => fav.uri === targetTrack.uri || fav.id === targetTrack.id);
+            hBtn.classList.toggle("is-favorite", nowFav);
+            hBtn.textContent = nowFav ? "❤️" : "♡";
+            hBtn.title = nowFav ? "お気に入りから削除" : "お気に入りに追加";
+          }
+        });
+      });
+
+      // Spotify links stop row click
+      trackListContainer.querySelectorAll(".track-row-spotify-btn").forEach((sBtn) => {
+        sBtn.addEventListener("click", (e) => e.stopPropagation());
       });
     }
   }
@@ -1901,7 +1949,7 @@ function renderAlbumDetailPageContent(data) {
       if (normalizedTracks.length > 0) {
         startTrackList(normalizedTracks, 0);
         if (typeof showToast === "function") {
-          showToast(`「${data.name}」を再生開始`);
+          showToast(`「${data.name}」を全曲再生開始`);
         }
       }
     };
@@ -3440,9 +3488,162 @@ async function refreshSpotifyQueue() {
 }
 
 // -------------------------------------------------------------
-// Search (Spotify catalog)
+// Search Suggestions & History (Spotify catalog)
 // -------------------------------------------------------------
+const POPULAR_SEARCH_ARTISTS = [
+  "Vaundy",
+  "YOASOBI",
+  "back number",
+  "Mrs. GREEN APPLE",
+  "Official髭男dism",
+  "King Gnu",
+  "藤井 風",
+  "Ado",
+  "優里",
+  "米津玄師"
+];
+
+function getSearchHistory() {
+  try {
+    return JSON.parse(localStorage.getItem("music_picker_search_history") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveSearchHistory(term) {
+  if (!term || typeof term !== "string") return;
+  term = term.trim();
+  if (!term) return;
+  let history = getSearchHistory();
+  history = history.filter((t) => t.toLowerCase() !== term.toLowerCase());
+  history.unshift(term);
+  if (history.length > 8) history = history.slice(0, 8);
+  try {
+    localStorage.setItem("music_picker_search_history", JSON.stringify(history));
+  } catch {}
+}
+
+function removeSearchHistory(term) {
+  let history = getSearchHistory();
+  history = history.filter((t) => t.toLowerCase() !== term.toLowerCase());
+  try {
+    localStorage.setItem("music_picker_search_history", JSON.stringify(history));
+  } catch {}
+  renderSearchSuggestions();
+}
+
+function clearSearchHistory() {
+  localStorage.removeItem("music_picker_search_history");
+  renderSearchSuggestions();
+}
+
+function renderSearchSuggestions() {
+  const container = document.getElementById("searchSuggestionsBox");
+  if (!container) return;
+  const history = getSearchHistory();
+  const input = document.getElementById("songSearchInput");
+  const box = document.getElementById("searchResults");
+
+  container.innerHTML = "";
+
+  // 1. Recent searches
+  if (history.length > 0) {
+    const sec = document.createElement("div");
+    sec.className = "search-suggestions-section";
+    sec.innerHTML = `
+      <div class="search-suggestions-header">
+        <span class="search-suggestions-title">🕒 最近の検索</span>
+        <button type="button" class="search-clear-history-btn" id="searchClearHistoryBtn">履歴を消去</button>
+      </div>
+      <div class="search-chips-container">
+        ${history
+          .map(
+            (item) => `
+          <div class="search-chip history-chip" data-search-term="${escapeHtml(item)}" role="button" tabindex="0">
+            <span>${escapeHtml(item)}</span>
+            <button type="button" class="chip-delete-btn" data-delete-term="${escapeHtml(item)}" title="削除" aria-label="${escapeHtml(item)}を履歴から削除">✕</button>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    `;
+
+    sec.querySelector("#searchClearHistoryBtn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      clearSearchHistory();
+    });
+
+    sec.querySelectorAll(".chip-delete-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeSearchHistory(btn.dataset.deleteTerm);
+      });
+    });
+
+    sec.querySelectorAll(".search-chip.history-chip").forEach((chip) => {
+      const handleChipClick = (e) => {
+        if (e.target.closest(".chip-delete-btn")) return;
+        const term = chip.dataset.searchTerm;
+        if (input && box) {
+          input.value = term;
+          saveSearchHistory(term);
+          const sugBox = document.getElementById("searchSuggestionsBox");
+          if (sugBox) sugBox.style.display = "none";
+          runSongSearch(term, box);
+        }
+      };
+      chip.addEventListener("click", handleChipClick);
+      chip.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleChipClick(e);
+        }
+      });
+    });
+
+    container.appendChild(sec);
+  }
+
+  // 2. Popular artists
+  const popSec = document.createElement("div");
+  popSec.className = "search-suggestions-section";
+  popSec.innerHTML = `
+    <div class="search-suggestions-header">
+      <span class="search-suggestions-title">🔥 話題・人気のアーティスト</span>
+    </div>
+    <div class="search-chips-container">
+      ${POPULAR_SEARCH_ARTISTS.map(
+        (artist) => `
+        <button type="button" class="search-chip artist-chip" data-artist-term="${escapeHtml(artist)}">
+          <span class="chip-icon">✦</span>
+          <span>${escapeHtml(artist)}</span>
+        </button>
+      `
+      ).join("")}
+    </div>
+  `;
+
+  popSec.querySelectorAll(".artist-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const artist = chip.dataset.artistTerm;
+      if (input && box) {
+        input.value = artist;
+        saveSearchHistory(artist);
+        const sugBox = document.getElementById("searchSuggestionsBox");
+        if (sugBox) sugBox.style.display = "none";
+        runSongSearch(artist, box);
+      }
+    });
+  });
+
+  container.appendChild(popSec);
+}
+
 function initSearch() {
+  renderSearchSuggestions();
+
   [
     ["songSearchInput", "songSearchButton"],
     ["musicSearchInput", "musicSearchButton"],
@@ -3450,22 +3651,42 @@ function initSearch() {
     const input = document.getElementById(inputId);
     const btn = document.getElementById(btnId);
     const box = document.getElementById("searchResults");
+    const sugBox = document.getElementById("searchSuggestionsBox");
     if (!input || !box) return;
     let timer = null;
     const run = () => {
       clearTimeout(timer);
-      runSongSearch(input.value.trim(), box);
+      const q = input.value.trim();
+      if (q) {
+        saveSearchHistory(q);
+        if (sugBox) sugBox.style.display = "none";
+      }
+      runSongSearch(q, box);
     };
+
+    input.addEventListener("focus", () => {
+      if (!input.value.trim() && sugBox) {
+        renderSearchSuggestions();
+        sugBox.style.display = "flex";
+      }
+    });
+
     // 入力するたびに自動検索（変換中も含む）。連打を避けるため少しだけ待つ
     input.addEventListener("input", () => {
       clearTimeout(timer);
       if (!input.value.trim()) {
         searchRequestId++; // 進行中の検索を無効化
+        if (sugBox) {
+          renderSearchSuggestions();
+          sugBox.style.display = "flex";
+        }
         box.innerHTML = `<div class="empty-message">曲名やアーティスト名を入力してください</div>`;
         return;
       }
+      if (sugBox) sugBox.style.display = "none";
       timer = setTimeout(run, 250);
     });
+
     // 検索ボタンがあるページ用（なくても動く）
     if (btn) btn.addEventListener("click", run);
     input.addEventListener("keydown", (e) => {
@@ -3593,19 +3814,12 @@ function renderSearchResults(query, state, box) {
   if (Array.isArray(state.albums) && state.albums.length > 0) {
     const albumSection = document.createElement("div");
     albumSection.className = "search-albums-section";
-    const totalAlbums = state.albums.length;
-    const isExpanded = !!state.albumsExpanded;
 
     albumSection.innerHTML = `
       <div class="search-albums-header" style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 8px;">
         <div class="search-section-title" style="font-size:14px;font-weight:700;margin:0;color:var(--text);">アルバム</div>
-        ${totalAlbums > 1 ? `
-          <button type="button" class="search-albums-toggle-btn" id="searchAlbumsToggleBtn">
-            ${isExpanded ? "閉じる" : "もっと見る"}
-          </button>
-        ` : ""}
       </div>
-      <div class="artist-albums-grid ${isExpanded ? "is-expanded" : ""}">
+      <div class="artist-albums-grid">
         ${state.albums
           .map(
             (alb) => `
@@ -3627,16 +3841,6 @@ function renderSearchResults(query, state, box) {
           .join("")}
       </div>
     `;
-
-    const toggleBtn = albumSection.querySelector("#searchAlbumsToggleBtn");
-    if (toggleBtn) {
-      toggleBtn.addEventListener("click", () => {
-        state.albumsExpanded = !state.albumsExpanded;
-        const grid = albumSection.querySelector(".artist-albums-grid");
-        if (grid) grid.classList.toggle("is-expanded", state.albumsExpanded);
-        toggleBtn.textContent = state.albumsExpanded ? "閉じる" : "もっと見る";
-      });
-    }
 
     albumSection.querySelectorAll(".artist-album-card").forEach((card) => {
       card.addEventListener("click", (e) => {
@@ -3749,6 +3953,7 @@ async function runSongSearch(query, box) {
     box.innerHTML = `<div class="empty-message">曲名やアーティスト名を入力してください</div>`;
     return;
   }
+  saveSearchHistory(query);
   const reqId = ++searchRequestId;
   // 入力のたびに前の通信を中断する（古い結果が後から表示されるのも防ぐ）
   searchAbort?.abort();
@@ -3987,6 +4192,9 @@ function openFullPlayer() {
 function closeFullPlayer() {
   const fp = document.getElementById("fullPlayer");
   if (!fp) return;
+  if (typeof lyricsFullscreen !== "undefined" && lyricsFullscreen) {
+    toggleLyricsFullscreen(false);
+  }
   fp.classList.remove("open", "queue-open");
   closePlayerPopovers();
   document.getElementById("fpQueueButton")?.setAttribute("aria-expanded", "false");
@@ -4245,7 +4453,62 @@ function syncLyrics(position, force = false) {
   if (line && lyricsFollowing) container.scrollTo({ top: Math.max(0, line.offsetTop - 12), behavior: "auto" });
 }
 
+let lyricsSize = "md";
+try {
+  lyricsSize = localStorage.getItem("music_picker_lyrics_size") || "md";
+} catch {}
+let lyricsFullscreen = false;
+
+function setLyricsSize(size) {
+  lyricsSize = size;
+  try {
+    localStorage.setItem("music_picker_lyrics_size", size);
+  } catch {}
+  const panel = document.getElementById("fpLyrics");
+  if (panel) {
+    panel.classList.remove("size-sm", "size-lg");
+    if (size === "sm") panel.classList.add("size-sm");
+    if (size === "lg") panel.classList.add("size-lg");
+  }
+  document.querySelectorAll(".lyrics-size-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.size === size);
+  });
+  syncLyrics(clockPosition(), true);
+}
+
+function toggleLyricsFullscreen(force) {
+  const panel = document.getElementById("fpLyrics");
+  if (!panel) return;
+  lyricsFullscreen = typeof force === "boolean" ? force : !lyricsFullscreen;
+  panel.classList.toggle("is-fullscreen", lyricsFullscreen);
+  const fsBtn = document.getElementById("fpLyricsFullscreenBtn");
+  if (fsBtn) {
+    fsBtn.innerHTML = lyricsFullscreen ? '<span class="fs-icon">✕</span> 閉じる' : '<span class="fs-icon">⛶</span> 全画面';
+    fsBtn.title = lyricsFullscreen ? "全画面を閉じる" : "全画面表示";
+  }
+  syncLyrics(clockPosition(), true);
+}
+
 function initLyrics() {
+  setLyricsSize(lyricsSize);
+
+  document.querySelectorAll(".lyrics-size-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setLyricsSize(btn.dataset.size || "md");
+    });
+  });
+
+  const fsBtn = document.getElementById("fpLyricsFullscreenBtn");
+  if (fsBtn) {
+    fsBtn.addEventListener("click", () => toggleLyricsFullscreen());
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && lyricsFullscreen) {
+      toggleLyricsFullscreen(false);
+    }
+  });
+
   window.addEventListener?.("resize", () => syncLyrics(clockPosition(), true));
   document.getElementById("fpLyricsButton")?.addEventListener("click", () => setLyricsOpen(!lyricsOpen));
   document.getElementById("fpLyricsRetry")?.addEventListener("click", loadLyrics);

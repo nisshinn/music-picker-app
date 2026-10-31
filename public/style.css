@@ -3198,7 +3198,7 @@ button.artist-group-header.artist-group-toggle:hover .group-arrow {
 
 input[type="search"] { -webkit-appearance: none; appearance: none; }
 
-/* Discography Tabs & Header (写真2枚目準拠) */
+/* Discography Tabs & Header */
 .discography-group-header {
   display: flex;
   align-items: center;
@@ -3206,19 +3206,7 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 }
 .discography-show-all-btn,
 .search-albums-toggle-btn {
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 2px 4px;
-  transition: color 0.15s ease;
-}
-.discography-show-all-btn:hover,
-.search-albums-toggle-btn:hover {
-  color: var(--text);
-  text-decoration: underline;
+  display: none !important;
 }
 .artist-discography-tabs {
   display: flex;
@@ -3256,68 +3244,43 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
   color: var(--card);
 }
 
-/* Discography & Search Albums Grid: Responsive 1-row default */
+/* Discography & Search Albums: Horizontal Carousel with Touch/Swipe (写真2枚目準拠) */
 .artist-albums-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 12px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 14px;
+  padding: 4px 2px 14px;
+  margin-top: 10px;
 }
 
-@media (max-width: 1200px) {
-  .artist-albums-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 14px;
-  }
+.artist-albums-grid::-webkit-scrollbar {
+  display: none;
 }
 
-@media (max-width: 900px) {
-  .artist-albums-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-  }
+.artist-album-card {
+  flex: 0 0 156px;
+  width: 156px;
+  min-width: 156px;
+  scroll-snap-align: start;
 }
 
 @media (max-width: 680px) {
   .artist-albums-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
+    padding-bottom: 10px;
   }
-}
-
-@media (max-width: 480px) {
-  .artist-albums-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .artist-album-card {
+    flex: 0 0 134px;
+    width: 134px;
+    min-width: 134px;
+    padding: 10px;
     gap: 8px;
-  }
-}
-
-/* 横一列だけ表示は絶対: When not expanded, show strictly the 1st row across all screen widths */
-.artist-albums-grid:not(.is-expanded) > .artist-album-card:nth-child(n + 7) {
-  display: none !important;
-}
-
-@media (max-width: 1200px) {
-  .artist-albums-grid:not(.is-expanded) > .artist-album-card:nth-child(n + 6) {
-    display: none !important;
-  }
-}
-
-@media (max-width: 900px) {
-  .artist-albums-grid:not(.is-expanded) > .artist-album-card:nth-child(n + 5) {
-    display: none !important;
-  }
-}
-
-@media (max-width: 680px) {
-  .artist-albums-grid:not(.is-expanded) > .artist-album-card:nth-child(n + 4) {
-    display: none !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .artist-albums-grid:not(.is-expanded) > .artist-album-card:nth-child(n + 3) {
-    display: none !important;
   }
 }
 
@@ -3594,30 +3557,46 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 .album-action-bar {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 22px 24px 14px;
+  gap: 16px;
+  padding: 20px 24px 14px;
+  flex-wrap: wrap;
 }
-.album-play-circle-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+
+.album-play-hero-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 50px;
+  padding: 0 28px;
+  border-radius: 999px;
   background: #1ed760;
   color: #000000;
   border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(30, 215, 96, 0.4);
-  transition: transform 0.2s ease, background 0.15s ease;
+  box-shadow: 0 8px 24px rgba(30, 215, 96, 0.45);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
 }
-.album-play-circle-btn:hover {
+
+.album-play-hero-btn:hover {
   background: #1fdf64;
-  transform: scale(1.06);
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 10px 28px rgba(30, 215, 96, 0.6);
 }
-.album-play-circle-btn svg {
-  margin-left: 2px;
+
+.album-play-hero-btn:active {
+  transform: scale(0.98);
 }
+
+.album-play-hero-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
 .album-icon-btn {
   width: 38px;
   height: 38px;
@@ -3656,8 +3635,9 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 }
 .album-table-header {
   display: grid;
-  grid-template-columns: 40px 1fr 64px;
-  gap: 16px;
+  grid-template-columns: 36px 1fr auto 56px;
+  gap: 14px;
+  align-items: center;
   padding: 8px 14px;
   font-size: 12.5px;
   font-weight: 700;
@@ -3667,6 +3647,9 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 }
 .album-table-header .col-num {
   text-align: center;
+}
+.album-table-header .col-actions {
+  width: 68px;
 }
 .album-table-header .col-duration {
   text-align: right;
@@ -3679,8 +3662,8 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 }
 .album-track-row {
   display: grid;
-  grid-template-columns: 40px 1fr 64px;
-  gap: 16px;
+  grid-template-columns: 36px 1fr auto 56px;
+  gap: 14px;
   align-items: center;
   padding: 10px 14px;
   border-radius: 6px;
@@ -3752,6 +3735,51 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.album-track-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.track-row-heart-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.track-row-heart-btn:hover {
+  transform: scale(1.15);
+  color: #fa2d48;
+}
+.track-row-heart-btn.is-favorite {
+  color: #fa2d48;
+}
+.track-row-spotify-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.track-row-spotify-btn:hover {
+  color: #1ed760;
+  transform: scale(1.15);
 }
 .album-track-duration-cell {
   text-align: right;
@@ -3839,5 +3867,194 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
   color: var(--muted);
   margin: 0;
 }
+
+/* =========================================================
+   Search Suggestions & History Chips (クイックタップ)
+   ========================================================= */
+.search-suggestions-box {
+  margin-top: 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.search-suggestions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.search-suggestions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.search-suggestions-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.search-clear-history-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: color 0.15s ease;
+}
+.search-clear-history-btn:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+.search-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.search-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.search-chip:hover {
+  background: var(--hover);
+  border-color: var(--accent-text);
+  color: var(--accent-text);
+  transform: translateY(-1px);
+}
+.search-chip.history-chip {
+  padding-right: 8px;
+}
+.chip-icon {
+  font-size: 12px;
+  color: var(--muted);
+}
+.chip-delete-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chip-delete-btn:hover {
+  color: #fa2d48;
+}
+
+/* =========================================================
+   Lyrics Toolbar, Font Size Control & Fullscreen Mode
+   ========================================================= */
+.fp-lyrics-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 6px 12px;
+  margin-bottom: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.lyrics-font-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lyrics-toolbar-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-right: 2px;
+}
+.lyrics-size-btn {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: var(--sub);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.lyrics-size-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+.lyrics-size-btn.active {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+.lyrics-fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.lyrics-fullscreen-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.fp-lyrics.size-sm .fp-lyric-line {
+  font-size: clamp(20px, 2.2vw, 32px);
+  margin-bottom: 24px;
+}
+.fp-lyrics.size-lg .fp-lyric-line {
+  font-size: clamp(34px, 4vw, 58px);
+  margin-bottom: 50px;
+}
+/* Fullscreen Lyrics Overlay */
+.fp-lyrics.is-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+  background: rgba(12, 12, 16, 0.96) !important;
+  backdrop-filter: blur(36px) !important;
+  -webkit-backdrop-filter: blur(36px) !important;
+  padding: max(24px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.fp-lyrics.is-fullscreen .fp-lyrics-lines {
+  height: calc(100vh - 140px) !important;
+  padding-right: 20px !important;
+}
+.fp-lyrics.is-fullscreen .fp-lyric-line {
+  font-size: clamp(32px, 4.5vw, 64px) !important;
+  line-height: 1.5 !important;
+  margin-bottom: 46px !important;
+}
+
 
 
