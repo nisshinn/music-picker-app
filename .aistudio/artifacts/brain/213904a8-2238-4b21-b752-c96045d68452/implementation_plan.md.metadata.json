@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for the 5 requested enhancements: Horizontal swipe carousel for discography, Album Play All button, Universal heart/Spotify actions across all track rows, Search history and quick artist chips, and Lyrics font size control with fullscreen mode.",
-  "updatedAt":  "2026-10-31T14:34:42.596851423Z",
+  "summary":  "情報科卒業制作発表（8分）向けのPowerPointスライド（.pptx）自動生成と発表原稿作成の実施計画書です。スライドは極限まで文字を絞った洗練されたデザイン（アプリ実機スクショ入り）とし、スピーカーノートに8分間の詳細な発表原稿を完全収録します。pptxgenjsを用いてブラウザからワンクリックでダウンロードできる.pptxファイルを生成します。",
+  "updatedAt":  "2026-10-31T14:56:29.985641578Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
