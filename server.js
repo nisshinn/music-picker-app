@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const { GoogleGenAI, Type } = require("@google/genai");
+const { GoogleGenAI, Type, ThinkingLevel } = require("@google/genai");
 const { collectPages } = require("./lib/paging");
 const { createRateLimiter } = require("./lib/rate-limit");
 
@@ -165,7 +165,7 @@ function getGeminiAI() {
     apiKey: process.env.GEMINI_API_KEY,
     httpOptions: {
       headers: {
-        "User-Agent": "music-picker-gemini",
+        "User-Agent": "aistudio-build",
       },
     },
   });
@@ -1598,27 +1598,37 @@ app.post("/api/create-playlist", async (req, res) => {
 // -------------------------------------------------------------
 async function generateContentWithRetry(prompt, systemInstruction = "") {
   const ai = getGeminiAI();
-  const models = ["gemini-flash-latest", "gemini-3.8-flash", "gemini-3.1-flash-lite"];
+  const models = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
 
   for (const model of models) {
+    let timer = null;
     try {
+      const config = {
+        systemInstruction: systemInstruction || undefined,
+        responseMimeType: "application/json",
+      };
+
+      if (model === "gemini-3.8-flash" && ThinkingLevel?.LOW) {
+        config.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+      }
+
       const call = ai.models.generateContent({
         model,
         contents: prompt,
-        config: {
-          systemInstruction: systemInstruction || undefined,
-          temperature: 0.7,
-          responseMimeType: "application/json",
-        },
+        config,
       });
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Gemini request timed out")), 5000)
-      );
+
+      const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error("Gemini request timed out")), 25000);
+      });
+
       const response = await Promise.race([call, timeoutPromise]);
       if (response && response.text) return response.text.trim();
     } catch (err) {
       console.warn(`Model ${model} failed or timed out:`, err?.message || err);
       continue;
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
   throw new Error("Gemini AI APIが現在混み合っています。少し時間をおいて再試行してください。");

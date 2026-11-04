@@ -1167,6 +1167,80 @@ window.playArtistTopSong = function (idx, event) {
   }
 };
 
+// アルバムカルーセルの横スクロール（PCマウスホイール＆スマホタッチスワイプ）対応
+function enableCarouselGestures(container) {
+  if (!container || container._hasCarouselGestures) return;
+  container._hasCarouselGestures = true;
+
+  // 1. PC: マウスホイール上下回転を横スクロールに変換
+  container.addEventListener(
+    "wheel",
+    (e) => {
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (maxScroll <= 0) return;
+
+      const isVertical = Math.abs(e.deltaY) >= Math.abs(e.deltaX);
+      const delta = isVertical ? e.deltaY : e.deltaX;
+      if (Math.abs(delta) < 1) return;
+
+      const atLeft = container.scrollLeft <= 1;
+      const atRight = container.scrollLeft >= maxScroll - 1;
+
+      // 端に達している時はページの縦スクロールを妨げない
+      if ((delta < 0 && atLeft) || (delta > 0 && atRight)) {
+        return;
+      }
+
+      e.preventDefault();
+      container.scrollLeft += delta;
+    },
+    { passive: false }
+  );
+
+  // 2. スマホ: スワイプ操作中にタップ判定が誤爆するのを防止
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let isSwiping = false;
+
+  container.addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.touches && e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isSwiping = false;
+      }
+    },
+    { passive: true }
+  );
+
+  container.addEventListener(
+    "touchmove",
+    (e) => {
+      if (e.touches && e.touches.length === 1) {
+        const dx = Math.abs(e.touches[0].clientX - touchStartX);
+        const dy = Math.abs(e.touches[0].clientY - touchStartY);
+        if (dx > 8 || dy > 8) {
+          isSwiping = true;
+        }
+      }
+    },
+    { passive: true }
+  );
+
+  container.addEventListener(
+    "click",
+    (e) => {
+      if (isSwiping) {
+        e.preventDefault();
+        e.stopPropagation();
+        isSwiping = false;
+      }
+    },
+    { capture: true }
+  );
+}
+
 window.openArtistDetailPage = async function (artist) {
   if (typeof document === "undefined" || !artist) return;
   const artistId = artist.id || "";
@@ -1634,6 +1708,8 @@ function renderArtistDetailPageContent(data) {
         }
       });
     });
+
+    enableCarouselGestures(albumsContainer);
   };
 
   discographyTabs.forEach((tab) => {
@@ -3865,6 +3941,11 @@ function renderSearchResults(query, state, box) {
         if (targetAlb) playAlbumDirectly(targetAlb);
       });
     });
+
+    const albumsGrid = albumSection.querySelector(".artist-albums-grid");
+    if (albumsGrid) {
+      enableCarouselGestures(albumsGrid);
+    }
 
     box.appendChild(albumSection);
   }
