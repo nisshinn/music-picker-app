@@ -240,6 +240,16 @@
                 <span class="toggle-slider"></span>
             </label>
         </div>
+        <div class="menu-setting">
+            <div class="menu-setting-row" style="margin-bottom: 6px;">
+                <span class="home-menu-label" data-label="歌詞の文字サイズ">📝 歌詞の文字サイズ</span>
+            </div>
+            <div class="lyrics-font-controls menu-font-controls" role="group" aria-label="歌詞の文字サイズ">
+                <button type="button" class="lyrics-size-btn" data-size="sm" title="小サイズ">小</button>
+                <button type="button" class="lyrics-size-btn active" data-size="md" title="中サイズ">中</button>
+                <button type="button" class="lyrics-size-btn" data-size="lg" title="大サイズ">大</button>
+            </div>
+        </div>
     </section>
 
     <!-- 設定ページ -->
@@ -707,6 +717,21 @@
         </div>
 
         <section class="content-box settings-box">
+            <h2>歌詞・表示設定</h2>
+            <div class="settings-setting-row">
+                <div class="settings-setting-info">
+                    <span class="settings-setting-title">歌詞の文字サイズ</span>
+                    <p class="settings-setting-desc">歌詞表示時のフォントサイズを設定します。</p>
+                </div>
+                <div class="lyrics-font-controls" role="group" aria-label="歌詞の文字サイズ">
+                    <button type="button" class="lyrics-size-btn" data-size="sm" title="小サイズ">小</button>
+                    <button type="button" class="lyrics-size-btn active" data-size="md" title="中サイズ">中</button>
+                    <button type="button" class="lyrics-size-btn" data-size="lg" title="大サイズ">大</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-box settings-box">
             <h2>データ管理 & アカウント</h2>
             <div class="settings-button-group">
                 <button id="clearFavorites" class="danger-button">お気に入りをすべて削除</button>
@@ -811,23 +836,12 @@
                 </div>
             </div>
             <section id="fpLyrics" class="fp-lyrics" aria-label="歌詞" hidden>
-                <div class="fp-lyrics-toolbar">
-                    <div class="lyrics-font-controls" role="group" aria-label="歌詞の文字サイズ">
-                        <span class="lyrics-toolbar-label">文字サイズ</span>
-                        <button type="button" class="lyrics-size-btn" data-size="sm" title="小サイズ">小</button>
-                        <button type="button" class="lyrics-size-btn active" data-size="md" title="中サイズ">中</button>
-                        <button type="button" class="lyrics-size-btn" data-size="lg" title="大サイズ">大</button>
-                    </div>
-                    <button type="button" class="lyrics-fullscreen-btn" id="fpLyricsFullscreenBtn" title="歌詞の全画面表示">
-                        <span class="fs-icon" aria-hidden="true">⛶</span> 全画面
-                    </button>
-                </div>
                 <p id="fpLyricsStatus" class="fp-lyrics-status" role="status"></p>
                 <div id="fpLyricsLines" class="fp-lyrics-lines" tabindex="0" aria-label="歌詞をスクロール"></div>
                 <div class="fp-lyrics-footer">
                     <a href="https://lrclib.net/" target="_blank" rel="noopener noreferrer">LRCLIB ↗</a>
                     <button id="fpLyricsFollow" class="icon-control" type="button" aria-label="再生位置に戻る" data-player-icon="follow" hidden></button>
-                    <button id="fpLyricsRetry" class="icon-control" type="button" aria-label="歌詞を再読み込み" data-player-icon="refresh" hidden></button>
+                    <button id="fpLyricsRetry" class="icon-control fp-lyrics-reload-btn" type="button" aria-label="歌詞を再読み込み" title="歌詞を再読み込み" data-player-icon="refresh"></button>
                 </div>
             </section>
         </div>

@@ -4001,66 +4001,78 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 /* =========================================================
    Lyrics Toolbar, Font Size Control & Fullscreen Mode
    ========================================================= */
-.fp-lyrics-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  padding: 6px 12px;
-  margin-bottom: 12px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
+/* =========================================================
+   Lyrics Font Size Controls & Minimal Reload Button
+   ========================================================= */
 .lyrics-font-controls {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-.lyrics-toolbar-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-  margin-right: 2px;
-}
 .lyrics-size-btn {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: transparent;
-  color: var(--sub);
-  font-size: 11.5px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.18));
+  background: var(--input, rgba(255, 255, 255, 0.06));
+  color: var(--sub, #aeb8b8);
+  font-size: 12px;
   font-weight: 700;
-  padding: 3px 9px;
+  padding: 4px 12px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 .lyrics-size-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
+  background: var(--hover, rgba(255, 255, 255, 0.15));
+  color: var(--text, #ffffff);
 }
 .lyrics-size-btn.active {
-  background: #ffffff;
+  background: var(--solid, #1db954);
   color: #000000;
-  border-color: #ffffff;
+  border-color: var(--solid, #1db954);
 }
-.lyrics-fullscreen-btn {
-  display: inline-flex;
+
+/* Side Menu Font Controls */
+.menu-font-controls {
+  display: flex;
+  width: 100%;
+  gap: 6px;
+  margin-top: 4px;
+}
+.menu-font-controls .lyrics-size-btn {
+  flex: 1;
+  text-align: center;
+  padding: 6px 0;
+  font-size: 12px;
+}
+
+/* Settings Page Settings Row */
+.settings-setting-row {
+  display: flex;
   align-items: center;
-  gap: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: transparent;
-  color: #ffffff;
-  font-size: 11.5px;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+}
+.settings-setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.settings-setting-title {
+  font-size: 14px;
   font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  color: var(--text);
 }
-.lyrics-fullscreen-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
+.settings-setting-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
 }
+.settings-box .lyrics-size-btn {
+  padding: 6px 16px;
+  font-size: 13px;
+}
+
+/* Lyrics Font Size Adjustments */
 .fp-lyrics.size-sm .fp-lyric-line {
   font-size: clamp(20px, 2.2vw, 32px);
   margin-bottom: 24px;
@@ -4069,27 +4081,37 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
   font-size: clamp(34px, 4vw, 58px);
   margin-bottom: 50px;
 }
-/* Fullscreen Lyrics Overlay */
-.fp-lyrics.is-fullscreen {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  max-width: none !important;
-  height: 100vh !important;
-  z-index: 99999 !important;
-  background: rgba(12, 12, 16, 0.96) !important;
-  backdrop-filter: blur(36px) !important;
-  -webkit-backdrop-filter: blur(36px) !important;
-  padding: max(24px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left)) !important;
-  display: flex !important;
-  flex-direction: column !important;
+
+/* Lyrics Footer Minimal Reload Button */
+.fp-lyrics-reload-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 5px !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: var(--muted) !important;
+  cursor: pointer !important;
+  opacity: 0.8 !important;
+  transition: all 0.15s ease !important;
 }
-.fp-lyrics.is-fullscreen .fp-lyrics-lines {
-  height: calc(100vh - 140px) !important;
-  padding-right: 20px !important;
+.fp-lyrics-reload-btn:hover {
+  opacity: 1 !important;
+  color: var(--text, #ffffff) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
-.fp-lyrics.is-fullscreen .fp-lyric-line {
-  font-size: clamp(32px, 4.5vw, 64px) !important;
-  line-height: 1.5 !important;
-  margin-bottom: 46px !important;
+.fp-lyrics-reload-btn:active {
+  transform: scale(0.92) !important;
 }
+.fp-lyrics-reload-btn.is-loading .player-icon {
+  animation: reload-spin 0.8s linear infinite !important;
+}
+@keyframes reload-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+

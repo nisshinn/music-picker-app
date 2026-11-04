@@ -4455,10 +4455,15 @@ async function loadLyrics() {
   lyricsActiveIndex = -1;
   lyricsFollowing = true;
   document.getElementById("fpLyricsFollow").hidden = true;
-  document.getElementById("fpLyricsRetry").hidden = true;
+  const retryBtn = document.getElementById("fpLyricsRetry");
+  if (retryBtn) {
+    retryBtn.hidden = false;
+    retryBtn.classList.add("is-loading");
+  }
   if (!track?.album?.name || !track?.duration_ms) {
     setText("fpLyricsStatus", track ? "この曲の情報では歌詞を取得できません。" : "曲を再生すると歌詞を表示できます。");
     lyricsController = null;
+    if (retryBtn) retryBtn.classList.remove("is-loading");
     return;
   }
   setText("fpLyricsStatus", "歌詞を読み込み中…");
@@ -4511,9 +4516,13 @@ async function loadLyrics() {
   } catch (error) {
     if (requestId !== lyricsRequestId || error.name === "AbortError") return;
     setText("fpLyricsStatus", error.message || "歌詞を取得できませんでした。");
-    document.getElementById("fpLyricsRetry").hidden = false;
   } finally {
     if (requestId === lyricsRequestId) lyricsController = null;
+    const rBtn = document.getElementById("fpLyricsRetry");
+    if (rBtn) {
+      rBtn.classList.remove("is-loading");
+      rBtn.hidden = false;
+    }
   }
 }
 
@@ -4538,7 +4547,6 @@ let lyricsSize = "md";
 try {
   lyricsSize = localStorage.getItem("music_picker_lyrics_size") || "md";
 } catch {}
-let lyricsFullscreen = false;
 
 function setLyricsSize(size) {
   lyricsSize = size;
@@ -4557,19 +4565,6 @@ function setLyricsSize(size) {
   syncLyrics(clockPosition(), true);
 }
 
-function toggleLyricsFullscreen(force) {
-  const panel = document.getElementById("fpLyrics");
-  if (!panel) return;
-  lyricsFullscreen = typeof force === "boolean" ? force : !lyricsFullscreen;
-  panel.classList.toggle("is-fullscreen", lyricsFullscreen);
-  const fsBtn = document.getElementById("fpLyricsFullscreenBtn");
-  if (fsBtn) {
-    fsBtn.innerHTML = lyricsFullscreen ? '<span class="fs-icon">✕</span> 閉じる' : '<span class="fs-icon">⛶</span> 全画面';
-    fsBtn.title = lyricsFullscreen ? "全画面を閉じる" : "全画面表示";
-  }
-  syncLyrics(clockPosition(), true);
-}
-
 function initLyrics() {
   setLyricsSize(lyricsSize);
 
@@ -4579,20 +4574,13 @@ function initLyrics() {
     });
   });
 
-  const fsBtn = document.getElementById("fpLyricsFullscreenBtn");
-  if (fsBtn) {
-    fsBtn.addEventListener("click", () => toggleLyricsFullscreen());
-  }
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && lyricsFullscreen) {
-      toggleLyricsFullscreen(false);
-    }
-  });
-
   window.addEventListener?.("resize", () => syncLyrics(clockPosition(), true));
   document.getElementById("fpLyricsButton")?.addEventListener("click", () => setLyricsOpen(!lyricsOpen));
-  document.getElementById("fpLyricsRetry")?.addEventListener("click", loadLyrics);
+  document.getElementById("fpLyricsRetry")?.addEventListener("click", () => {
+    lyricsKey = "";
+    refreshLyricsForTrack(currentTrackData || lyricsTrack);
+    loadLyrics();
+  });
   document.getElementById("fpLyricsFollow")?.addEventListener("click", () => {
     lyricsFollowing = true;
     document.getElementById("fpLyricsFollow").hidden = true;
