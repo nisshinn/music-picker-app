@@ -1597,11 +1597,16 @@ app.post("/api/create-playlist", async (req, res) => {
 // Gemini AI Mood Analysis & Smart Ranking with Multi-Model Retry
 // -------------------------------------------------------------
 async function generateContentWithRetry(prompt, systemInstruction = "") {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not set.");
+  }
   const ai = getGeminiAI();
-  const models = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+  // gemini-3.1-flash-lite delivers sub-2s latency and high reliability without thinking overhead
+  const models = ["gemini-3.1-flash-lite", "gemini-3.8-flash"];
 
   for (const model of models) {
     let timer = null;
+    const startTime = Date.now();
     try {
       const config = {
         systemInstruction: systemInstruction || undefined,
@@ -1619,13 +1624,18 @@ async function generateContentWithRetry(prompt, systemInstruction = "") {
       });
 
       const timeoutPromise = new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error("Gemini request timed out")), 25000);
+        timer = setTimeout(() => reject(new Error("Gemini API request timed out")), 12000);
       });
 
       const response = await Promise.race([call, timeoutPromise]);
-      if (response && response.text) return response.text.trim();
+      if (response && response.text) {
+        const elapsed = Date.now() - startTime;
+        console.log(`[Gemini] ${model} generated response in ${elapsed}ms`);
+        return response.text.trim();
+      }
     } catch (err) {
-      console.warn(`Model ${model} failed or timed out:`, err?.message || err);
+      const elapsed = Date.now() - startTime;
+      console.info(`[Gemini] ${model} unavailable after ${elapsed}ms (${err?.message || "error"}), trying fallback...`);
       continue;
     } finally {
       if (timer) clearTimeout(timer);
@@ -1633,6 +1643,7 @@ async function generateContentWithRetry(prompt, systemInstruction = "") {
   }
   throw new Error("Gemini AI APIが現在混み合っています。少し時間をおいて再試行してください。");
 }
+
 
 app.post("/api/gemini/analyze-mood", async (req, res) => {
   try {
