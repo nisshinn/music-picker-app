@@ -149,9 +149,12 @@ function saveAppSetting(key, value) {
 }
 
 function applyAppSettings() {
-  const theme = appSettings.theme === "night" ? "night" : "ocean";
-  document.documentElement.dataset.theme = theme;
-  document.body.dataset.theme = theme;
+  const isDark = appSettings.theme === "night" || appSettings.theme === "dark";
+  const theme = isDark ? "dark" : "light";
+  document.documentElement.dataset.theme = isDark ? "night" : "ocean";
+  document.documentElement.setAttribute("data-theme", theme);
+  document.body.dataset.theme = isDark ? "night" : "ocean";
+  document.body.setAttribute("data-theme", theme);
   document.body.classList.toggle("no-animation", !appSettings.animation);
 }
 
@@ -2137,8 +2140,115 @@ async function makePlaylist(options = {}) {
       ? selectedArtists
       : (selectedArtistId ? [{ id: selectedArtistId, name: selectedArtistName || "Artist", image: selectedArtistImage || "" }] : []);
 
-    // 1. If multi-artist, free text mood, no artist, or specific genre: use Hybrid Gemini Recommendation
-    if (artistsToUse.length > 1 || aiMoodText || artistsToUse.length === 0 || selectedGenre !== "all") {
+    if (isReshuffle && artistsToUse.length > 0) {
+      // ユーザー指示: 引き直すボタンを押したら気分やジャンルは関係なくアーティストだけでさっきの5曲以外の曲を表示
+      // 質問回答: 選択中アーティストから均等に選曲、曲数不足時は除外をリセットして5曲確保
+      const artistTrackPools = await Promise.all(
+        artistsToUse.map(async (art) => {
+          try {
+            let pool = [];
+            if (art.id) {
+              const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(art.id)}&recordingVersion=${encodeURIComponent(version)}`);
+              const data = await res.json();
+              if (res.ok && Array.isArray(data)) pool = data;
+            }
+            if (!pool.length && art.name) {
+              const res = await fetch(`/api/search?q=${encodeURIComponent(`artist:"${art.name}"`)}&type=track`);
+              const data = await res.json();
+              if (res.ok && data.tracks?.items) {
+                pool = data.tracks.items.map(formatTrack);
+              }
+            }
+            return {
+              artist: art,
+              tracks: normalizeTracks(pool).filter((t) => matchesRecordingVersion(t, version))
+            };
+          } catch {
+            return { artist: art, tracks: [] };
+          }
+        })
+      );
+
+      const poolsWithCandidates = artistTrackPools.map(({ artist, tracks: pTracks }) => {
+        const uniquePool = [...new Map(pTracks.map((t) => [t.uri, t])).values()];
+        const filtered = uniquePool.filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
+        return {
+          artist,
+          fullPool: uniquePool,
+          candidates: filtered
+        };
+      });
+
+      const totalEligible = poolsWithCandidates.reduce((acc, p) => acc + p.candidates.length, 0);
+      const useFullFallback = totalEligible < 5;
+
+      const workingPools = poolsWithCandidates.map((p) => {
+        const poolToUse = useFullFallback ? [...p.fullPool] : [...p.candidates];
+        poolToUse.sort(() => Math.random() - 0.5);
+        return {
+          artist: p.artist,
+          tracks: poolToUse
+        };
+      });
+
+      const selectedReshuffled = [];
+      const selectedUris = new Set();
+      let addedInRound = true;
+      while (selectedReshuffled.length < 5 && addedInRound) {
+        addedInRound = false;
+        for (const pool of workingPools) {
+          if (selectedReshuffled.length >= 5) break;
+          while (pool.tracks.length > 0) {
+            const candidate = pool.tracks.shift();
+            if (candidate && !selectedUris.has(candidate.uri)) {
+              selectedUris.add(candidate.uri);
+              candidate.reason = `「${pool.artist.name}」の楽曲カタログから引き直したおすすめナンバーです。`;
+              selectedReshuffled.push(candidate);
+              addedInRound = true;
+              break;
+            }
+          }
+        }
+      }
+
+      tracks = selectedReshuffled;
+      aiCuratorNote = `${artistsToUse.map((a) => a.name).join(" × ")}の楽曲カタログから、先ほどとは異なる5曲を引き直しました。`;
+    } else if (isReshuffle && artistsToUse.length === 0) {
+      // アーティスト未選択時の引き直し
+      try {
+        const res = await fetch("/api/gemini/recommend-from-mood", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: text,
+            analysis: aiMoodAnalysis,
+            excludedTrackUris,
+            recordingVersion: version,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.tracks) && data.tracks.length > 0) {
+          tracks = data.tracks;
+          aiCuratorNote = data.curatorNote || `「${text}」の気分に合う別の5曲を引き直しました。`;
+        }
+      } catch {}
+      if (tracks.length < 5) {
+        try {
+          const searchRes = await fetch(`/api/search?q=${encodeURIComponent(text || "J-Pop")}&type=track`);
+          const searchData = await searchRes.json();
+          if (searchData.tracks?.items) {
+            const pool = searchData.tracks.items.map(formatTrack).filter((t) => matchesRecordingVersion(t, version));
+            const fresh = pool.filter((t) => !excluded.has(t.uri));
+            tracks = [...tracks, ...fresh].slice(0, 5);
+            if (tracks.length < 5) {
+              tracks = pool.slice(0, 5);
+            }
+            aiCuratorNote = `「${text}」の気分に合わせて別の5曲をセレクトしました。`;
+          }
+        } catch {}
+      }
+    } else if (artistsToUse.length > 1 || aiMoodText || artistsToUse.length === 0 || selectedGenre !== "all") {
+      // 初回選曲 (マルチアーティスト・自由テキスト・ジャンル指定)
       const res = await fetch("/api/gemini/recommend-from-mood", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2159,7 +2269,7 @@ async function makePlaylist(options = {}) {
       tracks = data.tracks || [];
       aiCuratorNote = data.curatorNote || "";
     } else if (artistsToUse.length === 1) {
-      // 2. Direct artist catalogue query with AI mood ranking
+      // 初回選曲 (単一アーティスト)
       const excParam = excludedTrackUris.length ? `&excluded=${encodeURIComponent(excludedTrackUris.join(','))}` : '';
       const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(artistsToUse[0].id)}&mood=${encodeURIComponent(text)}&recordingVersion=${encodeURIComponent(version)}${excParam}`);
       const data = await res.json();
@@ -2172,12 +2282,16 @@ async function makePlaylist(options = {}) {
       }
     }
 
-    tracks = normalizeTracks(tracks).filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
+    tracks = normalizeTracks(tracks);
+    if (!isReshuffle) {
+      tracks = tracks.filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
+    }
     tracks = [...new Map(tracks.map((t) => [t.uri, t])).values()].slice(0, 5);
-    if (version !== "all" && tracks.length < 5) {
+
+    if (version !== "all" && tracks.length < 5 && !isReshuffle) {
       throw new Error("指定したバージョンで5曲そろいませんでした。アーティスト・ジャンルを変えるか、曲のバージョンを「指定なし」にしてください。");
     }
-    if (shouldExclude && tracks.length < 5) {
+    if (shouldExclude && tracks.length < 5 && !isReshuffle) {
       throw new Error("最近聴いた曲を除くと5曲そろいませんでした。アーティスト・ジャンルを変えるか、「最近聴いた曲を除外」をオフにしてください。");
     }
 
@@ -4407,6 +4521,10 @@ function parseSyncedLyrics(lrc) {
   return lines.sort((a, b) => a.time - b.time).slice(0, 2000);
 }
 
+let lyricsAutoRetryCount = 0;
+let lyricsAutoRetryTimer = null;
+const MAX_LYRICS_AUTO_RETRIES = 2;
+
 function refreshLyricsForTrack(track) {
   lyricsTrack = track;
   const key = JSON.stringify([track?.uri, track?.title || track?.name, track?.artists?.[0]?.name || track?.artist, track?.album?.name, track?.duration_ms]);
@@ -4414,6 +4532,11 @@ function refreshLyricsForTrack(track) {
   lyricsKey = key;
   lyricsRequestId++;
   lyricsController?.abort();
+  if (lyricsAutoRetryTimer) {
+    clearTimeout(lyricsAutoRetryTimer);
+    lyricsAutoRetryTimer = null;
+  }
+  lyricsAutoRetryCount = 0;
   lyricsLines = [];
   lyricsActiveIndex = -1;
   if (lyricsOpen) loadLyrics();
@@ -4439,10 +4562,14 @@ function setLyricsOpen(open) {
     lyricsRequestId++;
     lyricsController?.abort();
     lyricsController = null;
+    if (lyricsAutoRetryTimer) {
+      clearTimeout(lyricsAutoRetryTimer);
+      lyricsAutoRetryTimer = null;
+    }
   }
 }
 
-async function loadLyrics() {
+async function loadLyrics(isAutoRetry = false) {
   lyricsController?.abort();
   const requestId = ++lyricsRequestId;
   const controller = new AbortController();
@@ -4466,7 +4593,7 @@ async function loadLyrics() {
     if (retryBtn) retryBtn.classList.remove("is-loading");
     return;
   }
-  setText("fpLyricsStatus", "歌詞を読み込み中…");
+  setText("fpLyricsStatus", isAutoRetry ? `歌詞を取得中… (再試行 ${lyricsAutoRetryCount}/${MAX_LYRICS_AUTO_RETRIES})` : "歌詞を読み込み中…");
   try {
     const params = new URLSearchParams({ title: track.title || track.name || "", artist: track.artists?.[0]?.name || getArtistText(track), album: track.album.name, duration: String(track.duration_ms / 1000) });
     const res = await fetch(`/api/lyrics?${params}`, { signal: controller.signal });
@@ -4474,8 +4601,24 @@ async function loadLyrics() {
     if (requestId !== lyricsRequestId || !lyricsOpen) return;
     if (!res.ok) throw new Error(data.error || "歌詞を取得できませんでした。");
     if (data.status !== "found") {
-      setText("fpLyricsStatus", data.status === "instrumental" ? "インストゥルメンタルのため歌詞はありません。" : "この曲の歌詞はまだ見つかりません。別の曲でもお試しください。");
+      if (data.status !== "instrumental" && lyricsAutoRetryCount < MAX_LYRICS_AUTO_RETRIES && lyricsOpen && lyricsTrack === track) {
+        lyricsAutoRetryCount++;
+        const delay = lyricsAutoRetryCount === 1 ? 1500 : 3000;
+        setText("fpLyricsStatus", `歌詞が見つかりません。自動で再試行中 (${lyricsAutoRetryCount}/${MAX_LYRICS_AUTO_RETRIES})…`);
+        if (lyricsAutoRetryTimer) clearTimeout(lyricsAutoRetryTimer);
+        lyricsAutoRetryTimer = setTimeout(() => {
+          lyricsAutoRetryTimer = null;
+          if (lyricsOpen && lyricsTrack === track) loadLyrics(true);
+        }, delay);
+        return;
+      }
+      setText("fpLyricsStatus", data.status === "instrumental" ? "インストゥルメンタルのため歌詞はありません。" : "この曲の歌詞は見つかりませんでした。別の曲でもお試しください。");
       return;
+    }
+    lyricsAutoRetryCount = 0;
+    if (lyricsAutoRetryTimer) {
+      clearTimeout(lyricsAutoRetryTimer);
+      lyricsAutoRetryTimer = null;
     }
     lyricsLines = parseSyncedLyrics(data.syncedLyrics);
     const synced = lyricsLines.some(line => line.text);
@@ -4515,6 +4658,17 @@ async function loadLyrics() {
     syncLyrics(clockPosition());
   } catch (error) {
     if (requestId !== lyricsRequestId || error.name === "AbortError") return;
+    if (lyricsAutoRetryCount < MAX_LYRICS_AUTO_RETRIES && lyricsOpen && lyricsTrack === track) {
+      lyricsAutoRetryCount++;
+      const delay = lyricsAutoRetryCount === 1 ? 1500 : 3000;
+      setText("fpLyricsStatus", `歌詞を取得中… (自動再試行 ${lyricsAutoRetryCount}/${MAX_LYRICS_AUTO_RETRIES})`);
+      if (lyricsAutoRetryTimer) clearTimeout(lyricsAutoRetryTimer);
+      lyricsAutoRetryTimer = setTimeout(() => {
+        lyricsAutoRetryTimer = null;
+        if (lyricsOpen && lyricsTrack === track) loadLyrics(true);
+      }, delay);
+      return;
+    }
     setText("fpLyricsStatus", error.message || "歌詞を取得できませんでした。");
   } finally {
     if (requestId === lyricsRequestId) lyricsController = null;

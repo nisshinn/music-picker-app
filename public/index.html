@@ -44,9 +44,16 @@
     <meta name="apple-mobile-web-app-title" content="Music Picker">
     <link rel="stylesheet" href="/style.css">
     <script>
-        // 初回描画前にテーマを適用（ちらつき防止）。ocean=ライト(ダークモードOFF) / night=ダーク
-        try { document.documentElement.dataset.theme = localStorage.getItem("music_picker_theme") === "night" ? "night" : "ocean"; }
-        catch (e) { document.documentElement.dataset.theme = "ocean"; }
+        // 初回描画前にテーマを適用（ちらつき防止）。ocean/light=ライト / night/dark=ダーク
+        try {
+            const savedTheme = localStorage.getItem("music_picker_theme");
+            const isDark = savedTheme === "night" || savedTheme === "dark" || savedTheme === null;
+            document.documentElement.dataset.theme = isDark ? "night" : "ocean";
+            document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+        } catch (e) {
+            document.documentElement.dataset.theme = "night";
+            document.documentElement.setAttribute("data-theme", "dark");
+        }
     </script>
     <link rel="manifest" href="/manifest.webmanifest">
     <meta name="theme-color" content="#d6002b">
@@ -244,10 +251,10 @@
             <div class="menu-setting-row" style="margin-bottom: 6px;">
                 <span class="home-menu-label" data-label="歌詞の文字サイズ">📝 歌詞の文字サイズ</span>
             </div>
-            <div class="lyrics-font-controls menu-font-controls" role="group" aria-label="歌詞の文字サイズ">
-                <button type="button" class="lyrics-size-btn" data-size="sm" title="小サイズ">小</button>
-                <button type="button" class="lyrics-size-btn active" data-size="md" title="中サイズ">中</button>
-                <button type="button" class="lyrics-size-btn" data-size="lg" title="大サイズ">大</button>
+            <div class="lyrics-font-controls menu-font-controls join w-full" role="group" aria-label="歌詞の文字サイズ">
+                <button type="button" class="lyrics-size-btn btn btn-sm join-item" data-size="sm" title="小サイズ">小</button>
+                <button type="button" class="lyrics-size-btn active btn btn-sm join-item" data-size="md" title="中サイズ">中</button>
+                <button type="button" class="lyrics-size-btn btn btn-sm join-item" data-size="lg" title="大サイズ">大</button>
             </div>
         </div>
     </section>
@@ -314,7 +321,7 @@
                     <textarea id="freeMoodInput" maxlength="300" rows="3" placeholder="例：帰り道に、ゆっくり聴きたい" aria-describedby="homeMoodHint"></textarea>
                     <div class="home-input-footer">
                         <p id="homeMoodHint">入力後、そのまま「5曲を選ぶ」で選曲できます。</p>
-                        <button type="button" id="aiMoodButton" class="ai-mood-button">気分を分析</button>
+                        <button type="button" id="aiMoodButton" class="ai-mood-button btn btn-sm btn-outline btn-primary">気分を分析</button>
                     </div>
                     <div id="aiMoodResult" class="ai-mood-result" aria-live="polite"></div>
                 </div>
@@ -412,7 +419,7 @@
         </details>
         <div class="home-submit">
             <span id="selectionHint">気分を選ぶか入力して、「5曲を選ぶ」を押してください。</span>
-            <button id="makePlaylist" class="make-playlist-button" type="button">5曲を選ぶ</button>
+            <button id="makePlaylist" class="make-playlist-button btn btn-primary w-full text-base font-bold" type="button">5曲を選ぶ</button>
         </div>
 
         <!-- プレイリスト結果エリア -->
@@ -723,20 +730,20 @@
                     <span class="settings-setting-title">歌詞の文字サイズ</span>
                     <p class="settings-setting-desc">歌詞表示時のフォントサイズを設定します。</p>
                 </div>
-                <div class="lyrics-font-controls" role="group" aria-label="歌詞の文字サイズ">
-                    <button type="button" class="lyrics-size-btn" data-size="sm" title="小サイズ">小</button>
-                    <button type="button" class="lyrics-size-btn active" data-size="md" title="中サイズ">中</button>
-                    <button type="button" class="lyrics-size-btn" data-size="lg" title="大サイズ">大</button>
+                <div class="lyrics-font-controls join" role="group" aria-label="歌詞の文字サイズ">
+                    <button type="button" class="lyrics-size-btn btn btn-sm join-item" data-size="sm" title="小サイズ">小</button>
+                    <button type="button" class="lyrics-size-btn active btn btn-sm join-item" data-size="md" title="中サイズ">中</button>
+                    <button type="button" class="lyrics-size-btn btn btn-sm join-item" data-size="lg" title="大サイズ">大</button>
                 </div>
             </div>
         </section>
 
-        <section class="content-box settings-box">
+        <section class="content-box settings-box card bg-base-200 border border-base-300">
             <h2>データ管理 & アカウント</h2>
-            <div class="settings-button-group">
-                <button id="clearFavorites" class="danger-button">お気に入りをすべて削除</button>
-                <button id="clearHistory" class="danger-button">履歴を全部削除</button>
-                <button id="logoutButton" class="logout-button">Spotifyからログアウト</button>
+            <div class="settings-button-group flex gap-2 flex-wrap">
+                <button id="clearFavorites" class="danger-button btn btn-sm btn-outline btn-error">お気に入りをすべて削除</button>
+                <button id="clearHistory" class="danger-button btn btn-sm btn-outline btn-error">履歴を全部削除</button>
+                <button id="logoutButton" class="logout-button btn btn-sm btn-outline">Spotifyからログアウト</button>
             </div>
         </section>
     </section>
