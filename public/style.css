@@ -1415,7 +1415,6 @@ body .player-button .player-icon, body .menu-player-button .player-icon { width:
   flex-wrap: wrap;
 }
 .reshuffle-button {
-  height: 38px;
   background: var(--card);
   border: 1px solid var(--border);
   color: var(--text);

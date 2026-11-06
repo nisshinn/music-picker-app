@@ -6,9 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build:css": "tailwindcss -i src/input.css -o public/style.css",
-    "build": "npm run build:css && node -e \"console.log('Build completed')\"",
-    "lint": "node --check server.js public/script.js",
+    "build": "node -e \"console.log('Build completed')\"",
     "test": "node --test"
   },
   "keywords": [
@@ -22,10 +20,7 @@
   "type": "commonjs",
   "dependencies": {
     "@google/genai": "^2.32.0",
-    "@tailwindcss/cli": "^4.3.4",
-    "daisyui": "^5.7.50",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "tailwindcss": "^4.3.4"
+    "express": "^5.2.1"
   }
 }
