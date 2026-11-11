@@ -2106,6 +2106,37 @@ if (typeof document !== "undefined") {
 // -------------------------------------------------------------
 // Make Playlist: AI Curator & Hybrid Logic
 // -------------------------------------------------------------
+async function pickRandomTracksForArtists(artistsToUse, version, excluded) {
+  let allTracks = [];
+  for (const art of artistsToUse) {
+    if (!art.id) continue;
+    try {
+      const vParam = version !== "all" ? `&recordingVersion=${encodeURIComponent(version)}` : "";
+      const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(art.id)}${vParam}`);
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.tracks || []);
+        allTracks.push(...items);
+      }
+    } catch {}
+  }
+  allTracks = normalizeTracks(allTracks);
+  allTracks = [...new Map(allTracks.map((t) => [t.uri, t])).values()];
+  if (allTracks.length < 5) return null;
+
+  const shuffled = [...allTracks].sort(() => Math.random() - 0.5);
+  const nonExcluded = shuffled.filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
+  const remaining = shuffled.filter((t) => excluded.has(t.uri) || excluded.has(t.linked_from?.uri));
+  const selected = [...new Map([...nonExcluded, ...remaining].map((t) => [t.uri, t])).values()].slice(0, 5);
+
+  const artistLabel = artistsToUse.map((a) => a.name).join(" × ");
+  return selected.map((t) => ({
+    ...t,
+    reason: `「${artistLabel}」の楽曲からランダムにセレクトしたおすすめの曲です。`,
+    vibeKeywords: ["ランダム", "おすすめ", "シャッフル"]
+  }));
+}
+
 async function makePlaylist(options = {}) {
   const text = aiMoodText || selectedMood;
   if (!text) {
@@ -2132,6 +2163,7 @@ async function makePlaylist(options = {}) {
   try {
     let tracks = [];
     aiCuratorNote = "";
+    let isRandomFallback = false;
 
     const artistsToUse = selectedArtists.length > 0
       ? selectedArtists
@@ -2155,30 +2187,75 @@ async function makePlaylist(options = {}) {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "選曲に失敗しました。");
-      tracks = data.tracks || [];
-      aiCuratorNote = data.curatorNote || "";
+      if (!res.ok) {
+        if (artistsToUse.length > 0 && /最近聴いた曲|候補が不足/.test(data.error || "")) {
+          const fallback = await pickRandomTracksForArtists(artistsToUse, version, excluded);
+          if (fallback && fallback.length >= 5) {
+            tracks = fallback;
+            isRandomFallback = true;
+            aiCuratorNote = `最近聴いた曲を除くと候補が不足していたため、「${artistsToUse.map((a) => a.name).join(" × ")}」の楽曲からランダムに5曲をセレクトしました。`;
+          } else {
+            throw new Error(data.error || "選曲に失敗しました。");
+          }
+        } else {
+          throw new Error(data.error || "選曲に失敗しました。");
+        }
+      } else {
+        tracks = data.tracks || [];
+        aiCuratorNote = data.curatorNote || "";
+        if (data.isRandomFallback) isRandomFallback = true;
+      }
     } else if (artistsToUse.length === 1) {
       // 2. Direct artist catalogue query with AI mood ranking
       const excParam = excludedTrackUris.length ? `&excluded=${encodeURIComponent(excludedTrackUris.join(','))}` : '';
       const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(artistsToUse[0].id)}&mood=${encodeURIComponent(text)}&recordingVersion=${encodeURIComponent(version)}${excParam}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "選曲に失敗しました。");
-      tracks = Array.isArray(data) ? data : (data.tracks || []);
-      if (data.curatorNote) {
-        aiCuratorNote = data.curatorNote;
-      } else if (tracks[0]?.reason) {
-        aiCuratorNote = `${artistsToUse[0].name}の楽曲の中から、「${text}」の気分にぴったりな5曲をAIが厳選しました。`;
+      if (!res.ok) {
+        if (/最近聴いた曲|候補が不足/.test(data.error || "")) {
+          const fallback = await pickRandomTracksForArtists(artistsToUse, version, excluded);
+          if (fallback && fallback.length >= 5) {
+            tracks = fallback;
+            isRandomFallback = true;
+            aiCuratorNote = `最近聴いた曲を除くと候補が不足していたため、「${artistsToUse[0].name}」の楽曲からランダムに5曲をセレクトしました。`;
+          } else {
+            throw new Error(data.error || "選曲に失敗しました。");
+          }
+        } else {
+          throw new Error(data.error || "選曲に失敗しました。");
+        }
+      } else {
+        tracks = Array.isArray(data) ? data : (data.tracks || []);
+        if (data.curatorNote) {
+          aiCuratorNote = data.curatorNote;
+        } else if (tracks[0]?.reason) {
+          aiCuratorNote = `${artistsToUse[0].name}の楽曲の中から、「${text}」の気分にぴったりな5曲をAIが厳選しました。`;
+        }
       }
     }
 
-    tracks = normalizeTracks(tracks).filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
-    tracks = [...new Map(tracks.map((t) => [t.uri, t])).values()].slice(0, 5);
-    if (version !== "all" && tracks.length < 5) {
-      throw new Error("指定したバージョンで5曲そろいませんでした。アーティスト・ジャンルを変えるか、曲のバージョンを「指定なし」にしてください。");
-    }
-    if (shouldExclude && tracks.length < 5) {
-      throw new Error("最近聴いた曲を除くと5曲そろいませんでした。アーティスト・ジャンルを変えるか、「最近聴いた曲を除外」をオフにしてください。");
+    if (!isRandomFallback) {
+      tracks = normalizeTracks(tracks).filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
+      tracks = [...new Map(tracks.map((t) => [t.uri, t])).values()].slice(0, 5);
+      if (version !== "all" && tracks.length < 5) {
+        throw new Error("指定したバージョンで5曲そろいませんでした。アーティスト・ジャンルを変えるか、曲のバージョンを「指定なし」にしてください。");
+      }
+      if (shouldExclude && tracks.length < 5) {
+        if (artistsToUse.length > 0) {
+          const fallback = await pickRandomTracksForArtists(artistsToUse, version, excluded);
+          if (fallback && fallback.length >= 5) {
+            tracks = fallback;
+            isRandomFallback = true;
+            aiCuratorNote = `最近聴いた曲を除くと候補が不足していたため、「${artistsToUse.map((a) => a.name).join(" × ")}」の楽曲からランダムに5曲をセレクトしました。`;
+          } else {
+            throw new Error("最近聴いた曲を除くと5曲そろいませんでした。アーティスト・ジャンルを変えるか、「最近聴いた曲を除外」をオフにしてください。");
+          }
+        } else {
+          throw new Error("最近聴いた曲を除くと5曲そろいませんでした。アーティスト・ジャンルを変えるか、「最近聴いた曲を除外」をオフにしてください。");
+        }
+      }
+    } else {
+      tracks = normalizeTracks(tracks);
+      tracks = [...new Map(tracks.map((t) => [t.uri, t])).values()].slice(0, 5);
     }
 
     if (tracks.length === 0) {
@@ -2186,7 +2263,10 @@ async function makePlaylist(options = {}) {
     }
 
     displayPlaylist(tracks);
-    showToast(isReshuffle ? "🎲 別の5曲を引き直しました！" : "🎵 新しいおすすめ5曲を作りました！");
+    showToast(isRandomFallback
+      ? `🎲 ${artistsToUse.map((a) => a.name).join(" × ")}の曲をランダムに5曲選びました！`
+      : (isReshuffle ? "🎲 別の5曲を引き直しました！" : "🎵 新しいおすすめ5曲を作りました！")
+    );
   } catch (err) {
     alert(err.message || "プレイリスト作成に失敗しました。");
   } finally {

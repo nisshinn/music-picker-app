@@ -1762,6 +1762,31 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
     }
 
     if (candidates.length < 5) {
+      if (artists.length > 0) {
+        const allArtistTracks = uniqueTracks(rawTracks)
+          .filter((t) => matchesRecordingVersion(t, version))
+          .map(formatTrack)
+          .filter((t) => t.uri);
+        if (allArtistTracks.length >= 5) {
+          const shuffled = [...allArtistTracks].sort(() => Math.random() - 0.5);
+          const eligibleOnes = shuffled.filter(eligible);
+          const remainingOnes = shuffled.filter((t) => !eligible(t));
+          const selected = uniqueTracks([...eligibleOnes, ...remainingOnes]).slice(0, 5);
+          const artistLabel = artists.map((a) => a.name).join(" × ");
+          return res.json({
+            success: true,
+            isRandomFallback: true,
+            analysis,
+            curatorNote: `最近聴いた曲を除くと候補が不足していたため、「${artistLabel}」の楽曲からランダムに5曲をセレクトしました。`,
+            tracks: selected.map((t) => ({
+              ...t,
+              reason: `「${artistLabel}」の楽曲からランダムにセレクトしたおすすめの曲です。`,
+              vibeKeywords: ["ランダム", "おすすめ", "シャッフル"]
+            })),
+            reasons: selected.map(() => `「${artistLabel}」の楽曲からランダムにセレクトした曲です。`)
+          });
+        }
+      }
       return res.status(404).json({ error: version !== "all" ? "指定したバージョンの候補が不足しています。条件を変えるか、曲のバージョンを「指定なし」にしてください。" : excluded.size ? "最近聴いた曲を除くと候補が不足しています。条件を変えるか、「最近聴いた曲を除外」をオフにしてください。" : "候補曲が不足しています。ジャンルを「おまかせ」に戻すか、別の気分やアーティストをお試しください。" });
     }
 

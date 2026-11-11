@@ -551,6 +551,16 @@ test('curator searches later pages for unseen tracks and reports exclusion exhau
   assert.equal(api.context.rankCalls,0);
 });
 
+test('curator falls back to random artist tracks when candidate songs are exhausted by exclusion', async () => {
+  const api = exclusionServer();
+  api.run('get80Tracks=async()=>Array.from({length:10},(_,i)=>({id:String(i),uri:"spotify:track:"+i,artists:[{id:"artist",name:"Artist"}]}));');
+  const response = await api.recommend({ artistId: 'artist', artists: [{ id: 'artist', name: 'Artist' }], excludedTrackUris: Array.from({ length: 10 }, (_, i) => `spotify:track:${i}`) });
+  assert.equal(response.status, 200);
+  assert.equal(response.result.isRandomFallback, true);
+  assert.equal(response.result.tracks.length, 5);
+  assert.match(response.result.curatorNote, /ランダム/);
+});
+
 test('recording filters recognize annotations without classifying ordinary Live titles', () => {
   const api=exclusionServer();
   for (const name of ['Song - Live', 'Song (Live at Tokyo)', 'Song [Live Version]', 'Song - 2024 Live', 'Song（ライブ版）']) {
