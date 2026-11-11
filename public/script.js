@@ -2115,7 +2115,8 @@ async function pickRandomTracksForArtists(artistsToUse, version, excluded) {
     if (!art.id) continue;
     try {
       const vParam = version !== "all" ? `&recordingVersion=${encodeURIComponent(version)}` : "";
-      const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(art.id)}${vParam}`);
+      const nParam = art.name ? `&name=${encodeURIComponent(art.name)}` : "";
+      const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(art.id)}${nParam}${vParam}`);
       if (res.ok) {
         const data = await res.json();
         const items = Array.isArray(data) ? data : (data.tracks || []);
@@ -2223,9 +2224,9 @@ async function makePlaylist(options = {}) {
         if (data.isRandomFallback) isRandomFallback = true;
       }
     } else if (artistsToUse.length === 1) {
-      // 2. Direct artist catalogue query with AI mood ranking
+      const nameParam = artistsToUse[0].name ? `&name=${encodeURIComponent(artistsToUse[0].name)}` : '';
       const excParam = excludedTrackUris.length ? `&excluded=${encodeURIComponent(excludedTrackUris.join(','))}` : '';
-      const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(artistsToUse[0].id)}&mood=${encodeURIComponent(text)}&recordingVersion=${encodeURIComponent(version)}${excParam}`);
+      const res = await fetch(`/api/artist-tracks?id=${encodeURIComponent(artistsToUse[0].id)}${nameParam}&mood=${encodeURIComponent(text)}&recordingVersion=${encodeURIComponent(version)}${excParam}`);
       const data = await res.json();
       if (!res.ok) {
         if (/最近聴いた曲|候補が不足/.test(data.error || "")) {
@@ -2250,33 +2251,40 @@ async function makePlaylist(options = {}) {
       }
     }
 
+    const rawNormalized = normalizeTracks(tracks);
     if (!isRandomFallback) {
-      tracks = normalizeTracks(tracks).filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
-      tracks = [...new Map(tracks.map((t) => [t.uri, t])).values()].slice(0, 5);
+      const filtered = rawNormalized.filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
+      tracks = [...new Map(filtered.map((t) => [t.uri, t])).values()].slice(0, 5);
+
+      if (tracks.length < 5 && artistsToUse.length > 0) {
+        if (rawNormalized.length >= 5) {
+          sessionShownTrackUris.clear();
+          const shuffled = [...rawNormalized].sort(() => Math.random() - 0.5);
+          tracks = shuffled.slice(0, 5);
+          isRandomFallback = true;
+          aiCuratorNote = `「${artistsToUse.map((a) => a.name).join(" × ")}」の楽曲からおすすめをセレクトしました。`;
+        } else if (!shouldExclude && rawNormalized.length > 0) {
+          tracks = rawNormalized.slice(0, 5);
+        }
+      }
+
       if (version !== "all" && tracks.length < 5) {
         throw new Error("指定したバージョンで5曲そろいませんでした。アーティスト・ジャンルを変えるか、曲のバージョンを「指定なし」にしてください。");
       }
       if (shouldExclude && tracks.length < 5) {
-        if (artistsToUse.length > 0) {
-          const fallback = await pickRandomTracksForArtists(artistsToUse, version, excluded);
-          if (fallback && fallback.length >= 5) {
-            tracks = fallback;
-            isRandomFallback = true;
-            aiCuratorNote = `最近聴いた曲を除くと候補が不足していたため、「${artistsToUse.map((a) => a.name).join(" × ")}」の楽曲からランダムに5曲をセレクトしました。`;
-          } else {
-            throw new Error("最近聴いた曲を除くと5曲そろいませんでした。アーティスト・ジャンルを変えるか、「最近聴いた曲を除外」をオフにしてください。");
-          }
-        } else {
-          throw new Error("最近聴いた曲を除くと5曲そろいませんでした。アーティスト・ジャンルを変えるか、「最近聴いた曲を除外」をオフにしてください。");
-        }
+        throw new Error("最近聴いた曲を除くと5曲そろいませんでした。アーティスト・ジャンルを変えるか、「最近聴いた曲を除外」をオフにしてください。");
       }
     } else {
-      tracks = normalizeTracks(tracks);
+      tracks = rawNormalized;
       tracks = [...new Map(tracks.map((t) => [t.uri, t])).values()].slice(0, 5);
     }
 
     if (tracks.length === 0) {
-      throw new Error("条件に合う曲が見つかりませんでした。別の気分やアーティストをお試しください。");
+      if (rawNormalized.length > 0) {
+        tracks = rawNormalized.slice(0, 5);
+      } else {
+        throw new Error("条件に合う曲が見つかりませんでした。別の気分やアーティストをお試しください。");
+      }
     }
 
     displayPlaylist(tracks);

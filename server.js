@@ -1458,13 +1458,13 @@ app.get("/api/artist-tracks", async (req, res) => {
     if (!artistId) return res.status(400).json({ error: "artist id is required" });
     const token = await getSpotifyToken();
 
-    let artistName = "";
+    let artistName = String(req.query.name || "").trim();
     if (typeof spotifyFetch === "function") {
       try {
         const artist = await spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(artistId)}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        artistName = artist?.name || "";
+        if (artist?.name) artistName = artist.name;
       } catch {}
     }
     const fullCat = await getFullArtistCatalogue(token, artistId, artistName, { recordingVersion: req.query.recordingVersion });
@@ -1488,7 +1488,7 @@ app.get("/api/artist-tracks", async (req, res) => {
       try {
         const candidateSubset = tracks.slice(0, 30);
         const rankPrompt = `ユーザーの今の気分・シチュエーション: 「${mood}」
-アーティスト: 「${artist.name}」
+アーティスト: 「${artistName || "アーティスト"}」
 
 候補曲リスト（インデックス付き）:
 ${JSON.stringify(candidateSubset.map((c, i) => ({ index: i, title: c.title })))}
