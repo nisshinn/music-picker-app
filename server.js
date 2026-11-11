@@ -1474,6 +1474,10 @@ app.get("/api/artist-tracks", async (req, res) => {
         .map(formatTrack)
     );
 
+    if (!artistName && tracks[0]?.artist) {
+      artistName = tracks[0].artist;
+    }
+
     const excludedParam = req.query.excluded ? req.query.excluded.split(",").filter((u) => u.startsWith("spotify:track:")) : [];
     if (excludedParam.length > 0) {
       const excSet = new Set(excludedParam);
