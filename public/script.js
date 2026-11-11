@@ -2106,6 +2106,9 @@ if (typeof document !== "undefined") {
 // -------------------------------------------------------------
 // Make Playlist: AI Curator & Hybrid Logic
 // -------------------------------------------------------------
+let sessionShownTrackUris = new Set();
+let sessionArtistKey = "";
+
 async function pickRandomTracksForArtists(artistsToUse, version, excluded) {
   let allTracks = [];
   for (const art of artistsToUse) {
@@ -2125,15 +2128,18 @@ async function pickRandomTracksForArtists(artistsToUse, version, excluded) {
   if (allTracks.length < 5) return null;
 
   const shuffled = [...allTracks].sort(() => Math.random() - 0.5);
-  const nonExcluded = shuffled.filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
-  const remaining = shuffled.filter((t) => excluded.has(t.uri) || excluded.has(t.linked_from?.uri));
-  const selected = [...new Map([...nonExcluded, ...remaining].map((t) => [t.uri, t])).values()].slice(0, 5);
+  let nonExcluded = shuffled.filter((t) => !excluded.has(t.uri) && !excluded.has(t.linked_from?.uri));
+  if (nonExcluded.length < 5) {
+    sessionShownTrackUris.clear();
+    nonExcluded = shuffled;
+  }
+  const selected = nonExcluded.slice(0, 5);
 
   const artistLabel = artistsToUse.map((a) => a.name).join(" × ");
   return selected.map((t) => ({
     ...t,
-    reason: `「${artistLabel}」の楽曲からランダムにセレクトしたおすすめの曲です。`,
-    vibeKeywords: ["ランダム", "おすすめ", "シャッフル"]
+    reason: `「${artistLabel}」の楽曲から選出されたおすすめ曲です。`,
+    vibeKeywords: ["おすすめ", "シャッフル"]
   }));
 }
 
@@ -2144,11 +2150,26 @@ async function makePlaylist(options = {}) {
     return;
   }
 
+  const artistsToUse = selectedArtists.length > 0
+    ? selectedArtists
+    : (selectedArtistId ? [{ id: selectedArtistId, name: selectedArtistName || "Artist", image: selectedArtistImage || "" }] : []);
+
+  const currentArtistKey = artistsToUse.map((a) => a.id || a.name).sort().join(",");
+  if (currentArtistKey !== sessionArtistKey) {
+    sessionArtistKey = currentArtistKey;
+    sessionShownTrackUris.clear();
+  }
+
   const isReshuffle = options?.reshuffle === true;
-  let excludedTrackUris = getRecentTrackUris();
   if (isReshuffle && Array.isArray(options?.currentTracks)) {
-    const currentUris = options.currentTracks.map((t) => t.uri).filter(Boolean);
-    excludedTrackUris = [...new Set([...excludedTrackUris, ...currentUris])];
+    options.currentTracks.forEach((t) => {
+      if (t?.uri) sessionShownTrackUris.add(t.uri);
+    });
+  }
+
+  let excludedTrackUris = getRecentTrackUris();
+  if (isReshuffle || (artistsToUse.length > 0 && sessionShownTrackUris.size > 0)) {
+    excludedTrackUris = [...new Set([...excludedTrackUris, ...sessionShownTrackUris])];
   }
 
   const excluded = new Set(excludedTrackUris);
@@ -2164,10 +2185,6 @@ async function makePlaylist(options = {}) {
     let tracks = [];
     aiCuratorNote = "";
     let isRandomFallback = false;
-
-    const artistsToUse = selectedArtists.length > 0
-      ? selectedArtists
-      : (selectedArtistId ? [{ id: selectedArtistId, name: selectedArtistName || "Artist", image: selectedArtistImage || "" }] : []);
 
     // 1. If multi-artist, free text mood, no artist, or specific genre: use Hybrid Gemini Recommendation
     if (artistsToUse.length > 1 || aiMoodText || artistsToUse.length === 0 || selectedGenre !== "all") {
@@ -2278,6 +2295,11 @@ async function makePlaylist(options = {}) {
 }
 
 function displayPlaylist(playlist) {
+  if (Array.isArray(playlist)) {
+    playlist.forEach((t) => {
+      if (t?.uri) sessionShownTrackUris.add(t.uri);
+    });
+  }
   const container = document.getElementById("playlist");
   if (!container) return;
   container.innerHTML = "";

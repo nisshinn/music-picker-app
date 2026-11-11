@@ -425,6 +425,97 @@ async function get80Tracks(token, query) {
   return uniqueTracks(all).slice(0, 80);
 }
 
+const artistCatalogueCache = new Map();
+
+async function getFullArtistCatalogue(token, artistId, artistName, options = {}) {
+  const version = options.recordingVersion || "all";
+  const genreFilter = options.genreFilter || "";
+  const cacheKey = `${artistId || ""}:${artistName || ""}:${version}:${genreFilter}`;
+  const cached = artistCatalogueCache.get(cacheKey);
+  const now = Date.now();
+  if (cached && now - cached.timestamp < 10 * 60 * 1000 && cached.tracks.length >= 5) {
+    return cached.tracks;
+  }
+
+  let allRawTracks = [];
+
+  // 1. If artistId is present and no genre filter, try top-tracks
+  if (artistId && !genreFilter && typeof spotifyFetch === "function") {
+    try {
+      const topData = await spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(artistId)}/top-tracks?market=JP`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (Array.isArray(topData?.tracks)) {
+        allRawTracks.push(...topData.tracks);
+      }
+    } catch {}
+  }
+
+  // 2. Fetch search tracks (from get80Tracks)
+  const safeName = String(artistName || "").replace(/["\\]/g, "");
+  const query = safeName ? `artist:"${safeName}"${genreFilter}` : "";
+  if (query) {
+    try {
+      const searchItems = await get80Tracks(token, query);
+      if (Array.isArray(searchItems)) {
+        allRawTracks.push(...searchItems);
+      }
+    } catch {}
+  }
+
+  // 3. If artistId is present and total tracks < 60 and no genre filter, fetch albums
+  if (artistId && !genreFilter && typeof spotifyFetch === "function" && allRawTracks.length < 60) {
+    try {
+      const albumsData = await spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(artistId)}/albums?include_groups=album,single&limit=20&market=JP`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const albumItems = albumsData?.items || [];
+      const albumTrackPromises = albumItems.slice(0, 8).map(async (alb) => {
+        try {
+          const albTracks = await spotifyFetch(`https://api.spotify.com/v1/albums/${encodeURIComponent(alb.id)}/tracks?limit=30&market=JP`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          return (albTracks?.items || []).map((t) => ({ ...t, album: { id: alb.id, name: alb.name, images: alb.images } }));
+        } catch {
+          return [];
+        }
+      });
+      const albumTracksNested = await Promise.all(albumTrackPromises);
+      allRawTracks.push(...albumTracksNested.flat());
+    } catch {}
+  }
+
+  let formatted = allRawTracks
+    .filter((t) => {
+      if (!t || (!t.id && !t.uri)) return false;
+      if (artistId && Array.isArray(t.artists) && !t.artists.some((a) => a.id === artistId) && t.artists[0]?.name !== artistName) {
+        return false;
+      }
+      return matchesRecordingVersion(t, version);
+    })
+    .map(formatTrack);
+
+  const seenTitles = new Set();
+  const deduped = [];
+  for (const t of uniqueTracks(formatted)) {
+    const norm = (t.title || "").toLowerCase().replace(/[\s\-_・~〜()（）[\]【】]/g, "").replace(/(instrumental|offvocal|remastered|remaster|ver\.?|version)/gi, "");
+    if (!norm) {
+      deduped.push(t);
+      continue;
+    }
+    if (!seenTitles.has(norm)) {
+      seenTitles.add(norm);
+      deduped.push(t);
+    }
+  }
+
+  const finalTracks = deduped.length >= 5 ? deduped : uniqueTracks(formatted);
+  if (finalTracks.length > 0) {
+    artistCatalogueCache.set(cacheKey, { timestamp: now, tracks: finalTracks });
+  }
+  return finalTracks;
+}
+
 // -------------------------------------------------------------
 // Spotify OAuth Routes (Popup + Direct + PKCE Hybrid)
 // -------------------------------------------------------------
@@ -1367,14 +1458,21 @@ app.get("/api/artist-tracks", async (req, res) => {
     if (!artistId) return res.status(400).json({ error: "artist id is required" });
     const token = await getSpotifyToken();
 
-    const artist = await spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(artistId)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const items = await get80Tracks(token, `artist:"${artist.name}"`);
-    let tracks = items
-      .filter((track) => track.artists?.some((a) => a.id === artistId) && matchesRecordingVersion(track, req.query.recordingVersion))
-      .map(formatTrack);
-    tracks = uniqueTracks(tracks);
+    let artistName = "";
+    if (typeof spotifyFetch === "function") {
+      try {
+        const artist = await spotifyFetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(artistId)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        artistName = artist?.name || "";
+      } catch {}
+    }
+    const fullCat = await getFullArtistCatalogue(token, artistId, artistName, { recordingVersion: req.query.recordingVersion });
+    let tracks = fullCat.length ? fullCat : uniqueTracks(
+      (await get80Tracks(token, `artist:"${artistName || artistId}"`))
+        .filter((track) => (!artistId || track.artists?.some((a) => a.id === artistId)) && matchesRecordingVersion(track, req.query.recordingVersion))
+        .map(formatTrack)
+    );
 
     const excludedParam = req.query.excluded ? req.query.excluded.split(",").filter((u) => u.startsWith("spotify:track:")) : [];
     if (excludedParam.length > 0) {
@@ -1722,12 +1820,14 @@ app.post("/api/gemini/recommend-from-mood", async (req, res) => {
 
     if (artists.length > 0) {
       if (artists.length === 1) {
-        const items = await get80Tracks(token, `artist:"${String(artists[0].name || "").replace(/["\\]/g, "")}"${genreFilter}`);
-        rawTracks = items.filter((t) => !artists[0].id || t.artists?.some((a) => a.id === artists[0].id));
+        const fullCat = await getFullArtistCatalogue(token, artists[0].id, artists[0].name, { recordingVersion: version, genreFilter });
+        rawTracks = fullCat.length ? fullCat : (await get80Tracks(token, `artist:"${String(artists[0].name || "").replace(/["\\]/g, "")}"${genreFilter}`));
       } else {
         const results = await Promise.all(
           artists.map(async (art) => {
             try {
+              const fullCat = await getFullArtistCatalogue(token, art.id, art.name, { recordingVersion: version, genreFilter });
+              if (fullCat.length) return fullCat;
               const items = await get80Tracks(token, `artist:"${String(art.name || "").replace(/["\\]/g, "")}"${genreFilter}`);
               return items.filter((t) => !art.id || t.artists?.some((a) => a.id === art.id));
             } catch {

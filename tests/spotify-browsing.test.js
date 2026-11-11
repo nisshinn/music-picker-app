@@ -517,6 +517,22 @@ test('direct artist picks filter history before taking five; insufficient result
   assert.equal(run('window.result[0].id'), '0');
 });
 
+test('reshuffle excludes previously displayed tracks in session and yields fresh songs', async () => {
+  let catalogue = Array.from({ length: 15 }, (_, i) => track(String(i)));
+  const { run } = app(async () => response(catalogue));
+  memoryStorage(run);
+  run('selectedMood="楽しい";selectedArtistId="artist";excludeRecent=false;displayPlaylist=tracks=>{window.result=tracks};showToast=()=>{};globalThis.alert=message=>{window.error=message};');
+  await run('makePlaylist()');
+  const firstBatch = Array.from(run('window.result'), t => t.id);
+  assert.equal(firstBatch.length, 5);
+  assert.deepEqual(firstBatch, ['0','1','2','3','4']);
+  await run('makePlaylist({ reshuffle: true, currentTracks: window.result })');
+  const secondBatch = Array.from(run('window.result'), t => t.id);
+  assert.equal(secondBatch.length, 5);
+  assert.deepEqual(secondBatch, ['5','6','7','8','9']);
+  assert.ok(secondBatch.every(id => !firstBatch.includes(id)));
+});
+
 function exclusionServer() {
   const routes = new Map();
   const expressApp = { set() {}, use() {}, listen() {}, get(path, handler) { routes.set(path, handler); }, post(path, handler) { routes.set(path, handler); } };
